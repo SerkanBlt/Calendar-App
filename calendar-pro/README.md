@@ -14,6 +14,17 @@ npm run preview   # üretim çıktısını sunar (service worker burada aktif ol
 
 İlk açılışta tüm görünümleri tanıtan örnek veriler yüklenir (bir kez).
 
+## GitHub Pages'te yayınlama
+
+`.github/workflows/deploy.yml`, `master` dalına her push'ta uygulamayı derleyip GitHub Pages'e yükler.
+Build göreli yollarla (`base: './'`) üretildiği için alt klasörde sorunsuz çalışır:
+**https://serkanblt.github.io/Calendar-App/**
+
+Tek seferlik ayar:
+1. Repo herkese açık olmalı (ücretsiz hesapta Pages yalnızca public repolarda çalışır) — *Settings → General → Danger Zone → Change visibility*.
+2. *Settings → Pages → Build and deployment → Source* alanını **GitHub Actions** yapın.
+3. *Actions* sekmesinden "Deploy to GitHub Pages" iş akışını çalıştırın (veya yeni bir push yapın).
+
 ## Görünümler
 
 | Görünüm   | Özellikler |

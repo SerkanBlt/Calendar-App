@@ -15,6 +15,8 @@ import { toast } from '../components/toast.js';
 
 const CHECK_INTERVAL_MS = 30_000;
 const RETENTION_DAYS = 14;
+// Uygulama bir alt klasörde (GitHub Pages) yayınlandığında da doğru çözülsün diye BASE_URL'e göre
+const ICON_URL = `${import.meta.env.BASE_URL}icons/icon.svg`;
 let timer = null;
 
 export const notificationService = {
@@ -65,7 +67,7 @@ export const notificationService = {
 async function show(title, body, tag) {
   toast(`🔔 ${title} — ${body}`, { type: 'info', duration: 8000 });
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  const options = { body, tag, icon: '/icons/icon.svg', badge: '/icons/icon.svg' };
+  const options = { body, tag, icon: ICON_URL, badge: ICON_URL };
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
     if (reg) await reg.showNotification(title, options);
