@@ -12,7 +12,7 @@ import { settingsRepo } from '../core/settingsRepo.js';
 import { todayISO } from '../core/dateUtils.js';
 
 const SCHEMA = 1;
-const IMPORTABLE_SETTINGS = ['theme', 'background', 'backgroundFit', 'weekStartsOn', 'defaultReminder', 'schedulerDays', 'schedulerHourHeight', 'ganttDayWidth', 'ganttShowCriticalPath'];
+const IMPORTABLE_SETTINGS = ['theme', 'sidebarCollapsed', 'background', 'backgroundFit', 'weekStartsOn', 'defaultReminder', 'schedulerDays', 'schedulerHourHeight', 'ganttDayWidth', 'ganttShowCriticalPath'];
 
 function download(filename, text, type = 'application/json') {
   const url = URL.createObjectURL(new Blob([text], { type }));

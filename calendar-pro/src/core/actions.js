@@ -130,6 +130,9 @@ export const setTheme = (theme) => settingsRepo.set('theme', theme);
 export const setBackground = (background) => settingsRepo.set('background', background);
 export const setBackgroundFit = (fit) => settingsRepo.set('backgroundFit', fit);
 
+/** Kenar çubuğunu ikon moduna daraltır / genişletir (masaüstü). */
+export const toggleSidebarCollapsed = () => settingsRepo.set('sidebarCollapsed', !store.get().settings.sidebarCollapsed);
+
 /**
  * Kullanıcıdan bir görsel seçmesini ister, arka plan olarak kaydeder ve hemen uygular.
  * @returns {Promise<string|null>} eklenen arka planın değeri (user:<id>) veya vazgeçildiyse null

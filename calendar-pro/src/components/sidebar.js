@@ -6,7 +6,7 @@ import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
 import { addMonths, formatDate, startOfMonth, startOfWeek, toISODate, todayISO, rangeDays, weekdayNames } from '../core/dateUtils.js';
 import { BASE_THEMES, isCustomTheme, themeLabel } from '../core/theme.js';
-import { exportData, importData, setBackground, setBackgroundFit, setTheme, toggleNotifications } from '../core/actions.js';
+import { exportData, importData, setBackground, setBackgroundFit, setTheme, toggleNotifications, toggleSidebarCollapsed } from '../core/actions.js';
 import { icon } from './icons.js';
 import { openThemePicker } from './themePicker.js';
 import { openBackgroundPicker } from './backgroundPicker.js';
@@ -67,17 +67,18 @@ export function mountSidebar(el, ctx) {
     el.innerHTML = html`
       <div class="sidebar-inner">
         <div class="brand">
-          <span class="brand-logo">${icon('month')}</span>
+          <button type="button" class="brand-logo" data-toggle-collapse aria-expanded="${String(!settings.sidebarCollapsed)}" aria-controls="sidebar"
+                  title="${settings.sidebarCollapsed ? 'Kenar çubuğunu genişlet' : 'Kenar çubuğunu daralt'} ([)" aria-label="${settings.sidebarCollapsed ? 'Kenar çubuğunu genişlet' : 'Kenar çubuğunu daralt'}">${icon('month')}</button>
           <span class="brand-name">Calendar <b>Pro</b></span>
           <button type="button" class="icon-btn only-mobile" data-close-sidebar aria-label="Menüyü kapat">${icon('x')}</button>
         </div>
 
-        <button type="button" class="btn btn-primary btn-block" data-new>${icon('plus')} Yeni etkinlik</button>
-        <button type="button" class="search-btn" data-palette>${icon('search')}<span>Ara veya komut…</span><kbd>Ctrl K</kbd></button>
+        <button type="button" class="btn btn-primary btn-block new-btn" data-new title="Yeni etkinlik (N)">${icon('plus')}<span class="label">Yeni etkinlik</span></button>
+        <button type="button" class="search-btn" data-palette title="Ara veya komut (Ctrl K)">${icon('search')}<span>Ara veya komut…</span><kbd>Ctrl K</kbd></button>
 
         <nav class="nav" aria-label="Görünümler">
           ${NAV_ITEMS.map(
-            (item, i) => html`<a href="#/${item.id}?date=${state.cursor}" class="nav-item ${view === item.id ? 'is-active' : ''}" data-nav="${item.id}" ${view === item.id ? 'aria-current="page"' : ''}>
+            (item, i) => html`<a href="#/${item.id}?date=${state.cursor}" class="nav-item ${view === item.id ? 'is-active' : ''}" data-nav="${item.id}" title="${item.label} (${i + 1})" ${view === item.id ? 'aria-current="page"' : ''}>
               ${icon(item.icon)}<span>${item.label}</span><kbd>${i + 1}</kbd>
             </a>`,
           )}
@@ -87,11 +88,11 @@ export function mountSidebar(el, ctx) {
 
         <div class="sidebar-footer">
           <div class="segmented segmented--grid" role="radiogroup" aria-label="Tema">
-            <button type="button" role="radio" aria-checked="${isCustomTheme(settings.theme)}" aria-haspopup="dialog"
+            <button type="button" role="radio" aria-checked="${String(isCustomTheme(settings.theme))}" aria-haspopup="dialog"
                     class="${isCustomTheme(settings.theme) ? 'is-active' : ''}" data-theme-custom
                     title="${isCustomTheme(settings.theme) ? `Özel: ${themeLabel(settings.theme)}` : 'Özel temalar'}">${icon('palette')}<span>Özel</span>${icon('chevronDown', 'caret')}</button>
             ${BASE_THEMES.map(
-              (t) => html`<button type="button" role="radio" aria-checked="${settings.theme === t.value}" class="${settings.theme === t.value ? 'is-active' : ''}" data-theme-set="${t.value}" title="${t.label}">${icon(t.icon)}<span>${t.label}</span></button>`,
+              (t) => html`<button type="button" role="radio" aria-checked="${String(settings.theme === t.value)}" class="${settings.theme === t.value ? 'is-active' : ''}" data-theme-set="${t.value}" title="${t.label}">${icon(t.icon)}<span>${t.label}</span></button>`,
             )}
           </div>
           <button type="button" class="bg-btn" data-bg-picker aria-haspopup="dialog" title="Arka planı değiştir${hasImage(settings.background) ? ` · Yerleşim: ${fitLabel(settings.backgroundFit)}` : ''}">
@@ -128,7 +129,8 @@ export function mountSidebar(el, ctx) {
       render();
       return;
     }
-    if (t.closest('[data-new]')) ctx.openEditor({ startDate: store.get().cursor });
+    if (t.closest('[data-toggle-collapse]')) toggleSidebarCollapsed();
+    else if (t.closest('[data-new]')) ctx.openEditor({ startDate: store.get().cursor });
     else if (t.closest('[data-palette]')) ctx.openPalette();
     else if (t.closest('[data-close-sidebar]')) ctx.closeMobile();
     else if (t.closest('[data-theme-custom]')) {

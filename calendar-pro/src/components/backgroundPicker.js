@@ -53,7 +53,7 @@ export function openBackgroundPicker({ anchor, value, fit, onSelect, onFit }) {
         <div class="segmented segmented--sm fit-options" role="radiogroup" aria-label="Görsel yerleşimi">
           ${BACKGROUND_FITS.map(
             (f) => html`<button type="button" role="radio" data-fit="${f.value}" title="${f.hint}"
-                      aria-checked="${f.value === currentFit}" class="${f.value === currentFit ? 'is-active' : ''}" ${disabled ? 'disabled' : ''}>${f.label}</button>`,
+                      aria-checked="${String(f.value === currentFit)}" class="${f.value === currentFit ? 'is-active' : ''}" ${disabled ? 'disabled' : ''}>${f.label}</button>`,
           )}
         </div>`;
     },

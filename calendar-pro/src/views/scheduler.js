@@ -41,7 +41,7 @@ export default {
 
     const extra = html`
       <div class="segmented segmented--sm" role="radiogroup" aria-label="Gün sayısı">
-        ${DAY_OPTIONS.map((n) => html`<button type="button" role="radio" aria-checked="${n === count}" class="${n === count ? 'is-active' : ''}" data-days="${n}">${n === 5 ? 'İş haftası' : `${n} gün`}</button>`)}
+        ${DAY_OPTIONS.map((n) => html`<button type="button" role="radio" aria-checked="${String(n === count)}" class="${n === count ? 'is-active' : ''}" data-days="${n}">${n === 5 ? 'İş haftası' : `${n} gün`}</button>`)}
       </div>
       <div class="btn-group">
         <button type="button" class="icon-btn" data-zoom="-8" aria-label="Uzaklaştır" ${hourHeight <= ZOOM_MIN ? 'disabled' : ''}>${icon('minus')}</button>

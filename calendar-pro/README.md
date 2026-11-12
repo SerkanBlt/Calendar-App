@@ -84,6 +84,12 @@ Yeni arka plan eklemek için:
 2. `src/core/backgrounds.js` içindeki `BACKGROUNDS` listesine `{ value, label, src, dim }` ekleyin.
    `dim` (0–90): tema renginin görsel üzerindeki yoğunluğu; koyu/yoğun desenler için daha yüksek bir değer seçin.
 
+## Kenar çubuğu
+
+Sol üstteki **logoya** tıklamak (veya `[` tuşu) kenar çubuğunu ikon moduna daraltır: yalnızca ikonlar kalır,
+mini takvim gizlenir ve takvime daha fazla alan açılır. İkonların üzerine gelince adları görünür. Tercih kaydedilir.
+Telefonda menü her zaman tam genişlikte açılır.
+
 ## Klavye kısayolları
 
 | Kısayol | Eylem |
@@ -93,6 +99,7 @@ Yeni arka plan eklemek için:
 | `T` | Bugüne git |
 | `←` / `→` | Önceki / sonraki dönem |
 | `1`–`8` | Görünüm değiştir |
+| `[` | Kenar çubuğunu daralt / genişlet (logoya tıklamakla aynı) |
 | `Ctrl + Enter` | Formu kaydet |
 | `Esc` | Modal / palet kapat |
 

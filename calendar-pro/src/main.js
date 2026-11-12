@@ -29,7 +29,7 @@ import { openBackgroundPicker } from './components/backgroundPicker.js';
 import { html } from './core/dom.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
-import { exportData, importData, moveOccurrence, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications } from './core/actions.js';
+import { exportData, importData, moveOccurrence, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
@@ -120,6 +120,7 @@ function scheduleRender() {
 
 store.subscribe((s, prev) => {
   if (s.settings.theme !== prev.settings.theme) applyTheme(s.settings.theme);
+  if (s.settings.sidebarCollapsed !== prev.settings.sidebarCollapsed) appEl.classList.toggle('sidebar-collapsed', Boolean(s.settings.sidebarCollapsed));
   if (
     s.settings.background !== prev.settings.background ||
     s.settings.backgroundFit !== prev.settings.backgroundFit ||
@@ -182,6 +183,14 @@ const palette = createCommandPalette({
     { id: 'bg-add', title: 'Arka Plan Ekle (kendi görselin)…', keywords: 'arka plan yükle görsel fotoğraf resim upload background image', icon: 'upload', run: addUserBackground },
     ...BACKGROUND_FITS.map((f) => ({ id: `bg-fit-${f.value}`, title: `Arka Plan Yerleşimi: ${f.label}`, keywords: `background fit tile stretch yerleşim ${f.value} ${f.hint}`, icon: 'image', run: () => setBackgroundFit(f.value) })),
     {
+      id: 'sidebar-collapse',
+      title: store.get().settings.sidebarCollapsed ? 'Kenar Çubuğunu Genişlet' : 'Kenar Çubuğunu Daralt',
+      keywords: 'sidebar menü panel ikon küçült daralt genişlet collapse',
+      icon: 'menu',
+      hint: '[',
+      run: toggleSidebarCollapsed,
+    },
+    {
       id: 'notify',
       title: store.get().settings.notificationsEnabled ? 'Hatırlatmaları Kapat' : 'Hatırlatmaları Aç',
       keywords: 'bildirim notification reminder',
@@ -213,6 +222,7 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowLeft') shiftCursor(-1);
   else if (e.key === 'ArrowRight') shiftCursor(1);
   else if (/^[1-8]$/.test(e.key)) ctx.go(ROUTES[Number(e.key) - 1]);
+  else if (e.key === '[') toggleSidebarCollapsed();
   else if (e.key === 'Escape') setMobileSidebar(false);
 });
 
@@ -252,6 +262,7 @@ async function boot() {
     return;
   }
 
+  appEl.classList.toggle('sidebar-collapsed', Boolean(store.get().settings.sidebarCollapsed));
   mountSidebar(sidebarEl, {
     go: ctx.go,
     openEditor: ctx.openEditor,

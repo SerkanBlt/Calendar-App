@@ -67,13 +67,13 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) 
       lastKind = r.kind;
       const selected = i === active;
       if (r.kind === 'command') {
-        return html`${header}<li class="palette-item ${selected ? 'is-active' : ''}" role="option" aria-selected="${selected}" data-index="${i}" id="pal-${i}">
+        return html`${header}<li class="palette-item ${selected ? 'is-active' : ''}" role="option" aria-selected="${String(selected)}" data-index="${i}" id="pal-${i}">
           <span class="palette-icon">${icon(r.item.icon || 'command')}</span>
           <span class="palette-title">${r.item.title}</span>
           ${r.item.hint ? html`<kbd>${r.item.hint}</kbd>` : ''}
         </li>`;
       }
-      return html`${header}<li class="palette-item ${selected ? 'is-active' : ''}" role="option" aria-selected="${selected}" data-index="${i}" id="pal-${i}">
+      return html`${header}<li class="palette-item ${selected ? 'is-active' : ''}" role="option" aria-selected="${String(selected)}" data-index="${i}" id="pal-${i}">
         <span class="palette-icon"><span class="dot" style="--ev-color:${r.item.color}"></span></span>
         <span class="palette-title">${r.item.title}</span>
         <span class="palette-meta">${formatDate(r.item.startDate, { day: 'numeric', month: 'short', year: 'numeric' })}</span>

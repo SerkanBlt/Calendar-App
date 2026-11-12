@@ -83,7 +83,7 @@ kbd {
 /* ---------- Kabuk ---------- */
 .app {
   display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-columns: auto 1fr; /* kenar çubuğu genişliği .sidebar üzerinde (daraltma animasyonu için) */
   height: 100vh;
   height: 100dvh;
   gap: var(--space-3);
@@ -95,16 +95,18 @@ kbd {
 .view-body { flex: 1; min-height: 0; padding: 0 var(--space-2) var(--space-2); }
 
 /* ---------- Sidebar ---------- */
-.sidebar { min-height: 0; overflow: hidden; display: flex; }
+.sidebar { min-height: 0; overflow: hidden; display: flex; width: var(--sidebar-w); transition: width 220ms var(--ease); }
 .sidebar-inner {
   display: flex; flex-direction: column; gap: var(--space-3);
   padding: var(--space-4); width: 100%; overflow-y: auto;
 }
 .brand { display: flex; align-items: center; gap: var(--space-2); padding: 2px 4px var(--space-2); }
 .brand-logo {
-  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px;
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
   background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent);
+  border: 0; padding: 0; cursor: pointer; transition: transform var(--dur) var(--ease), box-shadow var(--dur);
 }
+.brand-logo:hover { transform: scale(1.07); box-shadow: 0 4px 14px var(--accent-glow); }
 .brand-name { font-size: 16px; letter-spacing: -0.01em; flex: 1; }
 .brand-name b { font-weight: 700; }
 
@@ -536,6 +538,24 @@ kbd {
 
 /* ---------- Responsive ---------- */
 .only-mobile { display: none !important; }
+
+/* ---------- Daraltılmış kenar çubuğu (logoya tıklayınca / [ tuşu) — yalnızca masaüstü ---------- */
+@media (min-width: 901px) {
+  .app.sidebar-collapsed { --sidebar-w: 76px; }
+  .sidebar-collapsed .sidebar-inner { padding: var(--space-4) var(--space-2); align-items: center; }
+  .sidebar-collapsed .brand { padding: 2px 0 var(--space-2); justify-content: center; }
+  .sidebar-collapsed :is(
+    .brand-name, .new-btn .label, .search-btn span, .search-btn kbd, .nav-item span, .nav-item kbd, .mini-cal,
+    .segmented--grid button span, .segmented--grid .caret, .bg-btn span, .bg-btn b, .bg-btn .caret, .chip-btn span
+  ) { display: none; }
+  .sidebar-collapsed :is(.new-btn, .search-btn, .nav-item, .bg-btn, .chip-btn) {
+    width: 44px; height: 40px; padding: 0; justify-content: center;
+  }
+  .sidebar-collapsed :is(.nav, .sidebar-footer) { width: 100%; align-items: center; }
+  .sidebar-collapsed .segmented--grid { grid-template-columns: 1fr; width: 44px; }
+  .sidebar-collapsed .segmented--grid button { padding: 8px 0; }
+  .sidebar-collapsed .footer-actions { flex-direction: column; align-items: center; }
+}
 
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; padding: var(--space-2); gap: 0; }

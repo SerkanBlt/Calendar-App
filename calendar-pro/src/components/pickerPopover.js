@@ -56,7 +56,7 @@ export function openPicker({ key, title, iconName, layout = 'list', anchor, item
 
   function renderBody() {
     list.innerHTML = html`${getItems().map(
-      (item) => html`<li role="option" tabindex="-1" class="picker-option ${item.value === selected ? 'is-active' : ''}" aria-selected="${item.value === selected}" data-value="${item.value}">
+      (item) => html`<li role="option" tabindex="-1" class="picker-option ${item.value === selected ? 'is-active' : ''}" aria-selected="${String(item.value === selected)}" data-value="${item.value}">
         ${renderItem(item, item.value === selected)}
       </li>`,
     )}`;
