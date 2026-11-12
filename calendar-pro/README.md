@@ -43,11 +43,24 @@ Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekran
 ## Temalar
 
 Kenar çubuğunda **Özel · Açık · Koyu · Sistem** seçimleri vardır. **Özel**, renk şeritli bir panel açar:
-**Sonbahar** (orman / amber), **Gün Batımı** (gece mavisi / kayısı) **Okyanus** (derin deniz / turkuaz) **Misket Limonu** (zeytin / lime) **Grafit** (renksiz gri) **Kızıl Çelik** (gece / kızıl) ve **Dağ Yolu** (asfalt / turuncu). `Ctrl + K` → "Özel Temalar…" veya "Tema: …" ile de seçilebilir.
+**Sonbahar** (orman / amber), **Gün Batımı** (gece mavisi / kayısı), **Okyanus** (derin deniz / turkuaz),
+**Misket Limonu** (zeytin / lime), **Grafit** (renksiz gri), **Kızıl Çelik** (gece / kızıl) ve **Dağ Yolu** (asfalt / turuncu).
+`Ctrl + K` → "Özel Temalar…" veya "Tema: …" ile de seçilebilir.
 
 Yeni özel tema eklemek için:
 1. `src/styles/theme.css` içine `:root[data-theme='<ad>'] { ... }` token bloğu ekleyin (mevcut özel temaları örnek alın; `--on-accent` vurgu rengi üzerindeki yazı rengidir).
 2. `src/core/theme.js` içindeki `CUSTOM_THEMES` listesine `{ value, label, description, meta, swatches }` ekleyin.
+
+## Arka planlar
+
+Arka plan temadan bağımsızdır; her tema her arka planla kullanılabilir. Kenar çubuğundaki **Arka plan** butonu,
+önizlemeli bir seçim paneli açar (`Ctrl + K` → "Arka Planlar…" veya "Arka Plan: …"). **Standart**, temanın kendi
+degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bindirilir; böylece her temada yazılar okunur kalır.
+
+Yeni arka plan eklemek için:
+1. Görseli `public/backgrounds/` klasörüne kopyalayın (webp/jpg önerilir, ~300 KB altı).
+2. `src/core/backgrounds.js` içindeki `BACKGROUNDS` listesine `{ value, label, src, dim }` ekleyin.
+   `dim` (0–90): tema renginin görsel üzerindeki yoğunluğu; koyu/yoğun desenler için daha yüksek bir değer seçin.
 
 ## Klavye kısayolları
 

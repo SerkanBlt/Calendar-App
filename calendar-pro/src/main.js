@@ -23,10 +23,12 @@ import { settingsRepo } from './core/settingsRepo.js';
 import { buildSeedEvents } from './core/seed.js';
 import { applyTheme, BASE_THEMES, CUSTOM_THEMES } from './core/theme.js';
 import { openThemePicker } from './components/themePicker.js';
+import { applyBackground, BACKGROUNDS } from './core/backgrounds.js';
+import { openBackgroundPicker } from './components/backgroundPicker.js';
 import { html } from './core/dom.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
-import { exportData, importData, moveOccurrence, setTheme, toggleNotifications } from './core/actions.js';
+import { exportData, importData, moveOccurrence, setBackground, setTheme, toggleNotifications } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
@@ -117,6 +119,7 @@ function scheduleRender() {
 
 store.subscribe((s, prev) => {
   if (s.settings.theme !== prev.settings.theme) applyTheme(s.settings.theme);
+  if (s.settings.background !== prev.settings.background) applyBackground(s.settings.background);
   if (!s.ready) return;
   if (s.view !== prev.view) viewEl.scrollTop = 0;
   if (s.ready !== prev.ready || s.view !== prev.view || s.cursor !== prev.cursor || s.events !== prev.events || s.settings !== prev.settings) {
@@ -154,6 +157,14 @@ const palette = createCommandPalette({
       keywords: 'tema theme renk palet custom',
       icon: 'palette',
       run: () => openThemePicker({ value: store.get().settings.theme, onSelect: setTheme }),
+    },
+    ...BACKGROUNDS.map((b) => ({ id: `bg-${b.value}`, title: `Arka Plan: ${b.label}`, keywords: `background arkaplan duvar kağıdı ${b.value}`, icon: 'image', run: () => setBackground(b.value) })),
+    {
+      id: 'bg-picker',
+      title: 'Arka Planlar…',
+      keywords: 'arka plan background görsel duvar kağıdı wallpaper',
+      icon: 'image',
+      run: () => openBackgroundPicker({ value: store.get().settings.background, onSelect: setBackground }),
     },
     {
       id: 'notify',
@@ -208,6 +219,7 @@ async function boot() {
     await openDB();
     const settings = await settingsRepo.load();
     applyTheme(settings.theme);
+    applyBackground(settings.background);
     await eventRepo.loadAll();
     if (!settings.seeded) {
       if (!store.get().events.length) await eventRepo.mergeMany(buildSeedEvents());
