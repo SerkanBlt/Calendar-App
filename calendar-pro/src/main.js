@@ -23,6 +23,7 @@ import { settingsRepo } from './core/settingsRepo.js';
 import { buildSeedEvents } from './core/seed.js';
 import { applyTheme, BASE_THEMES, CUSTOM_THEMES } from './core/theme.js';
 import { openSettings } from './components/settingsPanel.js';
+import { closeSearch, isSearchOpen, openSearch } from './components/searchPanel.js';
 import { allBackgrounds, applyBackground, BACKGROUND_FITS } from './core/backgrounds.js';
 import { userBackgroundRepo } from './core/userBackgroundRepo.js';
 import { html } from './core/dom.js';
@@ -150,6 +151,19 @@ viewEl.addEventListener('click', (e) => {
 // ---------------------------------------------------------------------------
 // Komut paleti
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Etkinlik arama paneli — sonuç seçilince o güne gidilir ve düzenleyici açılır
+// ---------------------------------------------------------------------------
+function openEventSearch() {
+  if (palette.isOpen()) palette.close();
+  openSearch({
+    onOpenEvent: (occ) => {
+      router.go({ date: occ.startDate });
+      ctx.openEditor(occ);
+    },
+  });
+}
+
 const palette = createCommandPalette({
   getCommands: () => [
     { id: 'new', title: 'Yeni Event', keywords: 'yeni etkinlik oluştur ekle new', icon: 'plus', hint: 'N', run: () => ctx.openEditor({ startDate: store.get().cursor }) },
@@ -159,6 +173,7 @@ const palette = createCommandPalette({
     { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', run: importData },
     ...BASE_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `theme ${t.value}`, icon: t.icon, run: () => setTheme(t.value) })),
     ...CUSTOM_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `özel custom theme ${t.value} ${t.description}`, icon: 'palette', run: () => setTheme(t.value) })),
+    { id: 'search', title: 'Etkinlik Ara', keywords: 'arama search bul find etkinlik', icon: 'search', hint: '/', run: () => openEventSearch() },
     { id: 'settings', title: 'Ayarlar', keywords: 'settings ayarlar tercihler tema arka plan veri', icon: 'settings', run: () => openSettings() },
     { id: 'theme-picker', title: 'Özel Temalar…', keywords: 'tema theme renk palet custom', icon: 'palette', run: () => openSettings({ section: 'theme' }) },
     ...allBackgrounds().map((b) => ({ id: `bg-${b.value}`, title: `Arka Plan: ${b.label}`, keywords: `background arkaplan duvar kağıdı ${b.value}`, icon: 'image', run: () => setBackground(b.value) })),
@@ -202,10 +217,12 @@ const palette = createCommandPalette({
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault();
-    if (!isModalOpen()) palette.toggle();
+    if (isModalOpen()) return;
+    if (isSearchOpen()) closeSearch();
+    palette.toggle();
     return;
   }
-  if (e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target) || isModalOpen() || palette.isOpen()) return;
+  if (e.ctrlKey || e.metaKey || e.altKey || isTypingTarget(e.target) || isModalOpen() || palette.isOpen() || isSearchOpen()) return;
   if (e.key === 'n' || e.key === 'N') {
     e.preventDefault();
     ctx.openEditor({ startDate: store.get().cursor });
@@ -214,6 +231,10 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowRight') shiftCursor(1);
   else if (/^[1-8]$/.test(e.key)) ctx.go(ROUTES[Number(e.key) - 1]);
   else if (e.key === '[') toggleSidebarCollapsed();
+  else if (e.key === '/') {
+    e.preventDefault(); // tarayıcının hızlı bul özelliğini açmasın
+    openEventSearch();
+  }
   else if (e.key === 'Escape') setMobileSidebar(false);
 });
 
@@ -258,6 +279,7 @@ async function boot() {
     go: ctx.go,
     openEditor: ctx.openEditor,
     openPalette: () => palette.open(),
+    openSearch: () => openEventSearch(),
     closeMobile: () => setMobileSidebar(false),
   });
   router.start();

@@ -1,5 +1,6 @@
 /**
- * sidebar.js — Kenar çubuğu: marka, Yeni etkinlik / Ara, gezinme, mini takvim ve altta sabit Ayarlar düğmesi.
+ * sidebar.js — Kenar çubuğu: marka, Hızlı komut / Ara, gezinme, mini takvim ve altta sabit Ayarlar düğmesi.
+ * Hızlı komut komut paletini (Ctrl+K), Ara ise etkinlik arama panelini (/) açar.
  * Tema, arka plan, hatırlatmalar ve veri işlemleri Ayarlar panelindedir (bkz. settingsPanel.js).
  * Üst kısım kaydırılabilir (kaydırma çubuğu gizli); Ayarlar düğmesi her zaman en altta görünür.
  * Store'a abone olur; yalnızca ilgili alanlar değiştiğinde kendini günceller.
@@ -24,12 +25,10 @@ export const NAV_ITEMS = Object.freeze([
 ]);
 
 const DATE_VIEWS = new Set(['month', 'week', 'day', 'scheduler']);
-/** Kenar çubuğu açıkken yan yana gösterilen görünümler. */
-const ROW_VIEWS = new Set(['month', 'week', 'day']);
 
 /**
  * @param {HTMLElement} el
- * @param {{go: Function, openEditor: Function, openPalette: Function, closeMobile: Function}} ctx
+ * @param {{go: Function, openEditor: Function, openPalette: Function, openSearch: Function, closeMobile: Function}} ctx
  */
 export function mountSidebar(el, ctx) {
   let miniMonth = startOfMonth(store.get().cursor);
@@ -63,25 +62,13 @@ export function mountSidebar(el, ctx) {
       </div>`;
   }
 
-  function navLink(item, state, compact = false) {
+  function navLink(item, state) {
     const i = NAV_ITEMS.indexOf(item);
     const active = state.view === item.id;
-    return html`<a href="#/${item.id}?date=${state.cursor}" class="nav-item ${compact ? 'nav-item--compact' : ''} ${active ? 'is-active' : ''}"
+    return html`<a href="#/${item.id}?date=${state.cursor}" class="nav-item ${active ? 'is-active' : ''}"
                    data-nav="${item.id}" title="${item.label} (${i + 1})" ${active ? 'aria-current="page"' : ''}>
-        ${icon(item.icon)}<span>${item.label}</span>${compact ? '' : html`<kbd>${i + 1}</kbd>`}
+        ${icon(item.icon)}<span>${item.label}</span><kbd>${i + 1}</kbd>
       </a>`;
-  }
-
-  /** Ay, Hafta ve Gün yan yana tek satırda; diğer görünümler alt alta. */
-  function navGroups(state) {
-    const row = NAV_ITEMS.filter((item) => ROW_VIEWS.has(item.id));
-    let rowRendered = false;
-    return NAV_ITEMS.map((item) => {
-      if (!ROW_VIEWS.has(item.id)) return navLink(item, state);
-      if (rowRendered) return '';
-      rowRendered = true;
-      return html`<div class="nav-row" role="group" aria-label="Takvim görünümleri">${row.map((r) => navLink(r, state, true))}</div>`;
-    });
   }
 
   function render() {
@@ -98,12 +85,12 @@ export function mountSidebar(el, ctx) {
         </div>
 
         <div class="nav nav--actions">
-          <button type="button" class="nav-item nav-item--primary" data-new title="Yeni etkinlik (N)">${icon('plus')}<span>Yeni etkinlik</span><kbd>N</kbd></button>
-          <button type="button" class="nav-item" data-palette title="Ara veya komut (Ctrl K)">${icon('search')}<span>Ara veya komut…</span><kbd>Ctrl K</kbd></button>
+          <button type="button" class="nav-item nav-item--primary" data-palette title="Hızlı komut (Ctrl K)">${icon('command')}<span>Hızlı komut</span><kbd>Ctrl K</kbd></button>
+          <button type="button" class="nav-item" data-search title="Etkinlik ara (/)">${icon('search')}<span>Ara</span><kbd>/</kbd></button>
         </div>
 
         <nav class="nav" aria-label="Görünümler">
-          ${navGroups(state)}
+          ${NAV_ITEMS.map((item) => navLink(item, state))}
         </nav>
 
         ${miniCalendar(state)}
@@ -139,8 +126,13 @@ export function mountSidebar(el, ctx) {
       return;
     }
     if (t.closest('[data-toggle-collapse]')) toggleSidebarCollapsed();
-    else if (t.closest('[data-new]')) ctx.openEditor({ startDate: store.get().cursor });
-    else if (t.closest('[data-palette]')) ctx.openPalette();
+    else if (t.closest('[data-palette]')) {
+      ctx.closeMobile();
+      ctx.openPalette();
+    } else if (t.closest('[data-search]')) {
+      ctx.closeMobile();
+      ctx.openSearch();
+    }
     else if (t.closest('[data-close-sidebar]')) ctx.closeMobile();
     else if (t.closest('[data-settings]')) {
       ctx.closeMobile();

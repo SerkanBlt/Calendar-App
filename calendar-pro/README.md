@@ -98,9 +98,13 @@ Yeni arka plan eklemek için:
 
 ## Kenar çubuğu
 
-Üstte Yeni etkinlik ve Ara, ardından görünümler ve mini takvim yer alır; **Ay · Hafta · Gün** yan yana tek satırdadır
-(daraltılmış modda alt alta ikon olur). Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar**
-düğmesinin sağında uygulamanın sürüm numarası görünür.
+Üstte **Hızlı komut** (komut paleti, `Ctrl + K`) ve **Ara** (etkinlik arama paneli, `/`), ardından görünümler ve mini
+takvim yer alır. Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesinin sağında
+uygulamanın sürüm numarası görünür.
+
+**Arama paneli** başlık, açıklama ve kategoride arar (birden fazla kelime → hepsi eşleşmeli), eşleşmeleri vurgular;
+Yaklaşan / Tümü / Geçmiş ve durum filtreleri vardır. Tekrarlayan etkinlikler bir sonraki tekrarıyla tek satırda görünür.
+Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinliği düzenleyicide açar.
 
 **Ayarlar** paneli sekmelidir (`Ctrl + K` → "Ayarlar"); yeni ayarlar ilgili sekmeye eklenir (`src/components/settingsPanel.js` → `TABS`):
 
@@ -127,7 +131,8 @@ Telefonda menü her zaman tam genişlikte açılır.
 
 | Kısayol | Eylem |
 |---------|-------|
-| `Ctrl/⌘ + K` | Komut paleti (komutlar + etkinlik araması) |
+| `Ctrl/⌘ + K` | Hızlı komut (komut paleti) |
+| `/` | Etkinlik arama paneli |
 | `N` | Yeni etkinlik |
 | `T` | Bugüne git |
 | `←` / `→` | Önceki / sonraki dönem |

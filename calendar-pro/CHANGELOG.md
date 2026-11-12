@@ -4,6 +4,14 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.10.0
+- Kenar çubuğunda "Yeni etkinlik" yerine **Hızlı komut** (Ctrl+K) düğmesi
+- **Ara** düğmesi yeni etkinlik arama panelini açar (`/` kısayolu): başlık/açıklama/kategoride arama,
+  eşleşmeleri vurgulama, zaman ve durum filtreleri, sonuca tıklayınca o güne gidip etkinliği açma
+- Ay, Hafta ve Gün düğmeleri yeniden alt alta
+- Kenar çubuğu düğmelerinin alt/üst boşlukları azaltıldı
+- Daraltılmış kenar çubuğu daha dar (76 → 64 px); düğme boyutu aynı
+
 ## 1.9.0
 - Kenar çubuğu açıkken Ay, Hafta ve Gün düğmeleri yan yana
 - Ayarlar düğmesinin sağında sürüm numarası
