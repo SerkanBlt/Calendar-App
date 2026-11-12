@@ -42,10 +42,10 @@ Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekran
 
 ## Temalar
 
-Kenar çubuğunda **Özel · Açık · Koyu · Sistem** seçimleri vardır. **Özel**, renk şeritli bir panel açar:
+**Ayarlar → Tema** bölümünde **Açık · Koyu · Sistem** ve renk şeritli özel tema kartları bulunur:
 **Sonbahar** (orman / amber), **Gün Batımı** (gece mavisi / kayısı), **Okyanus** (derin deniz / turkuaz),
 **Misket Limonu** (zeytin / lime), **Grafit** (renksiz gri), **Kızıl Çelik** (gece / kızıl) ve **Dağ Yolu** (asfalt / turuncu).
-`Ctrl + K` → "Özel Temalar…" veya "Tema: …" ile de seçilebilir.
+`Ctrl + K` → "Özel Temalar…" (Ayarlar'ı bu bölümde açar) veya "Tema: …" ile de seçilebilir.
 
 Yeni özel tema eklemek için:
 1. `src/styles/theme.css` içine `:root[data-theme='<ad>'] { ... }` token bloğu ekleyin (mevcut özel temaları örnek alın; `--on-accent` vurgu rengi üzerindeki yazı rengidir).
@@ -53,11 +53,11 @@ Yeni özel tema eklemek için:
 
 ## Arka planlar
 
-Arka plan temadan bağımsızdır; her tema her arka planla kullanılabilir. Kenar çubuğundaki **Arka plan** butonu,
-önizlemeli bir seçim paneli açar (`Ctrl + K` → "Arka Planlar…" veya "Arka Plan: …"). **Standart**, temanın kendi
+Arka plan temadan bağımsızdır; her tema her arka planla kullanılabilir. **Ayarlar → Arka plan** bölümünde
+önizlemeli bir ızgara bulunur (`Ctrl + K` → "Arka Planlar…" veya "Arka Plan: …"). **Standart**, temanın kendi
 degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bindirilir; böylece her temada yazılar okunur kalır.
 
-Görsel arka planlarda panelin altındaki **Yerleşim** seçenekleriyle görselin ekrana nasıl oturacağı belirlenir:
+Görsel arka planlarda ızgaranın altındaki **Yerleşim** seçenekleriyle görselin ekrana nasıl oturacağı belirlenir:
 
 | Yerleşim | Davranış |
 |----------|----------|
@@ -67,11 +67,11 @@ Görsel arka planlarda panelin altındaki **Yerleşim** seçenekleriyle görseli
 | Döşe | Gerçek boyutunda yan yana tekrarlanır (desen/doku görselleri için ideal) |
 | Ortala | Gerçek boyutunda ortada tek kez |
 
-Panel seçimden sonra açık kalır; görsel ve yerleşim art arda denenebilir. `Ctrl + K` → "Arka Plan Yerleşimi: …" ile de seçilebilir.
+Ayarlar paneli seçimden sonra açık kalır; görsel ve yerleşim art arda denenebilir. `Ctrl + K` → "Arka Plan Yerleşimi: …" ile de seçilebilir.
 
 ### Kendi arka planını ekleme
 
-Paneldeki **Kendi görselini ekle** butonu (veya `Ctrl + K` → "Arka Plan Ekle…") ile cihazdan bir görsel seçilir;
+Izgaradaki **Kendi görselini ekle** kutusu (veya `Ctrl + K` → "Arka Plan Ekle…") ile cihazdan bir görsel seçilir;
 görsel hemen arka plan olarak uygulanır ve listeye eklenir. Kendi görsellerinin köşesindeki **×** ile silinir
 ("Geri al" ile geri getirilebilir; seçili görsel silinirse Standart'a dönülür).
 
@@ -85,6 +85,10 @@ Yeni arka plan eklemek için:
    `dim` (0–90): tema renginin görsel üzerindeki yoğunluğu; koyu/yoğun desenler için daha yüksek bir değer seçin.
 
 ## Kenar çubuğu
+
+Üstte Yeni etkinlik ve Ara, ardından sekiz görünüm ve mini takvim yer alır; hepsi aynı boyuttaki düğmelerdir.
+Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesi; tema, arka plan, kenar çubuğu,
+hatırlatmalar ve veri (JSON dışa/içe aktarma) seçeneklerini içeren paneli açar (`Ctrl + K` → "Ayarlar").
 
 Sol üstteki **logoya** tıklamak (veya `[` tuşu) kenar çubuğunu ikon moduna daraltır: yalnızca ikonlar kalır,
 mini takvim gizlenir ve takvime daha fazla alan açılır. İkonların üzerine gelince adları görünür. Tercih kaydedilir.

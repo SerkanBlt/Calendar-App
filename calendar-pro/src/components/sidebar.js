@@ -1,16 +1,15 @@
 /**
- * sidebar.js — Kenar çubuğu: marka, gezinme, mini takvim, tema ve veri eylemleri.
+ * sidebar.js — Kenar çubuğu: marka, Yeni etkinlik / Ara, gezinme, mini takvim ve altta sabit Ayarlar düğmesi.
+ * Tema, arka plan, hatırlatmalar ve veri işlemleri Ayarlar panelindedir (bkz. settingsPanel.js).
+ * Üst kısım kaydırılabilir (kaydırma çubuğu gizli); Ayarlar düğmesi her zaman en altta görünür.
  * Store'a abone olur; yalnızca ilgili alanlar değiştiğinde kendini günceller.
  */
 import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
 import { addMonths, formatDate, startOfMonth, startOfWeek, toISODate, todayISO, rangeDays, weekdayNames } from '../core/dateUtils.js';
-import { BASE_THEMES, isCustomTheme, themeLabel } from '../core/theme.js';
-import { exportData, importData, setBackground, setBackgroundFit, setTheme, toggleNotifications, toggleSidebarCollapsed } from '../core/actions.js';
+import { toggleSidebarCollapsed } from '../core/actions.js';
 import { icon } from './icons.js';
-import { openThemePicker } from './themePicker.js';
-import { openBackgroundPicker } from './backgroundPicker.js';
-import { backgroundLabel, fitLabel, hasImage } from '../core/backgrounds.js';
+import { openSettings } from './settingsPanel.js';
 
 export const NAV_ITEMS = Object.freeze([
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -64,6 +63,7 @@ export function mountSidebar(el, ctx) {
   function render() {
     const state = store.get();
     const { view, settings } = state;
+    const scrollTop = el.querySelector('.sidebar-inner')?.scrollTop ?? 0;
     el.innerHTML = html`
       <div class="sidebar-inner">
         <div class="brand">
@@ -73,8 +73,10 @@ export function mountSidebar(el, ctx) {
           <button type="button" class="icon-btn only-mobile" data-close-sidebar aria-label="Menüyü kapat">${icon('x')}</button>
         </div>
 
-        <button type="button" class="btn btn-primary btn-block new-btn" data-new title="Yeni etkinlik (N)">${icon('plus')}<span class="label">Yeni etkinlik</span></button>
-        <button type="button" class="search-btn" data-palette title="Ara veya komut (Ctrl K)">${icon('search')}<span>Ara veya komut…</span><kbd>Ctrl K</kbd></button>
+        <div class="nav nav--actions">
+          <button type="button" class="nav-item nav-item--primary" data-new title="Yeni etkinlik (N)">${icon('plus')}<span>Yeni etkinlik</span><kbd>N</kbd></button>
+          <button type="button" class="nav-item" data-palette title="Ara veya komut (Ctrl K)">${icon('search')}<span>Ara veya komut…</span><kbd>Ctrl K</kbd></button>
+        </div>
 
         <nav class="nav" aria-label="Görünümler">
           ${NAV_ITEMS.map(
@@ -86,25 +88,11 @@ export function mountSidebar(el, ctx) {
 
         ${miniCalendar(state)}
 
-        <div class="sidebar-footer">
-          <div class="segmented segmented--grid" role="radiogroup" aria-label="Tema">
-            <button type="button" role="radio" aria-checked="${String(isCustomTheme(settings.theme))}" aria-haspopup="dialog"
-                    class="${isCustomTheme(settings.theme) ? 'is-active' : ''}" data-theme-custom
-                    title="${isCustomTheme(settings.theme) ? `Özel: ${themeLabel(settings.theme)}` : 'Özel temalar'}">${icon('palette')}<span>Özel</span>${icon('chevronDown', 'caret')}</button>
-            ${BASE_THEMES.map(
-              (t) => html`<button type="button" role="radio" aria-checked="${String(settings.theme === t.value)}" class="${settings.theme === t.value ? 'is-active' : ''}" data-theme-set="${t.value}" title="${t.label}">${icon(t.icon)}<span>${t.label}</span></button>`,
-            )}
-          </div>
-          <button type="button" class="bg-btn" data-bg-picker aria-haspopup="dialog" title="Arka planı değiştir${hasImage(settings.background) ? ` · Yerleşim: ${fitLabel(settings.backgroundFit)}` : ''}">
-            ${icon('image')}<span>Arka plan</span><b>${backgroundLabel(settings.background)}</b>${icon('chevronDown', 'caret')}
-          </button>
-          <div class="footer-actions">
-            <button type="button" class="chip-btn ${settings.notificationsEnabled ? 'is-on' : ''}" data-notify title="Hatırlatmalar">${icon('bell')}<span>${settings.notificationsEnabled ? 'Açık' : 'Kapalı'}</span></button>
-            <button type="button" class="chip-btn" data-export title="JSON dışa aktar">${icon('download')}<span>Export</span></button>
-            <button type="button" class="chip-btn" data-import title="JSON içe aktar">${icon('upload')}<span>Import</span></button>
-          </div>
-        </div>
+      </div>
+      <div class="sidebar-dock">
+        <button type="button" class="nav-item" data-settings aria-haspopup="dialog" title="Ayarlar (tema, arka plan, veri)">${icon('settings')}<span>Ayarlar</span></button>
       </div>`;
+    el.querySelector('.sidebar-inner').scrollTop = scrollTop;
   }
 
   el.addEventListener('click', (e) => {
@@ -133,20 +121,10 @@ export function mountSidebar(el, ctx) {
     else if (t.closest('[data-new]')) ctx.openEditor({ startDate: store.get().cursor });
     else if (t.closest('[data-palette]')) ctx.openPalette();
     else if (t.closest('[data-close-sidebar]')) ctx.closeMobile();
-    else if (t.closest('[data-theme-custom]')) {
-      openThemePicker({ anchor: () => el.querySelector('[data-theme-custom]'), value: store.get().settings.theme, onSelect: setTheme });
-    } else if (t.closest('[data-bg-picker]')) {
-      openBackgroundPicker({
-        anchor: () => el.querySelector('[data-bg-picker]'),
-        value: store.get().settings.background,
-        fit: store.get().settings.backgroundFit,
-        onSelect: setBackground,
-        onFit: setBackgroundFit,
-      });
-    } else if (t.closest('[data-theme-set]')) setTheme(t.closest('[data-theme-set]').dataset.themeSet);
-    else if (t.closest('[data-notify]')) toggleNotifications();
-    else if (t.closest('[data-export]')) exportData();
-    else if (t.closest('[data-import]')) importData();
+    else if (t.closest('[data-settings]')) {
+      ctx.closeMobile();
+      openSettings();
+    }
   });
 
   store.subscribe((s, prev) => {

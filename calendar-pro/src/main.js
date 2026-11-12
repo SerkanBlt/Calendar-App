@@ -22,10 +22,9 @@ import { eventRepo } from './core/eventRepo.js';
 import { settingsRepo } from './core/settingsRepo.js';
 import { buildSeedEvents } from './core/seed.js';
 import { applyTheme, BASE_THEMES, CUSTOM_THEMES } from './core/theme.js';
-import { openThemePicker } from './components/themePicker.js';
+import { openSettings } from './components/settingsPanel.js';
 import { allBackgrounds, applyBackground, BACKGROUND_FITS } from './core/backgrounds.js';
 import { userBackgroundRepo } from './core/userBackgroundRepo.js';
-import { openBackgroundPicker } from './components/backgroundPicker.js';
 import { html } from './core/dom.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
@@ -159,27 +158,10 @@ const palette = createCommandPalette({
     { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', run: importData },
     ...BASE_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `theme ${t.value}`, icon: t.icon, run: () => setTheme(t.value) })),
     ...CUSTOM_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `özel custom theme ${t.value} ${t.description}`, icon: 'palette', run: () => setTheme(t.value) })),
-    {
-      id: 'theme-picker',
-      title: 'Özel Temalar…',
-      keywords: 'tema theme renk palet custom',
-      icon: 'palette',
-      run: () => openThemePicker({ value: store.get().settings.theme, onSelect: setTheme }),
-    },
+    { id: 'settings', title: 'Ayarlar', keywords: 'settings ayarlar tercihler tema arka plan veri', icon: 'settings', run: () => openSettings() },
+    { id: 'theme-picker', title: 'Özel Temalar…', keywords: 'tema theme renk palet custom', icon: 'palette', run: () => openSettings({ section: 'theme' }) },
     ...allBackgrounds().map((b) => ({ id: `bg-${b.value}`, title: `Arka Plan: ${b.label}`, keywords: `background arkaplan duvar kağıdı ${b.value}`, icon: 'image', run: () => setBackground(b.value) })),
-    {
-      id: 'bg-picker',
-      title: 'Arka Planlar…',
-      keywords: 'arka plan background görsel duvar kağıdı wallpaper',
-      icon: 'image',
-      run: () =>
-        openBackgroundPicker({
-          value: store.get().settings.background,
-          fit: store.get().settings.backgroundFit,
-          onSelect: setBackground,
-          onFit: setBackgroundFit,
-        }),
-    },
+    { id: 'bg-picker', title: 'Arka Planlar…', keywords: 'arka plan background görsel duvar kağıdı wallpaper', icon: 'image', run: () => openSettings({ section: 'background' }) },
     { id: 'bg-add', title: 'Arka Plan Ekle (kendi görselin)…', keywords: 'arka plan yükle görsel fotoğraf resim upload background image', icon: 'upload', run: addUserBackground },
     ...BACKGROUND_FITS.map((f) => ({ id: `bg-fit-${f.value}`, title: `Arka Plan Yerleşimi: ${f.label}`, keywords: `background fit tile stretch yerleşim ${f.value} ${f.hint}`, icon: 'image', run: () => setBackgroundFit(f.value) })),
     {
