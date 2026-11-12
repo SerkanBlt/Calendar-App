@@ -218,3 +218,46 @@
   --scrim: rgba(1, 12, 16, 0.65);
   --glass-blur: 18px;
 }
+
+/* --------------------------------------------------------------------------
+   Misket Limonu (lime):
+   #1F2A05 koyu zeytin · #3D520B yosun · #648215 çimen · #8FB61F yaprak
+   #B4D944 misket limonu · #D6EE8D açık lime · #F1FBD3 limon kreması
+   Koyu zeytin zemin, yosun cam yüzeyler, enerjik lime vurgu, krem metin.
+   -------------------------------------------------------------------------- */
+:root[data-theme='lime'] {
+  color-scheme: dark;
+  --bg: #1f2a05;
+  --bg-glow-1: rgba(180, 217, 68, 0.12);
+  --bg-glow-2: rgba(100, 130, 21, 0.35);
+  --surface: rgba(61, 82, 11, 0.5);
+  --surface-solid: #2a3808;
+  --surface-2: rgba(241, 251, 211, 0.04);
+  --surface-3: rgba(241, 251, 211, 0.08);
+  --surface-hover: rgba(241, 251, 211, 0.07);
+  --border: rgba(214, 238, 141, 0.12);
+  --border-strong: rgba(214, 238, 141, 0.24);
+  --text: #f1fbd3;
+  --text-muted: #b5c98a;
+  --text-faint: #75884a;
+  --accent: #b4d944;
+  --accent-2: #8fb61f;
+  --accent-strong: #9fc832;
+  --accent-glow: rgba(180, 217, 68, 0.28);
+  --accent-glow-strong: rgba(180, 217, 68, 0.42);
+  --on-accent: #1f2a05;
+  --accent-soft: rgba(180, 217, 68, 0.15);
+  --accent-text: #d6ee8d;
+  --info: #b4d944;
+  --status-todo: #9aa883;
+  --status-doing: #d6ee8d;
+  --status-done: #7fd8b0;
+  --grid-line: rgba(214, 238, 141, 0.06);
+  --grid-line-strong: rgba(214, 238, 141, 0.11);
+  --weekend: rgba(100, 130, 21, 0.15);
+  --shadow-sm: 0 1px 2px rgba(8, 12, 0, 0.5);
+  --shadow: 0 8px 30px rgba(8, 12, 0, 0.4);
+  --shadow-lg: 0 24px 80px rgba(8, 12, 0, 0.6);
+  --scrim: rgba(8, 12, 0, 0.65);
+  --glass-blur: 18px;
+}

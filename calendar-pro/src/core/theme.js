@@ -41,6 +41,13 @@ export const CUSTOM_THEMES = Object.freeze([
     meta: '#04222b',
     swatches: ['#04222b', '#0a3d4a', '#10606f', '#1d8b94', '#4fb8b4', '#98d8d0', '#e2f4f0'],
   },
+  {
+    value: 'lime',
+    label: 'Misket Limonu',
+    description: 'Koyu zeytin üzerinde enerjik lime ve limon kreması',
+    meta: '#1f2a05',
+    swatches: ['#1f2a05', '#3d520b', '#648215', '#8fb61f', '#b4d944', '#d6ee8d', '#f1fbd3'],
+  },
 ]);
 
 const META_COLORS = { dark: '#0b0d12', light: '#f5f6fa', ...Object.fromEntries(CUSTOM_THEMES.map((t) => [t.value, t.meta])) };
