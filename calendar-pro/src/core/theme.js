@@ -55,6 +55,13 @@ export const CUSTOM_THEMES = Object.freeze([
     meta: '#0e0e10',
     swatches: ['#0e0e10', '#232327', '#3e3e45', '#63636e', '#9a9aa6', '#c9c9d2', '#f2f2f5'],
   },
+  {
+    value: 'crimson',
+    label: 'Kızıl Çelik',
+    description: 'Gece mavisi ve çelik gri üzerinde canlı kızıl vurgu',
+    meta: '#0d141a',
+    swatches: ['#d51c3d', '#9c0c20', '#0d141a', '#37444f', '#475867', '#63788d', '#91abbc'],
+  },
 ]);
 
 const META_COLORS = { dark: '#0b0d12', light: '#f5f6fa', ...Object.fromEntries(CUSTOM_THEMES.map((t) => [t.value, t.meta])) };

@@ -304,3 +304,47 @@
   --scrim: rgba(0, 0, 0, 0.65);
   --glass-blur: 18px;
 }
+
+/* --------------------------------------------------------------------------
+   Kızıl Çelik (crimson):
+   #D51C3D kızıl · #9C0C20 koyu kızıl · #0D141A gece · #37444F çelik
+   #475867 arduvaz · #63788D sis · #91ABBC buz mavisi
+   Gece zemin, çelik cam yüzeyler, kızıl vurgu (üzerinde beyaz yazı).
+   Vurgu kırmızı olduğu için uyarı/gecikme rengi (--danger) turuncuya çekildi; ikisi karışmasın.
+   -------------------------------------------------------------------------- */
+:root[data-theme='crimson'] {
+  color-scheme: dark;
+  --bg: #0d141a;
+  --bg-glow-1: rgba(213, 28, 61, 0.1);
+  --bg-glow-2: rgba(71, 88, 103, 0.35);
+  --surface: rgba(55, 68, 79, 0.5);
+  --surface-solid: #1c2731;
+  --surface-2: rgba(145, 171, 188, 0.05);
+  --surface-3: rgba(145, 171, 188, 0.09);
+  --surface-hover: rgba(145, 171, 188, 0.08);
+  --border: rgba(145, 171, 188, 0.12);
+  --border-strong: rgba(145, 171, 188, 0.24);
+  --text: #e6edf2;
+  --text-muted: #91abbc;
+  --text-faint: #63788d;
+  --accent: #d51c3d;
+  --accent-2: #9c0c20;
+  --accent-strong: #b8152f;
+  --accent-glow: rgba(213, 28, 61, 0.32);
+  --accent-glow-strong: rgba(213, 28, 61, 0.48);
+  --on-accent: #ffffff;
+  --accent-soft: rgba(213, 28, 61, 0.16);
+  --accent-text: #f0627a;
+  --danger: #ff8a5c;
+  --info: #91abbc;
+  --status-todo: #7d93a6;
+  --status-doing: #91abbc;
+  --grid-line: rgba(145, 171, 188, 0.06);
+  --grid-line-strong: rgba(145, 171, 188, 0.11);
+  --weekend: rgba(71, 88, 103, 0.18);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.6);
+  --scrim: rgba(4, 7, 10, 0.65);
+  --glass-blur: 18px;
+}
