@@ -10,8 +10,11 @@
  *      value: benzersiz kısa ad (a-z, -) · dim: tema renginin görsel üzerindeki yoğunluğu (0–90)
  *
  * Yerleşim (BACKGROUND_FITS): görselin ekrana nasıl yerleşeceği — Doldur, Sığdır, Uzat, Döşe, Ortala.
+ * Kullanıcılar kendi görsellerini de ekleyebilir (bkz. core/userBackgroundRepo.js); bunlar
+ * allBackgrounds() ile hazır arka planlara eklenir.
  * Seçimler ilk boyamada kullanılmak üzere localStorage'a da yansıtılır (bkz. index.html).
  */
+import { store } from './state.js';
 
 export const BACKGROUNDS = Object.freeze([
   { value: 'standard', label: 'Standart', src: null, dim: 0 },
@@ -30,24 +33,50 @@ export const BACKGROUND_FITS = Object.freeze([
   { value: 'center', label: 'Ortala', hint: 'Gerçek boyutunda ortada tek kez', size: 'auto', repeat: 'no-repeat', position: 'center' },
 ]);
 
-const byValue = new Map(BACKGROUNDS.map((b) => [b.value, b]));
 const fitByValue = new Map(BACKGROUND_FITS.map((f) => [f.value, f]));
 
-export const backgroundLabel = (value) => byValue.get(value)?.label ?? 'Standart';
-export const fitLabel = (value) => fitByValue.get(value)?.label ?? 'Doldur';
-export const hasImage = (value) => Boolean(byValue.get(value)?.src);
+/** Kullanıcı görselleri için tema renginin bindirme oranı. */
+const USER_DIM = 30;
+export const USER_PREFIX = 'user:';
 
-/** Görselin, uygulamanın yayınlandığı klasöre göre tam adresi (GitHub Pages alt klasörü dahil). */
-export const backgroundUrl = (bg) => (bg?.src ? new URL(bg.src, document.baseURI).href : null);
+/**
+ * Hazır arka planlar + kullanıcının yüklediği görseller (state.userBackgrounds).
+ * Kullanıcı görsellerinin değeri `user:<id>` biçimindedir.
+ */
+export function allBackgrounds() {
+  const users = (store.get().userBackgrounds || []).map((u) => ({
+    value: `${USER_PREFIX}${u.id}`,
+    label: u.name,
+    url: u.url,
+    dim: USER_DIM,
+    isUser: true,
+    id: u.id,
+  }));
+  return [...BACKGROUNDS, ...users];
+}
+
+const find = (value) => allBackgrounds().find((b) => b.value === value) || null;
+
+export const backgroundLabel = (value) => find(value)?.label ?? 'Standart';
+export const fitLabel = (value) => fitByValue.get(value)?.label ?? 'Doldur';
+export const hasImage = (value) => Boolean(find(value)?.src || find(value)?.url);
+
+/** Görselin adresi: kullanıcı görsellerinde object URL, hazır görsellerde yayın klasörüne göre tam adres. */
+export const backgroundUrl = (bg) => bg?.url || (bg?.src ? new URL(bg.src, document.baseURI).href : null);
 
 const CSS_VARS = ['--app-bg-image', '--app-bg-dim', '--app-bg-size', '--app-bg-repeat', '--app-bg-position'];
 
+/**
+ * Arka planı uygular. Seçili değer bulunamazsa (ör. silinmiş kullanıcı görseli) Standart'a düşer.
+ * Not: kullanıcı görselleri ilk boyamada uygulanamaz (object URL sayfa yenilenince geçersizdir);
+ * bu durumda görsel, veritabanı açılır açılmaz main.js tarafından uygulanır.
+ */
 export function applyBackground(value = 'standard', fitValue = 'fill') {
-  const bg = byValue.get(value) || byValue.get('standard');
+  const bg = find(value) || BACKGROUNDS[0];
   const fit = fitByValue.get(fitValue) || fitByValue.get('fill');
   const root = document.documentElement;
   root.dataset.bg = bg.value;
-  if (bg.src) {
+  if (bg.src || bg.url) {
     root.style.setProperty('--app-bg-image', `url("${backgroundUrl(bg)}")`);
     root.style.setProperty('--app-bg-dim', `${bg.dim}%`);
     root.style.setProperty('--app-bg-size', fit.size);
@@ -57,7 +86,8 @@ export function applyBackground(value = 'standard', fitValue = 'fill') {
     CSS_VARS.forEach((v) => root.style.removeProperty(v));
   }
   try {
-    localStorage.setItem('cp-bg', JSON.stringify({ value: bg.value, src: bg.src, dim: bg.dim, size: fit.size, repeat: fit.repeat, position: fit.position }));
+    // Kullanıcı görsellerinde src kaydedilmez; ilk boyama betiği yalnızca hazır görselleri uygular
+    localStorage.setItem('cp-bg', JSON.stringify({ value: bg.value, src: bg.src || null, dim: bg.dim, size: fit.size, repeat: fit.repeat, position: fit.position }));
   } catch {
     /* özel modda localStorage erişilemeyebilir */
   }

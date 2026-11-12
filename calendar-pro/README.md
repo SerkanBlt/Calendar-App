@@ -69,6 +69,16 @@ Görsel arka planlarda panelin altındaki **Yerleşim** seçenekleriyle görseli
 
 Panel seçimden sonra açık kalır; görsel ve yerleşim art arda denenebilir. `Ctrl + K` → "Arka Plan Yerleşimi: …" ile de seçilebilir.
 
+### Kendi arka planını ekleme
+
+Paneldeki **Kendi görselini ekle** butonu (veya `Ctrl + K` → "Arka Plan Ekle…") ile cihazdan bir görsel seçilir;
+görsel hemen arka plan olarak uygulanır ve listeye eklenir. Kendi görsellerinin köşesindeki **×** ile silinir
+("Geri al" ile geri getirilebilir; seçili görsel silinirse Standart'a dönülür).
+
+- Kabul edilen biçimler: JPG, PNG, WebP, AVIF, GIF, SVG (en fazla 25 MB).
+- Büyük fotoğraflar uzun kenarı 2560 px olacak şekilde küçültülüp WebP'ye çevrilir (ör. 8 MB → ~130 KB).
+- Görseller yalnızca bu tarayıcıda (IndexedDB) saklanır; JSON dışa aktarımına dahil değildir.
+
 Yeni arka plan eklemek için:
 1. Görseli `public/backgrounds/` klasörüne kopyalayın (webp/jpg önerilir, ~300 KB altı).
 2. `src/core/backgrounds.js` içindeki `BACKGROUNDS` listesine `{ value, label, src, dim }` ekleyin.

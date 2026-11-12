@@ -6,16 +6,18 @@
  *  - settings      (keyPath: key)
  *  - notifications (keyPath: id)  → gönderilmiş hatırlatmaların kaydı
  *  - attachments   (keyPath: id, index: eventId) → etkinlik ekleri (Blob)
+ *  - backgrounds   (keyPath: id) → kullanıcının yüklediği arka plan görselleri (Blob) — v2
  */
 
 const DB_NAME = 'calendar-pro';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // v2: backgrounds store eklendi
 
 export const STORES = Object.freeze({
   EVENTS: 'events',
   SETTINGS: 'settings',
   NOTIFICATIONS: 'notifications',
   ATTACHMENTS: 'attachments',
+  BACKGROUNDS: 'backgrounds',
 });
 
 let dbPromise = null;
@@ -41,10 +43,16 @@ export function openDB() {
         const att = db.createObjectStore(STORES.ATTACHMENTS, { keyPath: 'id' });
         att.createIndex('eventId', 'eventId');
       }
+      if (!db.objectStoreNames.contains(STORES.BACKGROUNDS)) db.createObjectStore(STORES.BACKGROUNDS, { keyPath: 'id' });
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      const db = req.result;
+      // Başka bir sekme daha yeni bir sürüme yükseltmek isterse bağlantıyı bırak (yükseltmeyi engelleme)
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     req.onerror = () => reject(req.error);
-    req.onblocked = () => reject(new Error('Veritabanı başka bir sekme tarafından kilitlendi.'));
+    req.onblocked = () => reject(new Error('Veritabanı güncelleniyor; uygulamanın açık olduğu diğer sekmeleri kapatıp sayfayı yenileyin.'));
   });
   return dbPromise;
 }

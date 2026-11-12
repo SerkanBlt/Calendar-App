@@ -9,6 +9,8 @@ import { choiceDialog, confirmDialog } from '../components/modal.js';
 import { toast } from '../components/toast.js';
 import { exportJSON, importJSON, pickFile } from '../services/exportService.js';
 import { notificationService } from '../services/notificationService.js';
+import { userBackgroundRepo } from './userBackgroundRepo.js';
+import { USER_PREFIX } from './backgrounds.js';
 
 /** Onay alıp siler; "Geri al" ile etkinlik geri yüklenir (ekler hariç). */
 export async function deleteEventWithUndo(id, { skipConfirm = false } = {}) {
@@ -127,6 +129,48 @@ export async function importData() {
 export const setTheme = (theme) => settingsRepo.set('theme', theme);
 export const setBackground = (background) => settingsRepo.set('background', background);
 export const setBackgroundFit = (fit) => settingsRepo.set('backgroundFit', fit);
+
+/**
+ * Kullanıcıdan bir görsel seçmesini ister, arka plan olarak kaydeder ve hemen uygular.
+ * @returns {Promise<string|null>} eklenen arka planın değeri (user:<id>) veya vazgeçildiyse null
+ */
+export async function addUserBackground() {
+  const file = await pickFile('image/*');
+  if (!file) return null;
+  try {
+    const view = await userBackgroundRepo.add(file);
+    const value = `${USER_PREFIX}${view.id}`;
+    await setBackground(value);
+    toast(`"${view.name}" arka plan olarak eklendi`, { type: 'success' });
+    return value;
+  } catch (err) {
+    toast(err.message, { type: 'error', duration: 6000 });
+    return null;
+  }
+}
+
+/**
+ * Kullanıcı görselini siler ("Geri al" ile geri getirilebilir). Seçili olan silinirse Standart'a döner.
+ * @returns {Promise<string|null>} seçili arka plan değiştiyse yeni değer, değişmediyse null
+ */
+export async function removeUserBackground(id) {
+  const value = `${USER_PREFIX}${id}`;
+  const wasSelected = store.get().settings.background === value;
+  const record = await userBackgroundRepo.remove(id);
+  if (wasSelected) await setBackground('standard');
+  toast(`"${record?.name ?? 'Görsel'}" silindi`, {
+    type: 'warning',
+    duration: 6000,
+    action: {
+      label: 'Geri al',
+      onClick: async () => {
+        await userBackgroundRepo.restore(record);
+        if (wasSelected) await setBackground(value);
+      },
+    },
+  });
+  return wasSelected ? 'standard' : null;
+}
 
 export async function toggleNotifications(force) {
   const enabled = force ?? !store.get().settings.notificationsEnabled;

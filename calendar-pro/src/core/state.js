@@ -46,6 +46,7 @@ export const store = createStore({
   cursor: todayISO(),
   events: [],
   settings: { ...DEFAULT_SETTINGS },
+  userBackgrounds: [], // kullanıcının yüklediği arka planlar (bkz. core/userBackgroundRepo.js)
 });
 
 /** Bileşenler arası gevşek bağlı iletişim için basit pub/sub. */

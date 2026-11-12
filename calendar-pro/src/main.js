@@ -23,12 +23,13 @@ import { settingsRepo } from './core/settingsRepo.js';
 import { buildSeedEvents } from './core/seed.js';
 import { applyTheme, BASE_THEMES, CUSTOM_THEMES } from './core/theme.js';
 import { openThemePicker } from './components/themePicker.js';
-import { applyBackground, BACKGROUND_FITS, BACKGROUNDS } from './core/backgrounds.js';
+import { allBackgrounds, applyBackground, BACKGROUND_FITS } from './core/backgrounds.js';
+import { userBackgroundRepo } from './core/userBackgroundRepo.js';
 import { openBackgroundPicker } from './components/backgroundPicker.js';
 import { html } from './core/dom.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
-import { exportData, importData, moveOccurrence, setBackground, setBackgroundFit, setTheme, toggleNotifications } from './core/actions.js';
+import { exportData, importData, moveOccurrence, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
@@ -119,7 +120,11 @@ function scheduleRender() {
 
 store.subscribe((s, prev) => {
   if (s.settings.theme !== prev.settings.theme) applyTheme(s.settings.theme);
-  if (s.settings.background !== prev.settings.background || s.settings.backgroundFit !== prev.settings.backgroundFit) {
+  if (
+    s.settings.background !== prev.settings.background ||
+    s.settings.backgroundFit !== prev.settings.backgroundFit ||
+    s.userBackgrounds !== prev.userBackgrounds
+  ) {
     applyBackground(s.settings.background, s.settings.backgroundFit);
   }
   if (!s.ready) return;
@@ -160,7 +165,7 @@ const palette = createCommandPalette({
       icon: 'palette',
       run: () => openThemePicker({ value: store.get().settings.theme, onSelect: setTheme }),
     },
-    ...BACKGROUNDS.map((b) => ({ id: `bg-${b.value}`, title: `Arka Plan: ${b.label}`, keywords: `background arkaplan duvar kağıdı ${b.value}`, icon: 'image', run: () => setBackground(b.value) })),
+    ...allBackgrounds().map((b) => ({ id: `bg-${b.value}`, title: `Arka Plan: ${b.label}`, keywords: `background arkaplan duvar kağıdı ${b.value}`, icon: 'image', run: () => setBackground(b.value) })),
     {
       id: 'bg-picker',
       title: 'Arka Planlar…',
@@ -174,6 +179,7 @@ const palette = createCommandPalette({
           onFit: setBackgroundFit,
         }),
     },
+    { id: 'bg-add', title: 'Arka Plan Ekle (kendi görselin)…', keywords: 'arka plan yükle görsel fotoğraf resim upload background image', icon: 'upload', run: addUserBackground },
     ...BACKGROUND_FITS.map((f) => ({ id: `bg-fit-${f.value}`, title: `Arka Plan Yerleşimi: ${f.label}`, keywords: `background fit tile stretch yerleşim ${f.value} ${f.hint}`, icon: 'image', run: () => setBackgroundFit(f.value) })),
     {
       id: 'notify',
@@ -228,6 +234,12 @@ async function boot() {
     await openDB();
     const settings = await settingsRepo.load();
     applyTheme(settings.theme);
+    // Kullanıcı görselleri yüklenmeden arka plan uygulanamaz (seçili görsel kullanıcıya ait olabilir)
+    try {
+      await userBackgroundRepo.loadAll();
+    } catch (err) {
+      console.warn('Kullanıcı arka planları yüklenemedi:', err);
+    }
     applyBackground(settings.background, settings.backgroundFit);
     await eventRepo.loadAll();
     if (!settings.seeded) {

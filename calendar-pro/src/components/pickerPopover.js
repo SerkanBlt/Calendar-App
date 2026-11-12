@@ -24,18 +24,23 @@ export const closePicker = () => closeCurrent?.();
  * @param {'list'|'grid'} [options.layout]
  * @param {HTMLElement|(() => HTMLElement|null)} [options.anchor] Buton veya onu döndüren fonksiyon
  *        (kenar çubuğu yeniden çizildiğinde de doğru butonu bulmak için fonksiyon önerilir)
- * @param {{value: string}[]} options.items
+ * @param {{value: string}[] | (() => {value: string}[])} options.items Liste veya her çizimde çağrılan fonksiyon
  * @param {string} options.value Seçili değer
  * @param {(item: object, selected: boolean) => import('../core/dom.js').SafeHTML} options.renderItem
  * @param {(value: string) => void} options.onSelect
  * @param {boolean} [options.closeOnSelect=true] false ise seçimden sonra panel açık kalır
  * @param {(value: string) => import('../core/dom.js').SafeHTML} [options.footer] Liste altındaki ek kontroller
  * @param {(event: MouseEvent, refresh: Function) => void} [options.onFooterClick]
+ * @param {(event: MouseEvent, refresh: Function) => void} [options.onItemAction] Seçenek içindeki
+ *        [data-item-action] butonlarına tıklanınca (ör. silme); seçim yapılmaz
+ *
+ * refresh(newValue?) listeyi ve alt bölümü yeniden çizer; değer verilirse seçili öğe de güncellenir.
  */
-export function openPicker({ key, title, iconName, layout = 'list', anchor, items, value, renderItem, onSelect, closeOnSelect = true, footer, onFooterClick }) {
+export function openPicker({ key, title, iconName, layout = 'list', anchor, items, value, renderItem, onSelect, closeOnSelect = true, footer, onFooterClick, onItemAction }) {
   closeCurrent?.();
   const previousFocus = document.activeElement;
   const getAnchor = typeof anchor === 'function' ? anchor : () => anchor || null;
+  const getItems = typeof items === 'function' ? items : () => items;
   let selected = value;
 
   const panel = document.createElement('div');
@@ -50,7 +55,7 @@ export function openPicker({ key, title, iconName, layout = 'list', anchor, item
   const footerEl = panel.querySelector('.picker-footer');
 
   function renderBody() {
-    list.innerHTML = html`${items.map(
+    list.innerHTML = html`${getItems().map(
       (item) => html`<li role="option" tabindex="-1" class="picker-option ${item.value === selected ? 'is-active' : ''}" aria-selected="${item.value === selected}" data-value="${item.value}">
         ${renderItem(item, item.value === selected)}
       </li>`,
@@ -110,10 +115,12 @@ export function openPicker({ key, title, iconName, layout = 'list', anchor, item
   }
 
   /** Alt bölümü (ve listeyi) güncel değerle yeniden çizer; onFooterClick'e verilir. */
-  function refresh() {
+  function refresh(newValue) {
+    if (newValue !== undefined && newValue !== null) selected = newValue;
     const focusedFit = document.activeElement?.dataset?.fit;
     renderBody();
     if (focusedFit) footerEl?.querySelector(`[data-fit="${CSS.escape(focusedFit)}"]`)?.focus();
+    else if (!panel.contains(document.activeElement)) (list.querySelector('.is-active') || list.querySelector('.picker-option'))?.focus();
   }
 
   function onOutside(e) {
@@ -121,7 +128,13 @@ export function openPicker({ key, title, iconName, layout = 'list', anchor, item
     if (!panel.contains(e.target) && !(a && a.contains(e.target))) close();
   }
 
-  list.addEventListener('click', (e) => select(e.target.closest('.picker-option')));
+  list.addEventListener('click', (e) => {
+    if (e.target.closest('[data-item-action]')) {
+      onItemAction?.(e, refresh);
+      return;
+    }
+    select(e.target.closest('.picker-option'));
+  });
   footerEl?.addEventListener('click', (e) => onFooterClick?.(e, refresh));
   panel.addEventListener('keydown', (e) => {
     e.stopPropagation(); // global kısayollar (N, T, 1-8) panel açıkken tetiklenmesin
