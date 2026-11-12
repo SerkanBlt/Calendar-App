@@ -98,9 +98,26 @@ Yeni arka plan eklemek için:
 
 ## Kenar çubuğu
 
-Üstte Yeni etkinlik ve Ara, ardından sekiz görünüm ve mini takvim yer alır; hepsi aynı boyuttaki düğmelerdir.
-Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesi; tema, arka plan, takvim (çalışma günleri), kenar çubuğu,
-hatırlatmalar ve veri (JSON dışa/içe aktarma) seçeneklerini içeren paneli açar (`Ctrl + K` → "Ayarlar").
+Üstte Yeni etkinlik ve Ara, ardından görünümler ve mini takvim yer alır; **Ay · Hafta · Gün** yan yana tek satırdadır
+(daraltılmış modda alt alta ikon olur). Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar**
+düğmesinin sağında uygulamanın sürüm numarası görünür.
+
+**Ayarlar** paneli sekmelidir (`Ctrl + K` → "Ayarlar"); yeni ayarlar ilgili sekmeye eklenir (`src/components/settingsPanel.js` → `TABS`):
+
+| Sekme | İçerik |
+|-------|--------|
+| Görünüm | Tema, arka plan, yerleşim |
+| Takvim | Çalışma günleri, çalışma dışı günleri göster/gizle |
+| Genel | Kenar çubuğu ikon modu, hatırlatmalar |
+| Veri | JSON dışa / içe aktarma |
+| Hakkında | Sürüm bilgisi |
+
+## Sürümler
+
+Sürüm numarası `package.json` → `version` alanından gelir ve derleme sırasında uygulamaya yerleştirilir
+(`src/core/version.js`). Semver kullanılır: yeni özellik → MINOR, hata düzeltmesi → PATCH, uyumsuz değişiklik → MAJOR.
+Her yayında `CHANGELOG.md` güncellenir ve `public/service-worker.js` içindeki `VERSION` da aynı numaraya getirilir
+(eski önbellekler temizlenir).
 
 Sol üstteki **logoya** tıklamak (veya `[` tuşu) kenar çubuğunu ikon moduna daraltır: yalnızca ikonlar kalır,
 mini takvim gizlenir ve takvime daha fazla alan açılır. İkonların üzerine gelince adları görünür. Tercih kaydedilir.

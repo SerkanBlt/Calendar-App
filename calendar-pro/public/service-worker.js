@@ -11,7 +11,7 @@
  *  - diğer GET istekleri (aynı origin): stale-while-revalidate.
  *  - notificationclick: açık pencereye odaklan veya uygulamayı aç.
  */
-const VERSION = 'v1.1.0';
+const VERSION = 'v1.9.0'; // uygulama sürümüyle birlikte artırılır; eski önbellekler temizlenir
 const CACHE_NAME = `calendar-pro-${VERSION}`;
 const SCOPE = self.registration.scope; // ör. https://kullanici.github.io/Calendar-App/
 const at = (path) => new URL(path, SCOPE).href;

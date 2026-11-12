@@ -10,6 +10,7 @@ import { addMonths, formatDate, startOfMonth, startOfWeek, toISODate, todayISO, 
 import { toggleSidebarCollapsed } from '../core/actions.js';
 import { icon } from './icons.js';
 import { openSettings } from './settingsPanel.js';
+import { APP_VERSION } from '../core/version.js';
 
 export const NAV_ITEMS = Object.freeze([
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -23,6 +24,8 @@ export const NAV_ITEMS = Object.freeze([
 ]);
 
 const DATE_VIEWS = new Set(['month', 'week', 'day', 'scheduler']);
+/** Kenar çubuğu açıkken yan yana gösterilen görünümler. */
+const ROW_VIEWS = new Set(['month', 'week', 'day']);
 
 /**
  * @param {HTMLElement} el
@@ -60,6 +63,27 @@ export function mountSidebar(el, ctx) {
       </div>`;
   }
 
+  function navLink(item, state, compact = false) {
+    const i = NAV_ITEMS.indexOf(item);
+    const active = state.view === item.id;
+    return html`<a href="#/${item.id}?date=${state.cursor}" class="nav-item ${compact ? 'nav-item--compact' : ''} ${active ? 'is-active' : ''}"
+                   data-nav="${item.id}" title="${item.label} (${i + 1})" ${active ? 'aria-current="page"' : ''}>
+        ${icon(item.icon)}<span>${item.label}</span>${compact ? '' : html`<kbd>${i + 1}</kbd>`}
+      </a>`;
+  }
+
+  /** Ay, Hafta ve Gün yan yana tek satırda; diğer görünümler alt alta. */
+  function navGroups(state) {
+    const row = NAV_ITEMS.filter((item) => ROW_VIEWS.has(item.id));
+    let rowRendered = false;
+    return NAV_ITEMS.map((item) => {
+      if (!ROW_VIEWS.has(item.id)) return navLink(item, state);
+      if (rowRendered) return '';
+      rowRendered = true;
+      return html`<div class="nav-row" role="group" aria-label="Takvim görünümleri">${row.map((r) => navLink(r, state, true))}</div>`;
+    });
+  }
+
   function render() {
     const state = store.get();
     const { view, settings } = state;
@@ -79,18 +103,15 @@ export function mountSidebar(el, ctx) {
         </div>
 
         <nav class="nav" aria-label="Görünümler">
-          ${NAV_ITEMS.map(
-            (item, i) => html`<a href="#/${item.id}?date=${state.cursor}" class="nav-item ${view === item.id ? 'is-active' : ''}" data-nav="${item.id}" title="${item.label} (${i + 1})" ${view === item.id ? 'aria-current="page"' : ''}>
-              ${icon(item.icon)}<span>${item.label}</span><kbd>${i + 1}</kbd>
-            </a>`,
-          )}
+          ${navGroups(state)}
         </nav>
 
         ${miniCalendar(state)}
 
       </div>
       <div class="sidebar-dock">
-        <button type="button" class="nav-item" data-settings aria-haspopup="dialog" title="Ayarlar (tema, arka plan, veri)">${icon('settings')}<span>Ayarlar</span></button>
+        <button type="button" class="nav-item" data-settings aria-haspopup="dialog" title="Ayarlar (tema, arka plan, takvim, veri) · Calendar Pro v${APP_VERSION}">${icon('settings')}<span>Ayarlar</span></button>
+        <span class="app-version" title="Calendar Pro sürümü">v${APP_VERSION}</span>
       </div>`;
     el.querySelector('.sidebar-inner').scrollTop = scrollTop;
   }

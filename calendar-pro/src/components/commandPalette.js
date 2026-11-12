@@ -2,7 +2,7 @@
  * commandPalette.js — Ctrl+K komut paleti.
  *
  * Komutları ve etkinlik başlıklarını bulanık (fuzzy) arama ile filtreler.
- * Klavye: ↑/↓ gezin, Enter çalıştır, Esc kapat.
+ * Klavye: ↑/↓ gezin, Enter çalıştır. Esc, odak nerede olursa olsun paleti kapatır; sağ üstteki × de kapatır.
  */
 import { html } from '../core/dom.js';
 import { normalizeText } from '../core/utils.js';
@@ -106,11 +106,15 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) 
     } else if (e.key === 'Enter') {
       e.preventDefault();
       execute(active);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      close();
     }
+  }
+
+  /** Palet açıkken Esc her yerde çalışır (odak metin kutusunda olmasa da). */
+  function onDocumentKeyDown(e) {
+    if (e.key !== 'Escape' || !backdrop) return;
+    e.preventDefault();
+    e.stopPropagation();
+    close();
   }
 
   function open() {
@@ -124,7 +128,7 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) 
           ${icon('search')}
           <input type="text" placeholder="Komut veya etkinlik ara…" aria-label="Ara" autocomplete="off" spellcheck="false"
                  role="combobox" aria-expanded="true" aria-controls="palette-list" />
-          <kbd>Esc</kbd>
+          <button type="button" class="icon-btn icon-btn-sm palette-close" data-close aria-label="Kapat (Esc)" title="Kapat (Esc)">${icon('x')}</button>
         </div>
         <ul class="palette-list" id="palette-list" role="listbox"></ul>
         <footer class="palette-footer">
@@ -151,6 +155,8 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) 
     backdrop.addEventListener('pointerdown', (e) => {
       if (e.target === backdrop) close();
     });
+    backdrop.querySelector('[data-close]').addEventListener('click', close);
+    document.addEventListener('keydown', onDocumentKeyDown, true);
     document.body.appendChild(backdrop);
     requestAnimationFrame(() => backdrop?.classList.add('is-visible'));
     update();
@@ -161,6 +167,7 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) 
     if (!backdrop) return;
     const el = backdrop;
     backdrop = null;
+    document.removeEventListener('keydown', onDocumentKeyDown, true);
     el.classList.remove('is-visible');
     setTimeout(() => el.remove(), 150);
     if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });

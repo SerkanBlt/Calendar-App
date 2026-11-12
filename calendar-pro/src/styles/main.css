@@ -107,7 +107,21 @@ kbd {
 }
 .sidebar-inner::-webkit-scrollbar { display: none; }
 /* Alta sabitlenmiş (dock) Ayarlar düğmesi */
-.sidebar-dock { flex-shrink: 0; padding: var(--space-2) var(--space-4) var(--space-4); border-top: 1px solid var(--border); }
+.sidebar-dock {
+  flex-shrink: 0; display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) var(--space-4); border-top: 1px solid var(--border);
+}
+.sidebar-dock .nav-item { flex: 1; min-width: 0; }
+.app-version {
+  flex-shrink: 0; font-size: 11.5px; font-weight: 600; color: var(--text-faint); font-variant-numeric: tabular-nums;
+  padding: 3px 8px; border-radius: var(--radius-pill); background: var(--surface-2); border: 1px solid var(--border);
+}
+
+/* Ay · Hafta · Gün yan yana (kenar çubuğu açıkken) */
+.nav-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; }
+.nav-item.nav-item--compact { justify-content: center; gap: 5px; padding: 8px 2px; font-size: 13px; }
+.nav-item.nav-item--compact .icon { width: 16px; height: 16px; }
+.nav-item.nav-item--compact span { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brand { display: flex; align-items: center; gap: var(--space-2); padding: 2px 4px var(--space-2); }
 .brand-logo {
   display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
@@ -227,7 +241,31 @@ kbd {
 .segmented--sm button { padding: 4px 10px; }
 
 /* ---------- Ayarlar paneli ---------- */
-.settings { display: flex; flex-direction: column; gap: var(--space-5); }
+.settings { display: flex; flex-direction: column; gap: var(--space-4); }
+.settings-panel { display: flex; flex-direction: column; gap: var(--space-5); min-height: min(420px, 55dvh); /* sekme değişince panel boyu zıplamasın */ }
+/* Sekme çubuğu panelin üstüne yapışık kalır (modal gövdesi kaydırılsa da) */
+.settings-tabs {
+  position: sticky; top: calc(-1 * var(--space-3)); z-index: 2; display: flex; gap: 2px;
+  margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-5)) 0; padding: var(--space-2) var(--space-5) 0;
+  background: var(--surface-solid); border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+}
+.settings-tabs::-webkit-scrollbar { display: none; }
+.settings-tab {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 12px; margin-bottom: -1px; white-space: nowrap;
+  border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--text-muted);
+  font-size: 13.5px; font-weight: 600; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: color var(--dur), border-color var(--dur), background var(--dur);
+}
+.settings-tab:hover { color: var(--text); background: var(--surface-hover); }
+.settings-tab.is-active { color: var(--accent-text); border-bottom-color: var(--accent); }
+.about-card { display: flex; align-items: center; gap: var(--space-3); }
+.about-card .brand-logo { width: 44px; height: 44px; border-radius: 14px; cursor: default; }
+.about-card .brand-logo:hover { transform: none; box-shadow: none; }
+.about-title { font-size: 18px; font-weight: 500; }
+.about-title b { font-weight: 700; }
+.about-version { color: var(--text); }
+.settings-note code { font-family: var(--font-mono); font-size: 12px; padding: 1px 6px; border-radius: 6px; background: var(--surface-3); }
 .settings-section { display: flex; flex-direction: column; gap: var(--space-3); scroll-margin-top: var(--space-3); }
 .settings-section h3 { display: flex; align-items: center; gap: var(--space-2); font-size: 14px; font-weight: 700; }
 .settings-section h3 .icon { color: var(--text-muted); }
@@ -446,6 +484,7 @@ kbd {
 }
 .palette-search { display: flex; align-items: center; gap: var(--space-3); padding: 14px 18px; border-bottom: 1px solid var(--border); color: var(--text-muted); }
 .palette-search input { flex: 1; border: 0; background: transparent; outline: none; font-size: 16px; color: var(--text); }
+.palette-close { flex-shrink: 0; margin-right: -6px; }
 .palette-list { list-style: none; margin: 0; padding: var(--space-2); overflow-y: auto; }
 .palette-group { padding: 8px 10px 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); }
 .palette-item { display: flex; align-items: center; gap: var(--space-3); padding: 9px 10px; border-radius: 10px; cursor: pointer; }
@@ -550,6 +589,9 @@ kbd {
   .sidebar-collapsed :is(.brand-name, .nav-item span, .nav-item kbd, .mini-cal) { display: none; }
   .sidebar-collapsed .nav-item { width: 44px; height: 40px; min-height: 0; padding: 0; justify-content: center; }
   .sidebar-collapsed .nav { width: 100%; align-items: center; }
+  .sidebar-collapsed .nav-row { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .sidebar-collapsed .app-version { display: none; }
+  .sidebar-collapsed .sidebar-dock .nav-item { flex: 0 0 auto; }
 }
 
 @media (max-width: 900px) {

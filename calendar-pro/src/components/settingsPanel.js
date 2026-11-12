@@ -1,14 +1,13 @@
 /**
  * settingsPanel.js — Ayarlar paneli (modal).
  *
- * Kenar çubuğunun altındaki "Ayarlar" düğmesiyle (veya Ctrl+K) açılır. Tüm seçenekler panelin içinde
- * doğrudan gösterilir; iç içe açılır menü yoktur:
- *   - Tema: Açık / Koyu / Sistem + özel temalar (renk şeritli kartlar)
- *   - Arka plan: önizlemeli ızgara (hazır + kullanıcı görselleri), "Kendi görselini ekle", yerleşim
+ * Kenar çubuğunun altındaki "Ayarlar" düğmesiyle (veya Ctrl+K) açılır. Ayarlar sekmelere ayrılmıştır
+ * (bkz. TABS); yeni ayarlar ilgili sekmeye eklenir:
+ *   - Görünüm: tema (Açık / Koyu / Sistem + özel temalar) ve arka plan (görseller, yerleşim)
  *   - Takvim: çalışma günleri ve çalışma dışı günlerin Ay/Hafta görünümünde gösterilmesi
- *   - Kenar çubuğu: ikon modu
- *   - Hatırlatmalar
+ *   - Genel: kenar çubuğu ikon modu, hatırlatmalar
  *   - Veri: JSON dışa / içe aktarma
+ *   - Hakkında: sürüm bilgisi
  * Panel açıkken store değiştikçe içerik yeniden çizilir (kaydırma konumu ve odak korunur).
  */
 import { html } from '../core/dom.js';
@@ -32,11 +31,12 @@ import {
 } from '../core/actions.js';
 import { openModal } from './modal.js';
 import { icon } from './icons.js';
+import { APP_VERSION } from '../core/version.js';
 
-let current = null; // { modal, scrollTo }
+let current = null; // { modal, show }
 
 /** Paneldeki bölümler (Ctrl+K komutları belirli bir bölüme açabilir). */
-export const SETTINGS_SECTIONS = Object.freeze({ theme: 'Tema', background: 'Arka plan', calendar: 'Takvim', sidebar: 'Kenar çubuğu', notifications: 'Hatırlatmalar', data: 'Veri' });
+export const SETTINGS_SECTIONS = Object.freeze({ theme: 'Tema', background: 'Arka plan', calendar: 'Takvim', sidebar: 'Kenar çubuğu', notifications: 'Hatırlatmalar', data: 'Veri', about: 'Hakkında' });
 
 function themeSection(settings) {
   return html`
@@ -130,44 +130,91 @@ function toggleRow({ key, iconName, title, hint, checked }) {
     </label>`;
 }
 
-function render(body, busy) {
+function generalSections(settings) {
+  return html`
+    <section class="settings-section" data-section="sidebar">
+      <h3>${icon('menu')} Kenar çubuğu</h3>
+      ${toggleRow({ key: 'sidebar', iconName: 'menu', title: 'Yalnızca ikonlar', hint: 'Kenar çubuğunu daraltır. Logoya tıklamak veya [ tuşu da aynı işi yapar.', checked: settings.sidebarCollapsed })}
+    </section>
+    <section class="settings-section" data-section="notifications">
+      <h3>${icon('bell')} Hatırlatmalar</h3>
+      ${toggleRow({ key: 'notify', iconName: 'bell', title: 'Etkinlik hatırlatmaları', hint: 'Etkinlikten 5, 15 veya 60 dakika önce bildirim gösterir.', checked: settings.notificationsEnabled })}
+    </section>`;
+}
+
+function dataSection() {
+  return html`
+    <section class="settings-section" data-section="data">
+      <h3>${icon('layers')} Veri</h3>
+      <div class="settings-actions">
+        <button type="button" class="btn btn-ghost" data-fk="export" data-export>${icon('download')} JSON dışa aktar</button>
+        <button type="button" class="btn btn-ghost" data-fk="import" data-import>${icon('upload')} JSON içe aktar</button>
+      </div>
+      <p class="settings-note">Etkinlikler ve ayarlar dışa aktarılır; ekler ve kendi arka plan görselleriniz bu tarayıcıda kalır.</p>
+    </section>`;
+}
+
+function aboutSection() {
+  return html`
+    <section class="settings-section" data-section="about">
+      <div class="about-card">
+        <span class="brand-logo" aria-hidden="true">${icon('month')}</span>
+        <div>
+          <h3 class="about-title">Calendar <b>Pro</b></h3>
+          <p class="settings-note">Sürüm <b class="about-version">v${APP_VERSION}</b></p>
+        </div>
+      </div>
+      <p class="settings-note">Takvim, görev ve proje planlama uygulaması. İnternet olmadan da çalışır; tüm veriler yalnızca bu tarayıcıda saklanır.</p>
+      <p class="settings-note">Değişiklikler için projedeki <code>CHANGELOG.md</code> dosyasına bakın.</p>
+    </section>`;
+}
+
+/**
+ * Sekmeler — yeni ayarlar ilgili sekmeye eklenir (gerekirse yeni sekme açılır).
+ * `sections`: Ctrl+K komutlarının açabileceği bölüm adları.
+ */
+const TABS = Object.freeze([
+  { id: 'appearance', label: 'Görünüm', icon: 'palette', sections: ['theme', 'background'], render: (s, busy) => html`${themeSection(s)}${backgroundSection(s, busy)}` },
+  { id: 'calendar', label: 'Takvim', icon: 'month', sections: ['calendar'], render: (s) => calendarSection(s) },
+  { id: 'general', label: 'Genel', icon: 'settings', sections: ['sidebar', 'notifications'], render: (s) => generalSections(s) },
+  { id: 'data', label: 'Veri', icon: 'layers', sections: ['data'], render: () => dataSection() },
+  { id: 'about', label: 'Hakkında', icon: 'sparkles', sections: ['about'], render: () => aboutSection() },
+]);
+
+const tabForSection = (section) => TABS.find((t) => t.sections.includes(section))?.id;
+let lastTab = TABS[0].id; // panel yeniden açıldığında son sekme hatırlanır
+
+function render(body, busy, activeTab) {
   const { settings } = store.get();
+  const tab = TABS.find((t) => t.id === activeTab) || TABS[0];
   body.innerHTML = html`
     <div class="settings">
-      ${themeSection(settings)}
-      ${backgroundSection(settings, busy)}
-      ${calendarSection(settings)}
-      <section class="settings-section" data-section="sidebar">
-        <h3>${icon('menu')} Kenar çubuğu</h3>
-        ${toggleRow({ key: 'sidebar', iconName: 'menu', title: 'Yalnızca ikonlar', hint: 'Kenar çubuğunu daraltır. Logoya tıklamak veya [ tuşu da aynı işi yapar.', checked: settings.sidebarCollapsed })}
-      </section>
-      <section class="settings-section" data-section="notifications">
-        <h3>${icon('bell')} Hatırlatmalar</h3>
-        ${toggleRow({ key: 'notify', iconName: 'bell', title: 'Etkinlik hatırlatmaları', hint: 'Etkinlikten 5, 15 veya 60 dakika önce bildirim gösterir.', checked: settings.notificationsEnabled })}
-      </section>
-      <section class="settings-section" data-section="data">
-        <h3>${icon('layers')} Veri</h3>
-        <div class="settings-actions">
-          <button type="button" class="btn btn-ghost" data-fk="export" data-export>${icon('download')} JSON dışa aktar</button>
-          <button type="button" class="btn btn-ghost" data-fk="import" data-import>${icon('upload')} JSON içe aktar</button>
-        </div>
-        <p class="settings-note">Etkinlikler ve ayarlar dışa aktarılır; ekler ve kendi arka plan görselleriniz bu tarayıcıda kalır.</p>
-      </section>
+      <div class="settings-tabs" role="tablist" aria-label="Ayar grupları">
+        ${TABS.map(
+          (t) => html`<button type="button" role="tab" id="settings-tab-${t.id}" class="settings-tab ${t.id === tab.id ? 'is-active' : ''}"
+                    data-fk="tab-${t.id}" data-tab="${t.id}" aria-selected="${String(t.id === tab.id)}" aria-controls="settings-panel"
+                    tabindex="${t.id === tab.id ? '0' : '-1'}">${icon(t.icon)}<span>${t.label}</span></button>`,
+        )}
+      </div>
+      <div class="settings-panel" id="settings-panel" role="tabpanel" aria-labelledby="settings-tab-${tab.id}">
+        ${tab.render(settings, busy)}
+      </div>
     </div>`;
 }
 
 /**
- * Ayarlar panelini açar (açıksa ilgili bölüme kaydırır).
- * @param {{section?: keyof SETTINGS_SECTIONS}} [options]
+ * Ayarlar panelini açar.
+ * @param {{section?: keyof SETTINGS_SECTIONS}} [options] verilirse ilgili sekme açılır ve bölüme kaydırılır
  */
 export function openSettings({ section } = {}) {
   if (current) {
-    current.scrollTo(section);
+    current.show(section);
     return;
   }
   const body = document.createElement('div');
   let busy = false;
-  render(body, busy);
+  let activeTab = tabForSection(section) || lastTab;
+  render(body, busy, activeTab);
 
   const modal = openModal({ title: 'Ayarlar', body, size: 'lg', onClose: () => {
     unsubscribe();
@@ -179,9 +226,18 @@ export function openSettings({ section } = {}) {
   function rerender() {
     const focusKey = document.activeElement?.dataset?.fk;
     const top = scroller.scrollTop;
-    render(body, busy);
+    render(body, busy, activeTab);
     scroller.scrollTop = top;
     if (focusKey) body.querySelector(`[data-fk="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
+  }
+
+  function selectTab(id, { focus = true } = {}) {
+    if (!TABS.some((t) => t.id === id)) return;
+    activeTab = id;
+    lastTab = id;
+    render(body, busy, activeTab);
+    scroller.scrollTop = 0;
+    if (focus) body.querySelector(`[data-tab="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
   }
 
   const unsubscribe = store.subscribe((s, prev) => {
@@ -191,6 +247,8 @@ export function openSettings({ section } = {}) {
   body.addEventListener('click', async (e) => {
     const t = e.target;
     if (!body.contains(t)) return undefined;
+    const tabBtn = t.closest('[data-tab]');
+    if (tabBtn) return selectTab(tabBtn.dataset.tab);
     const theme = t.closest('[data-theme-set]');
     if (theme) return setTheme(theme.dataset.themeSet);
     const remove = t.closest('[data-remove-bg]');
@@ -215,6 +273,18 @@ export function openSettings({ section } = {}) {
     return undefined;
   });
 
+  // Sekmeler arasında ← → / Home / End ile gezinme (WAI-ARIA tab deseni)
+  body.addEventListener('keydown', (e) => {
+    const tabBtn = e.target.closest('[data-tab]');
+    if (!tabBtn) return;
+    const ids = TABS.map((t) => t.id);
+    const i = ids.indexOf(tabBtn.dataset.tab);
+    const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: ids.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    selectTab(ids[(next + ids.length) % ids.length]);
+  });
+
   body.addEventListener('change', (e) => {
     const toggle = e.target.closest('[data-toggle]');
     if (!toggle) return;
@@ -227,10 +297,13 @@ export function openSettings({ section } = {}) {
     }
   });
 
-  const scrollTo = (name) => {
+  /** İlgili sekmeyi açar ve bölüme kaydırır. */
+  const show = (name) => {
+    const tabId = tabForSection(name);
+    if (tabId && tabId !== activeTab) selectTab(tabId, { focus: false });
     const target = name && body.querySelector(`[data-section="${CSS.escape(name)}"]`);
-    if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (target) requestAnimationFrame(() => target.scrollIntoView({ block: 'start', behavior: 'smooth' }));
   };
-  current = { modal, scrollTo };
-  if (section) requestAnimationFrame(() => scrollTo(section));
+  current = { modal, show };
+  if (section) show(section);
 }
