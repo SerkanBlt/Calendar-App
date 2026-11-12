@@ -24,6 +24,10 @@
 
   --accent: #7c6cff;
   --accent-2: #3fc8b6;
+  --accent-strong: #6a5af0; /* birincil buton gradyanının bitişi */
+  --accent-glow: rgba(124, 108, 255, 0.35);
+  --accent-glow-strong: rgba(124, 108, 255, 0.5);
+  --on-accent: #ffffff; /* accent zemin üzerindeki metin */
   --danger: #ff5d6c;
   --warning: #f5b84b;
   --success: #3ecf8e;
@@ -86,4 +90,46 @@
   --shadow: 0 8px 30px rgba(15, 20, 40, 0.08);
   --shadow-lg: 0 24px 80px rgba(15, 20, 40, 0.18);
   --scrim: rgba(20, 24, 36, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   Sonbahar (autumn) — orman paleti:
+   River Styx #13191F · Carbon Fibre #2B2F2E · Afternoon Tea #594C3D
+   Tanned Wood #906D4B · Amber Autumn #CA9C68
+   Koyu zemin üzerinde amber vurgu; accent zeminli öğelerde metin koyu (River Styx).
+   -------------------------------------------------------------------------- */
+:root[data-theme='autumn'] {
+  color-scheme: dark;
+  --bg: #13191f;
+  --bg-glow-1: rgba(202, 156, 104, 0.13);
+  --bg-glow-2: rgba(89, 76, 61, 0.35);
+  --surface: rgba(43, 47, 46, 0.66);
+  --surface-solid: #2b2f2e;
+  --surface-2: rgba(202, 156, 104, 0.05);
+  --surface-3: rgba(202, 156, 104, 0.1);
+  --surface-hover: rgba(202, 156, 104, 0.08);
+  --border: rgba(202, 156, 104, 0.12);
+  --border-strong: rgba(202, 156, 104, 0.24);
+  --text: #f0e4d4;
+  --text-muted: #b39878;
+  --text-faint: #7a6853;
+  --accent: #ca9c68;
+  --accent-2: #906d4b;
+  --accent-strong: #b5875a;
+  --accent-glow: rgba(202, 156, 104, 0.28);
+  --accent-glow-strong: rgba(202, 156, 104, 0.42);
+  --on-accent: #13191f;
+  --accent-soft: rgba(202, 156, 104, 0.16);
+  --accent-text: #ddb585;
+  --info: #c9a46f;
+  --status-todo: #a08a72;
+  --status-doing: #ddb585;
+  --grid-line: rgba(202, 156, 104, 0.06);
+  --grid-line-strong: rgba(202, 156, 104, 0.11);
+  --weekend: rgba(89, 76, 61, 0.18);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.6);
+  --scrim: rgba(8, 10, 12, 0.65);
+  --glass-blur: 18px;
 }

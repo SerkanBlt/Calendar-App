@@ -147,6 +147,7 @@ const palette = createCommandPalette({
     { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', run: importData },
     { id: 'theme-dark', title: 'Tema: Koyu', keywords: 'dark theme karanlık', icon: 'moon', run: () => setTheme('dark') },
     { id: 'theme-light', title: 'Tema: Açık', keywords: 'light theme aydınlık', icon: 'sun', run: () => setTheme('light') },
+    { id: 'theme-autumn', title: 'Tema: Sonbahar', keywords: 'autumn theme orman amber kahve', icon: 'leaf', run: () => setTheme('autumn') },
     { id: 'theme-system', title: 'Tema: Sistem', keywords: 'system theme otomatik', icon: 'monitor', run: () => setTheme('system') },
     {
       id: 'notify',

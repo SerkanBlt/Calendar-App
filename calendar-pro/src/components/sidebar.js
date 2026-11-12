@@ -20,7 +20,7 @@ export const NAV_ITEMS = Object.freeze([
   { id: 'kanban', label: 'Kanban', icon: 'kanban' },
 ]);
 
-const THEME_ICONS = { dark: 'moon', light: 'sun', system: 'monitor' };
+const THEME_ICONS = { dark: 'moon', light: 'sun', autumn: 'leaf', system: 'monitor' };
 const DATE_VIEWS = new Set(['month', 'week', 'day', 'scheduler']);
 
 /**
@@ -84,7 +84,7 @@ export function mountSidebar(el, ctx) {
         ${miniCalendar(state)}
 
         <div class="sidebar-footer">
-          <div class="segmented" role="radiogroup" aria-label="Tema">
+          <div class="segmented segmented--grid" role="radiogroup" aria-label="Tema">
             ${THEME_OPTIONS.map(
               (t) => html`<button type="button" role="radio" aria-checked="${settings.theme === t.value}" class="${settings.theme === t.value ? 'is-active' : ''}" data-theme-set="${t.value}" title="${t.label}">${icon(THEME_ICONS[t.value])}<span>${t.label}</span></button>`,
             )}

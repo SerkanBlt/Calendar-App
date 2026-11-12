@@ -14,8 +14,10 @@
       (function () {
         try {
           var pref = localStorage.getItem('cp-theme') || 'dark';
-          var dark = pref === 'system' ? matchMedia('(prefers-color-scheme: dark)').matches : pref === 'dark';
-          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+          var theme = pref === 'system'
+            ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : (['dark', 'light', 'autumn'].indexOf(pref) !== -1 ? pref : 'dark');
+          document.documentElement.setAttribute('data-theme', theme);
         } catch (e) { /* localStorage erişilemezse varsayılan koyu tema kalır */ }
       })();
     </script>

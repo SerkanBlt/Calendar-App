@@ -26,7 +26,7 @@
   font-size: 13px; font-weight: 600; display: grid; place-items: center; transition: background var(--dur);
 }
 .month-daynum:hover { background: var(--surface-3); }
-.month-cell.is-today .month-daynum { background: var(--accent); color: #fff; }
+.month-cell.is-today .month-daynum { background: var(--accent); color: var(--on-accent); }
 .month-cell.is-cursor:not(.is-today) .month-daynum { box-shadow: inset 0 0 0 1.5px var(--accent); }
 .month-events { display: flex; flex-direction: column; gap: 3px; min-height: 0; }
 .month-more { border: 0; background: none; text-align: left; padding: 0 6px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
@@ -43,7 +43,7 @@
 .tg-dayhead { display: flex; align-items: baseline; justify-content: center; gap: 6px; padding: 10px 4px; }
 .tg-dow { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .tg-dnum { font-size: 18px; font-weight: 600; width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 50%; }
-.tg-dayhead.is-today .tg-dnum { background: var(--accent); color: #fff; }
+.tg-dayhead.is-today .tg-dnum { background: var(--accent); color: var(--on-accent); }
 .tg-dayhead.is-today .tg-dow { color: var(--accent-text); }
 
 .tg-allday { border-bottom: 1px solid var(--border); max-height: 112px; overflow-y: auto; }
