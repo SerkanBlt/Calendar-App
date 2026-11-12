@@ -126,6 +126,7 @@ export async function importData() {
 
 export const setTheme = (theme) => settingsRepo.set('theme', theme);
 export const setBackground = (background) => settingsRepo.set('background', background);
+export const setBackgroundFit = (fit) => settingsRepo.set('backgroundFit', fit);
 
 export async function toggleNotifications(force) {
   const enabled = force ?? !store.get().settings.notificationsEnabled;

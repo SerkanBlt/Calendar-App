@@ -3,7 +3,8 @@
  *
  * Tema ve arka plan seçicileri bunu kullanır. Bir butona bağlı açılır (anchor verilmezse ekranın
  * ortasında), ekran dışına taşmaz ve uzun listelerde kaydırılır.
- * Klavye: ok tuşları gezin, Enter/Space seç, Esc/Tab kapat. Dışarı tıklamak kapatır.
+ * Klavye: ok tuşları seçenekler arasında gezer, Enter/Space seçer, Esc kapatır; Tab ile panel
+ * içindeki diğer kontrollere geçilir, odak panelden çıkınca panel kapanır. Dışarı tıklamak kapatır.
  * Aynı anda yalnızca bir panel açık olabilir.
  */
 import { html } from '../core/dom.js';
@@ -16,13 +17,26 @@ export const isPickerOpen = (key) => Boolean(closeCurrent) && (key == null || cu
 export const closePicker = () => closeCurrent?.();
 
 /**
- * @param {{key: string, title: string, iconName: string, layout?: 'list'|'grid', anchor?: HTMLElement,
- *          items: {value: string}[], value: string, renderItem: (item: object, selected: boolean) => import('../core/dom.js').SafeHTML,
- *          onSelect: (value: string) => void}} options
+ * @param {object} options
+ * @param {string} options.key Panel kimliği (aç/kapa için)
+ * @param {string} options.title
+ * @param {string} options.iconName
+ * @param {'list'|'grid'} [options.layout]
+ * @param {HTMLElement|(() => HTMLElement|null)} [options.anchor] Buton veya onu döndüren fonksiyon
+ *        (kenar çubuğu yeniden çizildiğinde de doğru butonu bulmak için fonksiyon önerilir)
+ * @param {{value: string}[]} options.items
+ * @param {string} options.value Seçili değer
+ * @param {(item: object, selected: boolean) => import('../core/dom.js').SafeHTML} options.renderItem
+ * @param {(value: string) => void} options.onSelect
+ * @param {boolean} [options.closeOnSelect=true] false ise seçimden sonra panel açık kalır
+ * @param {(value: string) => import('../core/dom.js').SafeHTML} [options.footer] Liste altındaki ek kontroller
+ * @param {(event: MouseEvent, refresh: Function) => void} [options.onFooterClick]
  */
-export function openPicker({ key, title, iconName, layout = 'list', anchor, items, value, renderItem, onSelect }) {
+export function openPicker({ key, title, iconName, layout = 'list', anchor, items, value, renderItem, onSelect, closeOnSelect = true, footer, onFooterClick }) {
   closeCurrent?.();
   const previousFocus = document.activeElement;
+  const getAnchor = typeof anchor === 'function' ? anchor : () => anchor || null;
+  let selected = value;
 
   const panel = document.createElement('div');
   panel.className = `picker glass picker--${layout}`;
@@ -30,25 +44,35 @@ export function openPicker({ key, title, iconName, layout = 'list', anchor, item
   panel.setAttribute('aria-label', title);
   panel.innerHTML = html`
     <header class="picker-head">${icon(iconName)}<span>${title}</span></header>
-    <ul class="picker-list" role="listbox" aria-label="${title}">
-      ${items.map(
-        (item) => html`<li role="option" tabindex="-1" class="picker-option ${item.value === value ? 'is-active' : ''}" aria-selected="${item.value === value}" data-value="${item.value}">
-          ${renderItem(item, item.value === value)}
-        </li>`,
-      )}
-    </ul>`;
+    <ul class="picker-list" role="listbox" aria-label="${title}"></ul>
+    ${footer ? html`<footer class="picker-footer"></footer>` : ''}`;
+  const list = panel.querySelector('.picker-list');
+  const footerEl = panel.querySelector('.picker-footer');
+
+  function renderBody() {
+    list.innerHTML = html`${items.map(
+      (item) => html`<li role="option" tabindex="-1" class="picker-option ${item.value === selected ? 'is-active' : ''}" aria-selected="${item.value === selected}" data-value="${item.value}">
+        ${renderItem(item, item.value === selected)}
+      </li>`,
+    )}`;
+    if (footerEl) footerEl.innerHTML = footer(selected);
+  }
+  const options = () => [...list.querySelectorAll('.picker-option')];
+
+  renderBody();
   document.body.appendChild(panel);
 
   const place = () => {
     const pw = panel.offsetWidth;
     const ph = panel.offsetHeight;
     const margin = 12;
-    if (!anchor || !anchor.isConnected) {
+    const a = getAnchor();
+    if (!a || !a.isConnected) {
       panel.style.left = `${Math.max(margin, (innerWidth - pw) / 2)}px`;
       panel.style.top = `${Math.max(margin, (innerHeight - ph) / 3)}px`;
       return;
     }
-    const r = anchor.getBoundingClientRect();
+    const r = a.getBoundingClientRect();
     let top = r.top - ph - 8; // varsayılan: butonun üstünde (seçiciler kenar çubuğunun altında)
     if (top < margin) top = r.bottom + 8;
     const left = Math.min(Math.max(margin, r.left), innerWidth - pw - margin);
@@ -58,9 +82,7 @@ export function openPicker({ key, title, iconName, layout = 'list', anchor, item
   };
   place();
   requestAnimationFrame(() => panel.classList.add('is-visible'));
-
-  const options = [...panel.querySelectorAll('.picker-option')];
-  (options.find((o) => o.classList.contains('is-active')) || options[0])?.focus();
+  (options().find((o) => o.classList.contains('is-active')) || options()[0])?.focus();
 
   function close() {
     if (closeCurrent !== close) return;
@@ -75,29 +97,54 @@ export function openPicker({ key, title, iconName, layout = 'list', anchor, item
 
   function select(option) {
     if (!option) return;
-    close();
-    onSelect(option.dataset.value);
+    const next = option.dataset.value;
+    if (closeOnSelect) {
+      close();
+      onSelect(next);
+      return;
+    }
+    selected = next;
+    onSelect(next);
+    renderBody();
+    list.querySelector(`[data-value="${CSS.escape(next)}"]`)?.focus();
+  }
+
+  /** Alt bölümü (ve listeyi) güncel değerle yeniden çizer; onFooterClick'e verilir. */
+  function refresh() {
+    const focusedFit = document.activeElement?.dataset?.fit;
+    renderBody();
+    if (focusedFit) footerEl?.querySelector(`[data-fit="${CSS.escape(focusedFit)}"]`)?.focus();
   }
 
   function onOutside(e) {
-    if (!panel.contains(e.target) && !(anchor && anchor.contains(e.target))) close();
+    const a = getAnchor();
+    if (!panel.contains(e.target) && !(a && a.contains(e.target))) close();
   }
 
-  panel.addEventListener('click', (e) => select(e.target.closest('.picker-option')));
+  list.addEventListener('click', (e) => select(e.target.closest('.picker-option')));
+  footerEl?.addEventListener('click', (e) => onFooterClick?.(e, refresh));
   panel.addEventListener('keydown', (e) => {
     e.stopPropagation(); // global kısayollar (N, T, 1-8) panel açıkken tetiklenmesin
-    const idx = options.indexOf(document.activeElement);
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      return;
+    }
+    const opts = options();
+    const idx = opts.indexOf(document.activeElement);
+    if (idx === -1) return; // alt bölümdeki butonlar kendi davranışını kullanır
     const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
     if (step) {
       e.preventDefault();
-      options[(idx + step + options.length) % options.length].focus();
+      opts[(idx + step + opts.length) % opts.length].focus();
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       select(document.activeElement.closest('.picker-option'));
-    } else if (e.key === 'Escape' || e.key === 'Tab') {
-      e.preventDefault();
-      close();
     }
+  });
+  // Odak panelin dışına çıkarsa (Tab ile) kapat
+  panel.addEventListener('focusout', (e) => {
+    if (e.relatedTarget && !panel.contains(e.relatedTarget)) close();
   });
   // Açan tıklama paneli hemen kapatmasın diye bir sonraki turda dinlemeye başla
   setTimeout(() => document.addEventListener('pointerdown', onOutside, true), 0);

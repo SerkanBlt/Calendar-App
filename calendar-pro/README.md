@@ -57,6 +57,18 @@ Arka plan temadan bağımsızdır; her tema her arka planla kullanılabilir. Ken
 önizlemeli bir seçim paneli açar (`Ctrl + K` → "Arka Planlar…" veya "Arka Plan: …"). **Standart**, temanın kendi
 degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bindirilir; böylece her temada yazılar okunur kalır.
 
+Görsel arka planlarda panelin altındaki **Yerleşim** seçenekleriyle görselin ekrana nasıl oturacağı belirlenir:
+
+| Yerleşim | Davranış |
+|----------|----------|
+| Doldur (varsayılan) | Ekranı kaplar, taşan kısımlar kırpılır |
+| Sığdır | Görselin tamamı görünür, oran korunur; boşluklar tema rengiyle dolar |
+| Uzat | Ekrana tam oturur, oran bozulabilir |
+| Döşe | Gerçek boyutunda yan yana tekrarlanır (desen/doku görselleri için ideal) |
+| Ortala | Gerçek boyutunda ortada tek kez |
+
+Panel seçimden sonra açık kalır; görsel ve yerleşim art arda denenebilir. `Ctrl + K` → "Arka Plan Yerleşimi: …" ile de seçilebilir.
+
 Yeni arka plan eklemek için:
 1. Görseli `public/backgrounds/` klasörüne kopyalayın (webp/jpg önerilir, ~300 KB altı).
 2. `src/core/backgrounds.js` içindeki `BACKGROUNDS` listesine `{ value, label, src, dim }` ekleyin.

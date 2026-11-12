@@ -23,12 +23,12 @@ import { settingsRepo } from './core/settingsRepo.js';
 import { buildSeedEvents } from './core/seed.js';
 import { applyTheme, BASE_THEMES, CUSTOM_THEMES } from './core/theme.js';
 import { openThemePicker } from './components/themePicker.js';
-import { applyBackground, BACKGROUNDS } from './core/backgrounds.js';
+import { applyBackground, BACKGROUND_FITS, BACKGROUNDS } from './core/backgrounds.js';
 import { openBackgroundPicker } from './components/backgroundPicker.js';
 import { html } from './core/dom.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
-import { exportData, importData, moveOccurrence, setBackground, setTheme, toggleNotifications } from './core/actions.js';
+import { exportData, importData, moveOccurrence, setBackground, setBackgroundFit, setTheme, toggleNotifications } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
@@ -119,7 +119,9 @@ function scheduleRender() {
 
 store.subscribe((s, prev) => {
   if (s.settings.theme !== prev.settings.theme) applyTheme(s.settings.theme);
-  if (s.settings.background !== prev.settings.background) applyBackground(s.settings.background);
+  if (s.settings.background !== prev.settings.background || s.settings.backgroundFit !== prev.settings.backgroundFit) {
+    applyBackground(s.settings.background, s.settings.backgroundFit);
+  }
   if (!s.ready) return;
   if (s.view !== prev.view) viewEl.scrollTop = 0;
   if (s.ready !== prev.ready || s.view !== prev.view || s.cursor !== prev.cursor || s.events !== prev.events || s.settings !== prev.settings) {
@@ -164,8 +166,15 @@ const palette = createCommandPalette({
       title: 'Arka Planlar…',
       keywords: 'arka plan background görsel duvar kağıdı wallpaper',
       icon: 'image',
-      run: () => openBackgroundPicker({ value: store.get().settings.background, onSelect: setBackground }),
+      run: () =>
+        openBackgroundPicker({
+          value: store.get().settings.background,
+          fit: store.get().settings.backgroundFit,
+          onSelect: setBackground,
+          onFit: setBackgroundFit,
+        }),
     },
+    ...BACKGROUND_FITS.map((f) => ({ id: `bg-fit-${f.value}`, title: `Arka Plan Yerleşimi: ${f.label}`, keywords: `background fit tile stretch yerleşim ${f.value} ${f.hint}`, icon: 'image', run: () => setBackgroundFit(f.value) })),
     {
       id: 'notify',
       title: store.get().settings.notificationsEnabled ? 'Hatırlatmaları Kapat' : 'Hatırlatmaları Aç',
@@ -219,7 +228,7 @@ async function boot() {
     await openDB();
     const settings = await settingsRepo.load();
     applyTheme(settings.theme);
-    applyBackground(settings.background);
+    applyBackground(settings.background, settings.backgroundFit);
     await eventRepo.loadAll();
     if (!settings.seeded) {
       if (!store.get().events.length) await eventRepo.mergeMany(buildSeedEvents());

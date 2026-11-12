@@ -27,6 +27,11 @@
             root.setAttribute('data-bg', bg.value);
             root.style.setProperty('--app-bg-image', 'url("' + new URL(bg.src, document.baseURI).href + '")');
             root.style.setProperty('--app-bg-dim', (Number(bg.dim) || 0) + '%');
+            // Yerleşim (Doldur/Sığdır/Uzat/Döşe/Ortala) — yalnızca beklenen CSS değerleri kabul edilir
+            var safe = /^[a-z0-9% ]+$/i;
+            if (safe.test(bg.size || '')) root.style.setProperty('--app-bg-size', bg.size);
+            if (safe.test(bg.repeat || '')) root.style.setProperty('--app-bg-repeat', bg.repeat);
+            if (safe.test(bg.position || '')) root.style.setProperty('--app-bg-position', bg.position);
           }
         } catch (e) { /* localStorage erişilemezse varsayılan koyu tema kalır */ }
       })();

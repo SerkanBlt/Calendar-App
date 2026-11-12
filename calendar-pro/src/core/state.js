@@ -10,6 +10,7 @@ import { todayISO } from './dateUtils.js';
 export const DEFAULT_SETTINGS = Object.freeze({
   theme: 'dark', // 'dark' | 'light' | 'system' | özel tema adı (bkz. core/theme.js)
   background: 'standard', // arka plan adı (bkz. core/backgrounds.js)
+  backgroundFit: 'fill', // görsel yerleşimi: fill | fit | stretch | tile | center
   weekStartsOn: 1, // 0 = Pazar, 1 = Pazartesi
   defaultReminder: 15,
   notificationsEnabled: false,

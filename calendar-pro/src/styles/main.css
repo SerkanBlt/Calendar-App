@@ -30,14 +30,14 @@ body {
 :root[data-bg]:not([data-bg='standard']) body {
   background:
     linear-gradient(color-mix(in srgb, var(--bg) var(--app-bg-dim, 30%), transparent), color-mix(in srgb, var(--bg) var(--app-bg-dim, 30%), transparent)),
-    var(--app-bg-image) center / cover no-repeat fixed,
+    var(--app-bg-image) var(--app-bg-position, center) / var(--app-bg-size, cover) var(--app-bg-repeat, no-repeat) fixed,
     var(--bg);
 }
 /* Açık temada koyu görseller başlık metnini boğmasın: tema rengi daha yoğun bindirilir */
 :root[data-theme='light'][data-bg]:not([data-bg='standard']) body {
   background:
     linear-gradient(color-mix(in srgb, var(--bg) calc(var(--app-bg-dim, 30%) + 45%), transparent), color-mix(in srgb, var(--bg) calc(var(--app-bg-dim, 30%) + 45%), transparent)),
-    var(--app-bg-image) center / cover no-repeat fixed,
+    var(--app-bg-image) var(--app-bg-position, center) / var(--app-bg-size, cover) var(--app-bg-repeat, no-repeat) fixed,
     var(--bg);
 }
 
@@ -276,6 +276,12 @@ kbd {
 }
 .bg-thumb-check .icon { width: 14px; height: 14px; }
 .bg-thumb-label { font-size: 12.5px; font-weight: 500; text-align: center; }
+
+/* Panel alt bölümü (ör. arka plan yerleşimi) */
+.picker-footer { border-top: 1px solid var(--border); margin-top: var(--space-2); padding: var(--space-2) 2px 2px; display: flex; flex-direction: column; gap: 6px; }
+.picker-footer-label { font-size: 12px; font-weight: 600; color: var(--text-muted); padding: 0 4px; }
+.fit-options button { padding: 5px 4px; font-size: 12px; }
+.fit-options button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Kenar çubuğundaki arka plan butonu */
 .bg-btn {

@@ -6,11 +6,11 @@ import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
 import { addMonths, formatDate, startOfMonth, startOfWeek, toISODate, todayISO, rangeDays, weekdayNames } from '../core/dateUtils.js';
 import { BASE_THEMES, isCustomTheme, themeLabel } from '../core/theme.js';
-import { exportData, importData, setBackground, setTheme, toggleNotifications } from '../core/actions.js';
+import { exportData, importData, setBackground, setBackgroundFit, setTheme, toggleNotifications } from '../core/actions.js';
 import { icon } from './icons.js';
 import { openThemePicker } from './themePicker.js';
 import { openBackgroundPicker } from './backgroundPicker.js';
-import { backgroundLabel } from '../core/backgrounds.js';
+import { backgroundLabel, fitLabel, hasImage } from '../core/backgrounds.js';
 
 export const NAV_ITEMS = Object.freeze([
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -94,7 +94,7 @@ export function mountSidebar(el, ctx) {
               (t) => html`<button type="button" role="radio" aria-checked="${settings.theme === t.value}" class="${settings.theme === t.value ? 'is-active' : ''}" data-theme-set="${t.value}" title="${t.label}">${icon(t.icon)}<span>${t.label}</span></button>`,
             )}
           </div>
-          <button type="button" class="bg-btn" data-bg-picker aria-haspopup="dialog" title="Arka planı değiştir">
+          <button type="button" class="bg-btn" data-bg-picker aria-haspopup="dialog" title="Arka planı değiştir${hasImage(settings.background) ? ` · Yerleşim: ${fitLabel(settings.backgroundFit)}` : ''}">
             ${icon('image')}<span>Arka plan</span><b>${backgroundLabel(settings.background)}</b>${icon('chevronDown', 'caret')}
           </button>
           <div class="footer-actions">
@@ -132,9 +132,15 @@ export function mountSidebar(el, ctx) {
     else if (t.closest('[data-palette]')) ctx.openPalette();
     else if (t.closest('[data-close-sidebar]')) ctx.closeMobile();
     else if (t.closest('[data-theme-custom]')) {
-      openThemePicker({ anchor: t.closest('[data-theme-custom]'), value: store.get().settings.theme, onSelect: setTheme });
+      openThemePicker({ anchor: () => el.querySelector('[data-theme-custom]'), value: store.get().settings.theme, onSelect: setTheme });
     } else if (t.closest('[data-bg-picker]')) {
-      openBackgroundPicker({ anchor: t.closest('[data-bg-picker]'), value: store.get().settings.background, onSelect: setBackground });
+      openBackgroundPicker({
+        anchor: () => el.querySelector('[data-bg-picker]'),
+        value: store.get().settings.background,
+        fit: store.get().settings.backgroundFit,
+        onSelect: setBackground,
+        onFit: setBackgroundFit,
+      });
     } else if (t.closest('[data-theme-set]')) setTheme(t.closest('[data-theme-set]').dataset.themeSet);
     else if (t.closest('[data-notify]')) toggleNotifications();
     else if (t.closest('[data-export]')) exportData();
