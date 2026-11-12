@@ -1,0 +1,62 @@
+/* ==========================================================================
+   dashboard.css — Genel bakış ekranı
+   ========================================================================== */
+.dashboard { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+
+.stat-card {
+  --tone: var(--accent);
+  position: relative; overflow: hidden; text-align: left;
+  display: grid; grid-template-columns: 1fr auto; grid-template-areas: 'value icon' 'label label' 'hint hint';
+  gap: 2px; padding: var(--space-5) var(--space-5) var(--space-4); color: var(--text);
+  transition: transform var(--dur) var(--ease), border-color var(--dur);
+}
+.stat-card::before {
+  content: ''; position: absolute; inset: auto -40px -60px auto; width: 160px; height: 160px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--tone) 28%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.stat-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--tone) 40%, transparent); }
+.stat-icon {
+  grid-area: icon; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  background: color-mix(in srgb, var(--tone) 16%, transparent); color: var(--tone);
+}
+.stat-value { grid-area: value; font-size: 34px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat-label { grid-area: label; font-weight: 600; }
+.stat-hint { grid-area: hint; color: var(--text-muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tone-accent { --tone: var(--accent); }
+.tone-teal { --tone: var(--accent-2); }
+.tone-blue { --tone: var(--info); }
+.tone-danger { --tone: var(--danger); }
+.tone-success { --tone: var(--success); }
+
+.dash-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+
+.status-bar { display: flex; height: 10px; border-radius: 10px; overflow: hidden; background: var(--surface-3); gap: 2px; }
+.seg--todo { background: var(--status-todo); }
+.seg--doing { background: var(--status-doing); }
+.seg--done { background: var(--status-done); }
+
+.legend { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: 13px; color: var(--text-muted); }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.legend b { color: var(--text); }
+
+.bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.bars li { display: grid; grid-template-columns: 110px 1fr 28px; align-items: center; gap: var(--space-3); font-size: 13px; }
+.bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+.bar-track { height: 8px; border-radius: 8px; background: var(--surface-3); overflow: hidden; }
+.bar-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+.bars b { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 1200px) {
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .dash-grid { grid-template-columns: 1fr; }
+  .stat-card { padding: var(--space-4); }
+  .stat-value { font-size: 28px; }
+}
+@media (max-width: 420px) {
+  .stats-grid { gap: var(--space-2); }
+}

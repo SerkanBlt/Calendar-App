@@ -1,0 +1,39 @@
+/* ==========================================================================
+   kanban.css — Kanban panosu ve görev kartları
+   ========================================================================== */
+.kanban {
+  display: grid; grid-template-columns: repeat(3, minmax(260px, 1fr)); gap: var(--space-4);
+  align-items: stretch; overflow-x: auto;
+}
+.kanban-col { display: flex; flex-direction: column; min-height: 0; padding: var(--space-3); transition: background var(--dur), outline-color var(--dur); }
+.kanban-head { display: flex; align-items: center; gap: var(--space-2); padding: 4px 6px var(--space-3); }
+.kanban-head h2 { font-size: 14px; font-weight: 600; flex: 1; }
+.kanban-list { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); overflow-y: auto; min-height: 80px; padding: 2px; }
+.kanban-empty {
+  display: grid; place-items: center; min-height: 96px; border-radius: var(--radius-md);
+  border: 1.5px dashed var(--border-strong); color: var(--text-faint); font-size: 13px;
+}
+.kanban-col--doing { box-shadow: var(--shadow), inset 0 3px 0 var(--status-doing); }
+.kanban-col--done { box-shadow: var(--shadow), inset 0 3px 0 var(--status-done); }
+.kanban-col--todo { box-shadow: var(--shadow), inset 0 3px 0 var(--status-todo); }
+
+.ev-card {
+  display: flex; flex-direction: column; gap: var(--space-2); padding: 12px 14px; border-radius: var(--radius-md);
+  background: var(--surface-solid); border: 1px solid var(--border); cursor: grab; touch-action: none; user-select: none;
+  box-shadow: var(--shadow-sm); transition: transform var(--dur) var(--ease), box-shadow var(--dur), border-color var(--dur);
+}
+.ev-card:hover { transform: translateY(-1px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--ev-color) 40%, transparent); }
+.ev-card.is-done .ev-card-title { text-decoration: line-through; color: var(--text-muted); }
+.ev-card-top { display: flex; align-items: center; gap: var(--space-2); }
+.ev-card-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--ev-color); flex-shrink: 0; }
+.ev-card-title { font-size: 14px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-card-desc { font-size: 12.5px; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ev-card-meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.ev-card-meta .meta { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
+.ev-card-meta .meta .icon { width: 13px; height: 13px; }
+.ev-card-meta .meta.is-overdue { color: var(--danger); font-weight: 600; }
+
+@media (max-width: 900px) {
+  .kanban { grid-template-columns: repeat(3, minmax(240px, 82vw)); scroll-snap-type: x mandatory; }
+  .kanban-col { scroll-snap-align: start; }
+}

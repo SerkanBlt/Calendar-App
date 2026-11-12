@@ -1,0 +1,35 @@
+/* ==========================================================================
+   scheduler.css — Scheduler görünümüne özgü ayarlamalar
+   (ortak saat ızgarası stilleri calendar.css içindedir)
+   ========================================================================== */
+.scheduler .tg { --gutter: 64px; }
+
+/* 15 dakikalık snap çizgileri: çeyrek saat kılavuzları */
+.scheduler .tg-col {
+  background-image:
+    linear-gradient(to bottom, var(--grid-line-strong) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--grid-line) 50%, transparent) 1px, transparent 1px);
+  background-size: 100% var(--hour-h), 100% calc(var(--hour-h) / 2), 100% calc(var(--hour-h) / 4);
+  background-position: 0 0, 0 calc(var(--hour-h) / 2), 0 0;
+}
+
+.scheduler .tg-dayhead { padding: 12px 4px; }
+.scheduler .tg-event { border-radius: 10px; padding: 6px 10px; }
+.scheduler .tg-event-title { font-size: 12.5px; }
+
+/* Çalışma saatleri dışını hafifçe karart (08:00–18:00 dışı) */
+.scheduler .tg-col::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--weekend) 0, var(--weekend) calc(var(--hour-h) * 8),
+    transparent calc(var(--hour-h) * 8), transparent calc(var(--hour-h) * 18),
+    var(--weekend) calc(var(--hour-h) * 18)
+  );
+}
+
+@media (max-width: 760px) {
+  .scheduler .tg { --gutter: 44px; }
+  .scheduler .tg-event { padding: 3px 5px; }
+}

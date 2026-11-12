@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "calendar-pro-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "calendar-pro", "run", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "calendar-pro-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "calendar-pro", "run", "preview"],
+      "port": 4173
+    }
+  ]
+}
