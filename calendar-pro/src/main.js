@@ -21,7 +21,8 @@ import { openDB } from './core/db.js';
 import { eventRepo } from './core/eventRepo.js';
 import { settingsRepo } from './core/settingsRepo.js';
 import { buildSeedEvents } from './core/seed.js';
-import { applyTheme } from './core/theme.js';
+import { applyTheme, BASE_THEMES, CUSTOM_THEMES } from './core/theme.js';
+import { openThemePicker } from './components/themePicker.js';
 import { html } from './core/dom.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
@@ -145,10 +146,15 @@ const palette = createCommandPalette({
     ...NAV_ITEMS.map((item, i) => ({ id: `go-${item.id}`, title: `${item.label} Aç`, keywords: `görünüm view ${item.id}`, icon: item.icon, hint: String(i + 1), run: () => ctx.go(item.id) })),
     { id: 'export', title: 'Export Data (JSON)', keywords: 'dışa aktar yedek indir export', icon: 'download', run: exportData },
     { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', run: importData },
-    { id: 'theme-dark', title: 'Tema: Koyu', keywords: 'dark theme karanlık', icon: 'moon', run: () => setTheme('dark') },
-    { id: 'theme-light', title: 'Tema: Açık', keywords: 'light theme aydınlık', icon: 'sun', run: () => setTheme('light') },
-    { id: 'theme-autumn', title: 'Tema: Sonbahar', keywords: 'autumn theme orman amber kahve', icon: 'leaf', run: () => setTheme('autumn') },
-    { id: 'theme-system', title: 'Tema: Sistem', keywords: 'system theme otomatik', icon: 'monitor', run: () => setTheme('system') },
+    ...BASE_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `theme ${t.value}`, icon: t.icon, run: () => setTheme(t.value) })),
+    ...CUSTOM_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `özel custom theme ${t.value} ${t.description}`, icon: 'palette', run: () => setTheme(t.value) })),
+    {
+      id: 'theme-picker',
+      title: 'Özel Temalar…',
+      keywords: 'tema theme renk palet custom',
+      icon: 'palette',
+      run: () => openThemePicker({ value: store.get().settings.theme, onSelect: setTheme }),
+    },
     {
       id: 'notify',
       title: store.get().settings.notificationsEnabled ? 'Hatırlatmaları Kapat' : 'Hatırlatmaları Aç',

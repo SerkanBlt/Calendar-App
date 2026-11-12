@@ -133,3 +133,46 @@
   --scrim: rgba(8, 10, 12, 0.65);
   --glass-blur: 18px;
 }
+
+/* --------------------------------------------------------------------------
+   Gün Batımı (sunset):
+   #1C1E3A gece mavisi · #40263A koyu mürdüm · #6D324F şarap
+   #B85C4A kiremit · #E89F6E kayısı · #F7E6C4 krem
+   Gece mavisi zemin, mürdüm cam yüzeyler, kayısı vurgu, krem metin.
+   -------------------------------------------------------------------------- */
+:root[data-theme='sunset'] {
+  color-scheme: dark;
+  --bg: #1c1e3a;
+  --bg-glow-1: rgba(232, 159, 110, 0.12);
+  --bg-glow-2: rgba(109, 50, 79, 0.42);
+  --surface: rgba(64, 38, 58, 0.58);
+  --surface-solid: #2e223a;
+  --surface-2: rgba(247, 230, 196, 0.04);
+  --surface-3: rgba(247, 230, 196, 0.08);
+  --surface-hover: rgba(247, 230, 196, 0.07);
+  --border: rgba(247, 230, 196, 0.1);
+  --border-strong: rgba(247, 230, 196, 0.2);
+  --text: #f7e6c4;
+  --text-muted: #c9a99a;
+  --text-faint: #8d6b7c;
+  --accent: #e89f6e;
+  --accent-2: #b85c4a;
+  --accent-strong: #d9875a;
+  --accent-glow: rgba(232, 159, 110, 0.3);
+  --accent-glow-strong: rgba(232, 159, 110, 0.45);
+  --on-accent: #1c1e3a;
+  --accent-soft: rgba(232, 159, 110, 0.16);
+  --accent-text: #f2b98f;
+  --info: #e0a3a0;
+  --status-todo: #a98d9c;
+  --status-doing: #f2b98f;
+  --status-done: #8fcfa4;
+  --grid-line: rgba(247, 230, 196, 0.05);
+  --grid-line-strong: rgba(247, 230, 196, 0.09);
+  --weekend: rgba(109, 50, 79, 0.2);
+  --shadow-sm: 0 1px 2px rgba(10, 8, 20, 0.45);
+  --shadow: 0 8px 30px rgba(10, 8, 20, 0.4);
+  --shadow-lg: 0 24px 80px rgba(10, 8, 20, 0.6);
+  --scrim: rgba(12, 10, 24, 0.65);
+  --glass-blur: 18px;
+}

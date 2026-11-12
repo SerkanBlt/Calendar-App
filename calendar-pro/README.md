@@ -40,6 +40,15 @@ Tek seferlik ayar:
 
 Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır.
 
+## Temalar
+
+Kenar çubuğunda **Özel · Açık · Koyu · Sistem** seçimleri vardır. **Özel**, renk şeritli bir panel açar:
+**Sonbahar** (orman / amber) ve **Gün Batımı** (gece mavisi / kayısı). `Ctrl + K` → "Özel Temalar…" veya "Tema: …" ile de seçilebilir.
+
+Yeni özel tema eklemek için:
+1. `src/styles/theme.css` içine `:root[data-theme='<ad>'] { ... }` token bloğu ekleyin (mevcut özel temaları örnek alın; `--on-accent` vurgu rengi üzerindeki yazı rengidir).
+2. `src/core/theme.js` içindeki `CUSTOM_THEMES` listesine `{ value, label, description, meta, swatches }` ekleyin.
+
 ## Klavye kısayolları
 
 | Kısayol | Eylem |

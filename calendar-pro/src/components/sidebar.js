@@ -5,9 +5,10 @@
 import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
 import { addMonths, formatDate, startOfMonth, startOfWeek, toISODate, todayISO, rangeDays, weekdayNames } from '../core/dateUtils.js';
-import { THEME_OPTIONS } from '../core/theme.js';
+import { BASE_THEMES, isCustomTheme, themeLabel } from '../core/theme.js';
 import { exportData, importData, setTheme, toggleNotifications } from '../core/actions.js';
 import { icon } from './icons.js';
+import { closeThemePicker, isThemePickerOpen, openThemePicker } from './themePicker.js';
 
 export const NAV_ITEMS = Object.freeze([
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
@@ -20,7 +21,6 @@ export const NAV_ITEMS = Object.freeze([
   { id: 'kanban', label: 'Kanban', icon: 'kanban' },
 ]);
 
-const THEME_ICONS = { dark: 'moon', light: 'sun', autumn: 'leaf', system: 'monitor' };
 const DATE_VIEWS = new Set(['month', 'week', 'day', 'scheduler']);
 
 /**
@@ -85,8 +85,11 @@ export function mountSidebar(el, ctx) {
 
         <div class="sidebar-footer">
           <div class="segmented segmented--grid" role="radiogroup" aria-label="Tema">
-            ${THEME_OPTIONS.map(
-              (t) => html`<button type="button" role="radio" aria-checked="${settings.theme === t.value}" class="${settings.theme === t.value ? 'is-active' : ''}" data-theme-set="${t.value}" title="${t.label}">${icon(THEME_ICONS[t.value])}<span>${t.label}</span></button>`,
+            <button type="button" role="radio" aria-checked="${isCustomTheme(settings.theme)}" aria-haspopup="dialog"
+                    class="${isCustomTheme(settings.theme) ? 'is-active' : ''}" data-theme-custom
+                    title="${isCustomTheme(settings.theme) ? `Özel: ${themeLabel(settings.theme)}` : 'Özel temalar'}">${icon('palette')}<span>Özel</span>${icon('chevronDown', 'caret')}</button>
+            ${BASE_THEMES.map(
+              (t) => html`<button type="button" role="radio" aria-checked="${settings.theme === t.value}" class="${settings.theme === t.value ? 'is-active' : ''}" data-theme-set="${t.value}" title="${t.label}">${icon(t.icon)}<span>${t.label}</span></button>`,
             )}
           </div>
           <div class="footer-actions">
@@ -123,7 +126,10 @@ export function mountSidebar(el, ctx) {
     if (t.closest('[data-new]')) ctx.openEditor({ startDate: store.get().cursor });
     else if (t.closest('[data-palette]')) ctx.openPalette();
     else if (t.closest('[data-close-sidebar]')) ctx.closeMobile();
-    else if (t.closest('[data-theme-set]')) setTheme(t.closest('[data-theme-set]').dataset.themeSet);
+    else if (t.closest('[data-theme-custom]')) {
+      if (isThemePickerOpen()) closeThemePicker();
+      else openThemePicker({ anchor: t.closest('[data-theme-custom]'), value: store.get().settings.theme, onSelect: setTheme });
+    } else if (t.closest('[data-theme-set]')) setTheme(t.closest('[data-theme-set]').dataset.themeSet);
     else if (t.closest('[data-notify]')) toggleNotifications();
     else if (t.closest('[data-export]')) exportData();
     else if (t.closest('[data-import]')) importData();
