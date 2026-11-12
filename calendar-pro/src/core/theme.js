@@ -62,6 +62,13 @@ export const CUSTOM_THEMES = Object.freeze([
     meta: '#0d141a',
     swatches: ['#d51c3d', '#9c0c20', '#0d141a', '#37444f', '#475867', '#63788d', '#91abbc'],
   },
+  {
+    value: 'mountain',
+    label: 'Dağ Yolu',
+    description: 'Gece lacivert ve asfalt üzerinde turuncu ve kiremit',
+    meta: '#060a17',
+    swatches: ['#e07116', '#702920', '#060a17', '#131c29', '#293235', '#484a49'],
+  },
 ]);
 
 const META_COLORS = { dark: '#0b0d12', light: '#f5f6fa', ...Object.fromEntries(CUSTOM_THEMES.map((t) => [t.value, t.meta])) };

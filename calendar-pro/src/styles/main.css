@@ -212,6 +212,7 @@ kbd {
 /* ---------- Özel tema seçim paneli ---------- */
 .theme-picker {
   position: fixed; z-index: 160; width: min(320px, calc(100vw - 24px)); padding: var(--space-2);
+  max-height: calc(100dvh - 24px); display: flex; flex-direction: column; /* tema sayısı artınca liste kaydırılır */
   background: var(--surface-solid); box-shadow: var(--shadow-lg);
   opacity: 0; transform: translateY(6px) scale(0.98); transform-origin: bottom left;
   transition: opacity 140ms, transform 140ms var(--ease);
@@ -221,7 +222,7 @@ kbd {
   display: flex; align-items: center; gap: var(--space-2); padding: 6px 8px 8px;
   font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
 }
-.theme-picker-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.theme-picker-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; min-height: 0; }
 .theme-option {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3);
   padding: 10px; border-radius: var(--radius-md); cursor: pointer; outline: none;

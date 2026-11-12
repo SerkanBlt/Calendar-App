@@ -43,7 +43,7 @@ Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekran
 ## Temalar
 
 Kenar çubuğunda **Özel · Açık · Koyu · Sistem** seçimleri vardır. **Özel**, renk şeritli bir panel açar:
-**Sonbahar** (orman / amber), **Gün Batımı** (gece mavisi / kayısı) **Okyanus** (derin deniz / turkuaz) **Misket Limonu** (zeytin / lime) **Grafit** (renksiz gri) ve **Kızıl Çelik** (gece / kızıl). `Ctrl + K` → "Özel Temalar…" veya "Tema: …" ile de seçilebilir.
+**Sonbahar** (orman / amber), **Gün Batımı** (gece mavisi / kayısı) **Okyanus** (derin deniz / turkuaz) **Misket Limonu** (zeytin / lime) **Grafit** (renksiz gri) **Kızıl Çelik** (gece / kızıl) ve **Dağ Yolu** (asfalt / turuncu). `Ctrl + K` → "Özel Temalar…" veya "Tema: …" ile de seçilebilir.
 
 Yeni özel tema eklemek için:
 1. `src/styles/theme.css` içine `:root[data-theme='<ad>'] { ... }` token bloğu ekleyin (mevcut özel temaları örnek alın; `--on-accent` vurgu rengi üzerindeki yazı rengidir).
