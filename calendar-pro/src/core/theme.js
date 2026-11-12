@@ -48,6 +48,13 @@ export const CUSTOM_THEMES = Object.freeze([
     meta: '#1f2a05',
     swatches: ['#1f2a05', '#3d520b', '#648215', '#8fb61f', '#b4d944', '#d6ee8d', '#f1fbd3'],
   },
+  {
+    value: 'graphite',
+    label: 'Grafit',
+    description: 'Renksiz, sade gri tonlar — dikkat dağıtmayan arayüz',
+    meta: '#0e0e10',
+    swatches: ['#0e0e10', '#232327', '#3e3e45', '#63636e', '#9a9aa6', '#c9c9d2', '#f2f2f5'],
+  },
 ]);
 
 const META_COLORS = { dark: '#0b0d12', light: '#f5f6fa', ...Object.fromEntries(CUSTOM_THEMES.map((t) => [t.value, t.meta])) };
