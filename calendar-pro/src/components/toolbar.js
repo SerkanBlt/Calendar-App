@@ -3,12 +3,12 @@
  *
  * Kabuk eylemleri `data-action` ile işaretlenir ve main.js tarafından delegasyonla işlenir:
  *  menu (mobil kenar çubuğu), prev, next, today, new
- * View'a özgü kontroller `extra` parametresiyle eklenir.
+ * View'a özgü kontroller `extra` parametresiyle eklenir; `beforeNew` ise doğrudan "Yeni" düğmesinin soluna yerleşir.
  */
 import { html } from '../core/dom.js';
 import { icon } from './icons.js';
 
-export function toolbar({ title, subtitle = '', nav = false, extra = '' }) {
+export function toolbar({ title, subtitle = '', nav = false, extra = '', beforeNew = '' }) {
   return html`
     <header class="toolbar">
       <button type="button" class="icon-btn only-mobile" data-action="menu" aria-label="Menüyü aç">${icon('menu')}</button>
@@ -25,6 +25,7 @@ export function toolbar({ title, subtitle = '', nav = false, extra = '' }) {
               <button type="button" class="icon-btn" data-action="next" aria-label="Sonraki" title="Sonraki (→)">${icon('chevronRight')}</button>
             </div>`
           : ''}
+        ${beforeNew}
         <button type="button" class="btn btn-primary btn-sm" data-action="new" title="Yeni etkinlik (N)">${icon('plus')}<span class="hide-sm">Yeni</span></button>
       </div>
     </header>`;

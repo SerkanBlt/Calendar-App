@@ -130,6 +130,22 @@ export const setTheme = (theme) => settingsRepo.set('theme', theme);
 export const setBackground = (background) => settingsRepo.set('background', background);
 export const setBackgroundFit = (fit) => settingsRepo.set('backgroundFit', fit);
 
+/** Ay ve Hafta görünümünde çalışma dışı günleri göster / gizle. */
+export const toggleShowOffDays = (force) => settingsRepo.set('showOffDays', force ?? store.get().settings.showOffDays === false);
+
+/** Bir günü çalışma günü yapar / çalışma dışı bırakır (en az bir çalışma günü kalır). */
+export function toggleWorkDay(day) {
+  const current = new Set(store.get().settings.workDays ?? [1, 2, 3, 4, 5]);
+  if (current.has(day)) {
+    if (current.size === 1) {
+      toast('En az bir çalışma günü seçili olmalı', { type: 'warning' });
+      return undefined;
+    }
+    current.delete(day);
+  } else current.add(day);
+  return settingsRepo.set('workDays', [...current].sort((a, b) => a - b));
+}
+
 /** Kenar çubuğunu ikon moduna daraltır / genişletir (masaüstü). */
 export const toggleSidebarCollapsed = () => settingsRepo.set('sidebarCollapsed', !store.get().settings.sidebarCollapsed);
 

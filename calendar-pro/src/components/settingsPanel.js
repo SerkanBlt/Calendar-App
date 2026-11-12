@@ -5,6 +5,7 @@
  * doğrudan gösterilir; iç içe açılır menü yoktur:
  *   - Tema: Açık / Koyu / Sistem + özel temalar (renk şeritli kartlar)
  *   - Arka plan: önizlemeli ızgara (hazır + kullanıcı görselleri), "Kendi görselini ekle", yerleşim
+ *   - Takvim: çalışma günleri ve çalışma dışı günlerin Ay/Hafta görünümünde gösterilmesi
  *   - Kenar çubuğu: ikon modu
  *   - Hatırlatmalar
  *   - Veri: JSON dışa / içe aktarma
@@ -14,6 +15,8 @@ import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
 import { BASE_THEMES, CUSTOM_THEMES } from '../core/theme.js';
 import { allBackgrounds, BACKGROUND_FITS, backgroundUrl, hasImage } from '../core/backgrounds.js';
+import { normalizeWorkDays, orderedWeekdays } from '../core/workDays.js';
+import { formatDate } from '../core/dateUtils.js';
 import {
   addUserBackground,
   exportData,
@@ -23,7 +26,9 @@ import {
   setBackgroundFit,
   setTheme,
   toggleNotifications,
+  toggleShowOffDays,
   toggleSidebarCollapsed,
+  toggleWorkDay,
 } from '../core/actions.js';
 import { openModal } from './modal.js';
 import { icon } from './icons.js';
@@ -31,7 +36,7 @@ import { icon } from './icons.js';
 let current = null; // { modal, scrollTo }
 
 /** Paneldeki bölümler (Ctrl+K komutları belirli bir bölüme açabilir). */
-export const SETTINGS_SECTIONS = Object.freeze({ theme: 'Tema', background: 'Arka plan', sidebar: 'Kenar çubuğu', notifications: 'Hatırlatmalar', data: 'Veri' });
+export const SETTINGS_SECTIONS = Object.freeze({ theme: 'Tema', background: 'Arka plan', calendar: 'Takvim', sidebar: 'Kenar çubuğu', notifications: 'Hatırlatmalar', data: 'Veri' });
 
 function themeSection(settings) {
   return html`
@@ -90,6 +95,32 @@ function backgroundSection(settings, busy) {
     </section>`;
 }
 
+/** 4 Ocak 2026 Pazar olduğu için 4 + gün numarası o günün tarihini verir. */
+const weekdayLabel = (day, style) => formatDate(new Date(2026, 0, 4 + day), { weekday: style });
+
+function calendarSection(settings) {
+  const work = new Set(normalizeWorkDays(settings.workDays));
+  return html`
+    <section class="settings-section" data-section="calendar">
+      <h3>${icon('month')} Takvim</h3>
+      <p class="settings-sub">Çalışma günleri</p>
+      <div class="workday-chips" role="group" aria-label="Çalışma günleri">
+        ${orderedWeekdays(settings.weekStartsOn).map((d) => {
+          const on = work.has(d);
+          return html`<button type="button" class="workday-chip ${on ? 'is-on' : ''}" aria-pressed="${String(on)}" data-fk="wd-${d}" data-workday="${d}"
+                    title="${weekdayLabel(d, 'long')}: ${on ? 'çalışma günü' : 'çalışma dışı'}">${weekdayLabel(d, 'short')}</button>`;
+        })}
+      </div>
+      ${toggleRow({
+        key: 'offdays',
+        iconName: 'eye',
+        title: 'Çalışma dışı günleri göster',
+        hint: 'Ay ve Hafta görünümünde. Kapalıyken bu günlerin sütunları gizlenir; takvim başlığındaki düğmeyle de değiştirilebilir.',
+        checked: settings.showOffDays !== false,
+      })}
+    </section>`;
+}
+
 function toggleRow({ key, iconName, title, hint, checked }) {
   return html`
     <label class="settings-row">
@@ -105,6 +136,7 @@ function render(body, busy) {
     <div class="settings">
       ${themeSection(settings)}
       ${backgroundSection(settings, busy)}
+      ${calendarSection(settings)}
       <section class="settings-section" data-section="sidebar">
         <h3>${icon('menu')} Kenar çubuğu</h3>
         ${toggleRow({ key: 'sidebar', iconName: 'menu', title: 'Yalnızca ikonlar', hint: 'Kenar çubuğunu daraltır. Logoya tıklamak veya [ tuşu da aynı işi yapar.', checked: settings.sidebarCollapsed })}
@@ -174,6 +206,8 @@ export function openSettings({ section } = {}) {
       busy = false;
       return rerender();
     }
+    const workday = t.closest('[data-workday]');
+    if (workday) return toggleWorkDay(Number(workday.dataset.workday));
     const fit = t.closest('[data-fit]');
     if (fit && !fit.disabled) return setBackgroundFit(fit.dataset.fit);
     if (t.closest('[data-export]')) return exportData();
@@ -186,6 +220,8 @@ export function openSettings({ section } = {}) {
     if (!toggle) return;
     if (toggle.dataset.toggle === 'sidebar') {
       if (toggle.checked !== Boolean(store.get().settings.sidebarCollapsed)) toggleSidebarCollapsed();
+    } else if (toggle.dataset.toggle === 'offdays') {
+      toggleShowOffDays(toggle.checked);
     } else if (toggle.dataset.toggle === 'notify') {
       toggleNotifications(toggle.checked);
     }

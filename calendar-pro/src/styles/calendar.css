@@ -5,7 +5,7 @@
 /* ---------- Ay ---------- */
 .month { display: flex; flex-direction: column; }
 .month-grid {
-  flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+  flex: 1; display: grid; grid-template-columns: repeat(var(--month-cols, 7), minmax(0, 1fr)); /* çalışma dışı günler gizlenince azalır */
   grid-template-rows: auto repeat(6, minmax(96px, 1fr)); overflow: hidden;
 }
 .month-dow {
@@ -17,9 +17,14 @@
   border-right: 1px solid var(--grid-line); border-bottom: 1px solid var(--grid-line);
   cursor: pointer; transition: background var(--dur);
 }
-.month-cell:nth-child(7n + 7) { border-right: 0; }
+.month-cell.is-row-end { border-right: 0; }
 .month-cell:hover { background: var(--surface-2); }
 .month-cell.is-outside { background: var(--weekend); }
+/* Çalışma dışı günler (Ayarlar → Takvim) — taranmış hafif zemin */
+.month-cell.is-off, .tg-col.is-off, .tg-allday-cell.is-off {
+  background-image: repeating-linear-gradient(135deg, var(--weekend) 0 6px, transparent 6px 12px);
+}
+.month-dow.is-off, .tg-dayhead.is-off .tg-dow, .tg-dayhead.is-off .tg-dnum { color: var(--text-faint); }
 .month-cell.is-outside .month-daynum { color: var(--text-faint); }
 .month-daynum {
   align-self: flex-start; border: 0; background: none; width: 28px; height: 28px; border-radius: 50%;
@@ -66,11 +71,12 @@
   background-position: 0 0, 0 calc(var(--hour-h) / 2);
 }
 .tg-col.is-today { background-color: color-mix(in srgb, var(--accent) 4%, transparent); }
+.tg-col.is-off { background-image: repeating-linear-gradient(135deg, var(--weekend) 0 6px, transparent 6px 12px), linear-gradient(to bottom, var(--grid-line-strong) 1px, transparent 1px), linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px); background-size: auto, 100% var(--hour-h), 100% calc(var(--hour-h) / 2); background-position: 0 0, 0 0, 0 calc(var(--hour-h) / 2); }
 
 .tg-event {
   position: absolute; z-index: 2; overflow: hidden; padding: 4px 8px; border-radius: 8px;
   background: color-mix(in srgb, var(--ev-color) 22%, var(--surface-solid));
-  border-left: 3px solid var(--ev-color); color: var(--text); cursor: grab; touch-action: none;
+  border-left: 3px solid var(--ev-color); color: var(--text); cursor: grab; touch-action: manipulation; -webkit-touch-callout: none;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12); transition: box-shadow var(--dur), opacity var(--dur);
   font-size: 12px; line-height: 1.3;
 }

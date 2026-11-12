@@ -19,6 +19,8 @@ import { toolbar } from '../components/toolbar.js';
 import { icon } from '../components/icons.js';
 import { confirmDialog } from '../components/modal.js';
 import { toast } from '../components/toast.js';
+import { createAutoScroller } from '../components/autoScroll.js';
+import { isTouch, lockTouchScroll, waitForHold } from '../components/touchHold.js';
 
 const ROW_H = 44;
 const BAR_PAD = 9;
@@ -223,12 +225,22 @@ export default {
       return { x: ev.clientX - r.left, y: ev.clientY - r.top };
     };
 
-    chart.addEventListener('pointerdown', (e) => {
+    // Fare: hemen sürüklenir. Dokunmatik: dokun → aç, basılı tut → sürükle, kaydır → şema kayar.
+    // Olaylar window üzerinden dinlenir; kenara yaklaşınca şema otomatik kayar.
+    chart.addEventListener('pointerdown', async (e) => {
       if (e.button !== 0) return;
       const bar = e.target.closest('.gantt-bar');
       if (!bar) return;
       const task = byId.get(bar.dataset.task);
-      e.preventDefault();
+      let unlock = null;
+      if (isTouch(e)) {
+        const result = await waitForHold(e);
+        if (result === 'tap') ctx.openEditor(task);
+        if (result !== 'hold') return;
+        unlock = lockTouchScroll();
+      } else {
+        e.preventDefault();
+      }
       const mode = e.target.closest('[data-link]') ? 'link' : e.target.closest('[data-knob]') ? 'progress' : e.target.dataset.edge || 'move';
       const originX = e.clientX;
       const origLeft = xOf(task.startDate);
@@ -239,11 +251,17 @@ export default {
       let deltaDays = 0;
       let progress = task.progress;
       let linkTarget = null;
-      bar.setPointerCapture(e.pointerId);
+      let lastEv = e;
+      const originScroll = scroller.scrollLeft;
+      const originalStyle = bar.getAttribute('style');
+      const autoScroll = createAutoScroller({ container: scroller, axes: 'x', onScroll: () => moved && onMove(lastEv, true) });
 
-      const onMove = (ev) => {
-        const dx = ev.clientX - originX;
-        if (!moved && Math.abs(dx) < 3 && mode !== 'link') return;
+      const onMove = (ev, fromScroll = false) => {
+        if (ev.pointerId !== e.pointerId) return;
+        lastEv = ev;
+        const dx = ev.clientX - originX + (scroller.scrollLeft - originScroll);
+        if (!fromScroll) autoScroll.update(ev.clientX, ev.clientY);
+        if (!moved && Math.abs(dx) < 3 && mode !== 'link' && !unlock) return;
         if (!moved) {
           moved = true;
           chart.classList.add('is-interacting');
@@ -278,10 +296,25 @@ export default {
         }
       };
 
-      const onUp = () => {
-        bar.removeEventListener('pointermove', onMove);
-        bar.removeEventListener('pointerup', onUp);
-        bar.removeEventListener('pointercancel', onUp);
+      const stopTracking = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onCancel);
+        autoScroll.stop();
+        unlock?.();
+        chart.classList.remove('is-interacting');
+        bar.classList.remove('is-dragging');
+        tempLink.setAttribute('d', '');
+        linkTarget?.classList.remove('is-link-target');
+      };
+      const onCancel = (ev) => {
+        if (ev.pointerId !== e.pointerId) return;
+        stopTracking();
+        bar.setAttribute('style', originalStyle);
+      };
+      const onUp = (ev) => {
+        if (ev.pointerId !== e.pointerId) return;
+        stopTracking();
         chart.classList.remove('is-interacting');
         bar.classList.remove('is-dragging');
         tempLink.setAttribute('d', '');
@@ -305,10 +338,11 @@ export default {
         return ctx.updateEvent(task.id, { startDate: addDaysISO(task.startDate, deltaDays) });
       };
 
-      bar.addEventListener('pointermove', onMove);
-      bar.addEventListener('pointerup', onUp);
-      bar.addEventListener('pointercancel', onUp);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onCancel);
     });
+    chart.addEventListener('contextmenu', (e) => e.target.closest('.gantt-bar') && e.preventDefault());
 
     chart.addEventListener('keydown', (e) => {
       const bar = e.target.closest('.gantt-bar');

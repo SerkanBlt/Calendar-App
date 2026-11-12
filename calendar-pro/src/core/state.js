@@ -13,6 +13,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   sidebarCollapsed: false, // kenar çubuğu ikon modunda mı (logoya tıklanınca değişir)
   backgroundFit: 'fill', // görsel yerleşimi: fill | fit | stretch | tile | center
   weekStartsOn: 1, // 0 = Pazar, 1 = Pazartesi
+  workDays: [1, 2, 3, 4, 5], // çalışma günleri (0 = Pazar … 6 = Cumartesi); varsayılan: Cumartesi ve Pazar çalışma dışı
+  showOffDays: true, // Ay ve Hafta görünümünde çalışma dışı günler gösterilsin mi
   defaultReminder: 15,
   notificationsEnabled: false,
   schedulerDays: 7,

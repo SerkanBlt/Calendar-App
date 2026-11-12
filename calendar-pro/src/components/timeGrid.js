@@ -3,11 +3,18 @@
  *
  * Özellikler:
  *  - 24 saatlik dikey ızgara, N gün sütunu
- *  - Tüm gün / çok günlü etkinlikler için üst satır (sürükle-bırak ile gün değiştirme)
+ *  - Tüm gün / çok günlü etkinlikler için üst satır
  *  - Saatli etkinliklerde sürükle-bırak (gün + saat), alttan boyutlandırma, `snap` dakikalık hizalama
+ *  - Saatli etkinliği "Tüm gün" satırına bırakmak onu tüm gün yapar; tüm gün etkinliğini saat
+ *    ızgarasına bırakmak bırakılan saatte 1 saatlik etkinliğe çevirir
+ *  - Sürüklerken ızgaranın üst/alt kenarına yaklaşınca otomatik kaydırma
+ *  - Dokunmatikte: dokun → aç, basılı tut → sürükle, kaydır → sayfa kayar
  *  - Boş alana tıkla/sürükle → yeni etkinlik aralığı
  *  - Çakışan etkinliklerin yan yana yerleşimi
  *  - Şu anki zaman çizgisi; kaydırma konumunun yeniden çizimler arasında korunması
+ *
+ * Not: Sürüklenen öğe DOM'da başka sütuna taşınmaz (taşımak tarayıcının imleç takibini koparıyordu);
+ * yatay konum transform ile gösterilir ve tüm olaylar window üzerinden dinlenir.
  */
 import { html } from '../core/dom.js';
 import { addDaysISO, diffDays, formatDate, minutesToTime, nowMinutes, pad, timeToMinutes, todayISO } from '../core/dateUtils.js';
@@ -16,9 +23,12 @@ import { layoutOverlaps } from '../core/overlap.js';
 import { clamp } from '../core/utils.js';
 import { eventChip } from './eventCard.js';
 import { enableDragDrop } from './dragDrop.js';
+import { createAutoScroller } from './autoScroll.js';
+import { isTouch, lockTouchScroll, waitForHold } from './touchHold.js';
 
 const scrollMemory = new Map();
 const MIN_DURATION = 15;
+const DRAG_THRESHOLD = 4;
 
 const startMin = (o) => timeToMinutes(o.startTime);
 const endMin = (o) => {
@@ -46,23 +56,25 @@ function eventBlock(o, layout, hourHeight, resizable) {
 /**
  * @param {HTMLElement} el
  * @param {{days: string[], occurrences: object[], hourHeight?: number, snap?: number, resizable?: boolean,
- *          scrollKey?: string, onOpen?: Function, onCreate?: Function, onChange?: Function}} opts
+ *          scrollKey?: string, offDays?: Set<string>, onOpen?: Function, onCreate?: Function, onChange?: Function}} opts
+ *   offDays: çalışma dışı günler (soluk gösterilir)
  *   onChange(occ, changes) — taşıma/boyutlandırma sonucu { startDate, endDate, startTime?, endTime? }
  * @returns {Function} temizleme fonksiyonu
  */
 export function renderTimeGrid(el, opts) {
-  const { days, occurrences, hourHeight = 48, snap = 15, resizable = true, scrollKey = 'grid', onOpen, onCreate, onChange } = opts;
+  const { days, occurrences, hourHeight = 48, snap = 15, resizable = true, scrollKey = 'grid', offDays = new Set(), onOpen, onCreate, onChange } = opts;
   const today = todayISO();
   const timed = occurrences.filter(isTimed);
   const allDay = occurrences.filter((o) => !isTimed(o));
   const byId = new Map(occurrences.map((o) => [o.id, o]));
+  const dayClass = (d) => [d === today && 'is-today', offDays.has(d) && 'is-off'].filter(Boolean).join(' ');
 
   el.innerHTML = html`
     <div class="tg" style="--hour-h:${hourHeight}px;--tg-days:${days.length}">
       <div class="tg-head">
         <div class="tg-gutter"></div>
         ${days.map(
-          (d) => html`<div class="tg-dayhead ${d === today ? 'is-today' : ''}" data-date="${d}">
+          (d) => html`<div class="tg-dayhead ${dayClass(d)}" data-date="${d}">
             <span class="tg-dow">${formatDate(d, { weekday: 'short' })}</span>
             <span class="tg-dnum">${Number(d.slice(8))}</span>
           </div>`,
@@ -71,7 +83,7 @@ export function renderTimeGrid(el, opts) {
       <div class="tg-allday">
         <div class="tg-gutter tg-allday-label">Tüm gün</div>
         ${days.map(
-          (d) => html`<div class="tg-allday-cell" data-drop-date="${d}">
+          (d) => html`<div class="tg-allday-cell ${offDays.has(d) ? 'is-off' : ''}" data-drop-date="${d}">
             ${allDay.filter((o) => o.startDate <= d && o.endDate >= d).map((o) => eventChip(o))}
           </div>`,
         )}
@@ -84,7 +96,7 @@ export function renderTimeGrid(el, opts) {
           ${days.map((d) => {
             const items = timed.filter((o) => o.startDate === d);
             const layout = layoutOverlaps(items, startMin, endMin);
-            return html`<div class="tg-col ${d === today ? 'is-today' : ''}" data-date="${d}">
+            return html`<div class="tg-col ${dayClass(d)}" data-date="${d}">
               ${items.map((o) => eventBlock(o, layout.get(o.id), hourHeight, resizable))}
             </div>`;
           })}
@@ -93,7 +105,7 @@ export function renderTimeGrid(el, opts) {
     </div>`;
 
   const root = el.querySelector('.tg');
-  const scroller = el.querySelector('.tg-scroll');
+  const scrollEl = el.querySelector('.tg-scroll');
   const body = el.querySelector('.tg-body');
   const cols = [...el.querySelectorAll('.tg-col')];
   const snapTo = (m) => Math.round(m / snap) * snap;
@@ -103,12 +115,13 @@ export function renderTimeGrid(el, opts) {
       const r = c.getBoundingClientRect();
       return clientX >= r.left && clientX < r.right;
     }) || null;
+  const cleanups = [];
 
   // --- Kaydırma konumu ---
   const defaultScroll = days.includes(today) ? Math.max(0, ((nowMinutes() - 120) / 60) * hourHeight) : 7.5 * hourHeight;
-  scroller.scrollTop = scrollMemory.get(scrollKey) ?? defaultScroll;
-  const onScroll = () => scrollMemory.set(scrollKey, scroller.scrollTop);
-  scroller.addEventListener('scroll', onScroll, { passive: true });
+  scrollEl.scrollTop = scrollMemory.get(scrollKey) ?? defaultScroll;
+  const onScroll = () => scrollMemory.set(scrollKey, scrollEl.scrollTop);
+  scrollEl.addEventListener('scroll', onScroll, { passive: true });
 
   // --- Şu anki zaman çizgisi ---
   let nowTimer = null;
@@ -122,69 +135,128 @@ export function renderTimeGrid(el, opts) {
     nowTimer = setInterval(paint, 60_000);
   }
 
-  // --- Saatli etkinlik: sürükle / boyutlandır ---
+  /** window üzerinde belirli bir pointer için move/up/cancel dinler; temizleme fonksiyonu döner. */
+  function trackPointer(pointerId, { move, up, cancel }) {
+    const onMove = (ev) => ev.pointerId === pointerId && move(ev);
+    const onUp = (ev) => ev.pointerId === pointerId && (stop(), up(ev));
+    const onCancel = (ev) => ev.pointerId === pointerId && (stop(), cancel(ev));
+    function stop() {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+    }
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    cleanups.push(stop);
+    return stop;
+  }
+
   function setLabel(evEl, s, e) {
     const t = evEl.querySelector('.tg-event-time');
     if (t) t.textContent = `${minutesToTime(s)} – ${minutesToTime(e)}`;
   }
 
-  function startEventDrag(e, evEl, isResize) {
+  // --- Saatli etkinlik: sürükle / boyutlandır ---
+  function startEventDrag(e, evEl, isResize, { unlock = null, armed = false } = {}) {
     const occ = byId.get(evEl.dataset.occId);
     if (!occ) return;
-    e.preventDefault();
-    const origin = { x: e.clientX, y: e.clientY, s: startMin(occ), e: endMin(occ) };
-    const dur = origin.e - origin.s;
+    const origCol = evEl.parentElement;
+    const originalStyle = evEl.getAttribute('style');
+    const s0 = startMin(occ);
+    const e0 = endMin(occ);
+    const dur = e0 - s0;
+    const grab = minutesAt(origCol, e.clientY) - s0; // imlecin etkinlik başlangıcına uzaklığı (dk)
+    const start = { x: e.clientX, y: e.clientY };
     let moved = false;
-    let targetCol = evEl.parentElement;
-    let ns = origin.s;
-    let ne = origin.e;
-    evEl.setPointerCapture(e.pointerId);
+    let targetCol = origCol;
+    let ns = s0;
+    let ne = e0;
+    let allDayCell = null;
 
-    const onMove = (ev) => {
-      if (!moved && Math.hypot(ev.clientX - origin.x, ev.clientY - origin.y) < 4) return;
-      if (!moved) {
-        moved = true;
-        evEl.classList.add('is-dragging');
-        root.classList.add('is-interacting');
-      }
-      const delta = snapTo(((ev.clientY - origin.y) / hourHeight) * 60);
-      if (isResize) {
-        ne = clamp(origin.e + delta, origin.s + snap, 1440);
-        evEl.style.height = `${((ne - origin.s) / 60) * hourHeight}px`;
-        setLabel(evEl, origin.s, ne);
-      } else {
-        ns = clamp(origin.s + delta, 0, 1440 - dur);
-        ne = ns + dur;
-        const c = colAt(ev.clientX);
-        if (c && c !== targetCol) {
-          targetCol = c;
-          c.appendChild(evEl);
-        }
-        evEl.style.top = `${(ns / 60) * hourHeight}px`;
-        evEl.style.left = '2px';
-        evEl.style.width = 'calc(100% - 4px)';
-        setLabel(evEl, ns, ne);
-      }
+    const setAllDayCell = (cell) => {
+      if (cell === allDayCell) return;
+      allDayCell?.classList.remove('is-drop-target');
+      cell?.classList.add('is-drop-target');
+      allDayCell = cell;
+      evEl.classList.toggle('is-to-allday', Boolean(cell));
     };
-    const finish = () => {
-      evEl.removeEventListener('pointermove', onMove);
-      evEl.removeEventListener('pointerup', finish);
-      evEl.removeEventListener('pointercancel', finish);
-      root.classList.remove('is-interacting');
-      if (!moved) {
-        onOpen?.(occ);
+
+    function update(x, y) {
+      if (isResize) {
+        ne = clamp(snapTo(minutesAt(origCol, y)), s0 + snap, 1440);
+        evEl.style.height = `${((ne - s0) / 60) * hourHeight}px`;
+        setLabel(evEl, s0, ne);
         return;
       }
-      const date = targetCol.dataset.date;
-      onChange?.(occ, { startDate: date, endDate: date, startTime: minutesToTime(ns), endTime: minutesToTime(Math.min(ne, 1439)) });
-    };
-    evEl.addEventListener('pointermove', onMove);
-    evEl.addEventListener('pointerup', finish);
-    evEl.addEventListener('pointercancel', finish);
+      const cell = document.elementFromPoint(x, y)?.closest('.tg-allday-cell');
+      setAllDayCell(cell && root.contains(cell) ? cell : null);
+      if (allDayCell) return;
+      targetCol = colAt(x) || targetCol;
+      ns = clamp(snapTo(minutesAt(targetCol, y) - grab), 0, 1440 - dur);
+      ne = ns + dur;
+      const shiftX = targetCol.getBoundingClientRect().left - origCol.getBoundingClientRect().left;
+      evEl.style.top = `${(ns / 60) * hourHeight}px`;
+      evEl.style.left = '2px';
+      evEl.style.width = 'calc(100% - 4px)';
+      evEl.style.transform = `translateX(${shiftX}px)`;
+      setLabel(evEl, ns, ne);
+    }
+
+    const autoScroll = createAutoScroller({ container: scrollEl, axes: 'y', onScroll: (x, y) => moved && update(x, y) });
+
+    function begin() {
+      moved = true;
+      evEl.classList.add('is-dragging');
+      evEl.style.pointerEvents = 'none'; // altındaki hedefi (sütun / tüm gün hücresi) bulabilmek için
+      root.classList.add('is-interacting');
+    }
+    if (armed) begin(); // dokunmatikte basılı tutunca sürükleme hemen başlar
+
+    function finish() {
+      autoScroll.stop();
+      unlock?.();
+      root.classList.remove('is-interacting');
+      evEl.classList.remove('is-dragging', 'is-to-allday');
+      evEl.style.pointerEvents = '';
+    }
+
+    trackPointer(e.pointerId, {
+      move(ev) {
+        if (!moved) {
+          if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < DRAG_THRESHOLD) return;
+          begin();
+        }
+        update(ev.clientX, ev.clientY);
+        autoScroll.update(ev.clientX, ev.clientY);
+      },
+      up() {
+        const target = allDayCell;
+        setAllDayCell(null);
+        finish();
+        if (!moved || (ns === s0 && ne === e0 && targetCol === origCol && !target)) {
+          evEl.setAttribute('style', originalStyle);
+          if (!moved) onOpen?.(occ);
+          return;
+        }
+        if (target) {
+          const date = target.dataset.dropDate;
+          onChange?.(occ, { startDate: date, endDate: date, startTime: '', endTime: '' });
+          return;
+        }
+        const date = targetCol.dataset.date;
+        onChange?.(occ, { startDate: date, endDate: date, startTime: minutesToTime(ns), endTime: minutesToTime(Math.min(ne, 1439)) });
+      },
+      cancel() {
+        setAllDayCell(null);
+        finish();
+        evEl.setAttribute('style', originalStyle); // görsel değişiklikleri geri al
+      },
+    });
   }
 
   // --- Boş alanda yeni etkinlik aralığı seçimi ---
-  function startCreate(e, col) {
+  function startCreate(e, col, { unlock = null } = {}) {
     const anchor = clamp(Math.floor(minutesAt(col, e.clientY) / snap) * snap, 0, 1440 - snap);
     const ghost = document.createElement('div');
     ghost.className = 'tg-ghost';
@@ -198,10 +270,9 @@ export function renderTimeGrid(el, opts) {
     };
     col.appendChild(ghost);
     paint();
-    col.setPointerCapture(e.pointerId);
 
-    const onMove = (ev) => {
-      const m = minutesAt(col, ev.clientY);
+    function update(y) {
+      const m = minutesAt(col, y);
       if (!moved && Math.abs(m - anchor) < snap / 2) return;
       moved = true;
       if (m >= anchor) {
@@ -212,31 +283,56 @@ export function renderTimeGrid(el, opts) {
         en = anchor + snap;
       }
       paint();
-    };
+    }
+    const autoScroll = createAutoScroller({ container: scrollEl, axes: 'y', onScroll: (_x, y) => update(y) });
     const end = (cancelled) => {
-      col.removeEventListener('pointermove', onMove);
-      col.removeEventListener('pointerup', onUp);
-      col.removeEventListener('pointercancel', onCancel);
+      autoScroll.stop();
+      unlock?.();
       ghost.remove();
       if (cancelled) return;
       onCreate?.({ startDate: col.dataset.date, endDate: col.dataset.date, startTime: minutesToTime(s), endTime: minutesToTime(Math.min(en, 1439)) });
     };
-    const onUp = () => end(false);
-    const onCancel = () => end(true);
-    col.addEventListener('pointermove', onMove);
-    col.addEventListener('pointerup', onUp);
-    col.addEventListener('pointercancel', onCancel);
+    trackPointer(e.pointerId, {
+      move(ev) {
+        update(ev.clientY);
+        autoScroll.update(ev.clientX, ev.clientY);
+      },
+      up: () => end(false),
+      cancel: () => end(true),
+    });
   }
 
-  function onPointerDown(e) {
+  async function onPointerDown(e) {
     if (e.button !== 0) return;
     const evEl = e.target.closest('.tg-event');
-    if (evEl) {
-      startEventDrag(e, evEl, Boolean(e.target.closest('[data-resize]')) && resizable);
+    const col = e.target.closest('.tg-col');
+    if (!evEl && !(col && onCreate)) return;
+    const isResize = Boolean(evEl && e.target.closest('[data-resize]')) && resizable;
+
+    if (isTouch(e)) {
+      // Dokunmatik: kaydırmaya izin ver; sürükleme yalnızca basılı tutunca başlar
+      const result = await waitForHold(e);
+      if (result === 'move') return;
+      if (result === 'tap') {
+        if (evEl) onOpen?.(byId.get(evEl.dataset.occId));
+        else onCreate?.(createRangeAt(col, e.clientY));
+        return;
+      }
+      const unlock = lockTouchScroll();
+      if (evEl) startEventDrag(e, evEl, isResize, { unlock, armed: true });
+      else startCreate(e, col, { unlock });
       return;
     }
-    const col = e.target.closest('.tg-col');
-    if (col && onCreate) startCreate(e, col);
+
+    e.preventDefault(); // fareyle sürüklerken metin seçimini engelle
+    if (evEl) startEventDrag(e, evEl, isResize);
+    else startCreate(e, col);
+  }
+
+  /** Dokunarak tek tıkla oluşturma: dokunulan yerden başlayan 1 saatlik aralık. */
+  function createRangeAt(col, clientY) {
+    const s = clamp(Math.floor(minutesAt(col, clientY) / snap) * snap, 0, 1440 - snap);
+    return { startDate: col.dataset.date, endDate: col.dataset.date, startTime: minutesToTime(s), endTime: minutesToTime(Math.min(s + 60, 1439)) };
   }
 
   function onKeyDown(e) {
@@ -248,21 +344,33 @@ export function renderTimeGrid(el, opts) {
     }
   }
 
+  // Dokunmatikte uzun basınca açılan sistem menüsünü engelle (basılı tutmak sürüklemeyi başlatır)
+  const onContextMenu = (e) => {
+    if (e.target.closest('.tg-event, .tg-col')) e.preventDefault();
+  };
+
   body.addEventListener('pointerdown', onPointerDown);
   body.addEventListener('keydown', onKeyDown);
+  body.addEventListener('contextmenu', onContextMenu);
 
-  // --- Tüm gün satırı: gün değiştirme ---
-  const cleanupDnd = enableDragDrop(el.querySelector('.tg-allday'), {
-    itemSelector: '.ev-chip',
-    zoneSelector: '[data-drop-date]',
+  // --- Tüm gün etkinlikleri: başka güne taşı veya saat ızgarasına bırak (saatli yap) ---
+  const cleanupDnd = enableDragDrop(root, {
+    itemSelector: '.tg-allday .ev-chip',
+    zoneSelector: '.tg-allday-cell, .tg-col',
     onClick: (item) => onOpen?.(byId.get(item.dataset.occId)),
-    onDrop: (item, zone) => {
+    onDrop: (item, zone, point) => {
       const occ = byId.get(item.dataset.occId);
-      const target = zone.dataset.dropDate;
-      if (!occ || !target) return;
-      // Tıklanan günden bırakılan güne olan farkı uygula (çok günlü etkinlikler için)
+      if (!occ) return;
+      // Tek günlük tüm gün etkinliği saat ızgarasına bırakılırsa saatli olur.
+      // Çok günlü etkinlikler süresini kaybetmesin diye yalnızca gün kaydırılır.
+      if (zone.classList.contains('tg-col') && occ.startDate === occ.endDate) {
+        const s = clamp(snapTo(minutesAt(zone, point.y)), 0, 1440 - 60);
+        onChange?.(occ, { startDate: zone.dataset.date, endDate: zone.dataset.date, startTime: minutesToTime(s), endTime: minutesToTime(Math.min(s + 60, 1439)) });
+        return;
+      }
+      // Tutulan günden bırakılan güne olan farkı uygula (çok günlü etkinlikler için)
       const fromCell = item.closest('[data-drop-date]')?.dataset.dropDate || occ.startDate;
-      const shift = diffDays(fromCell, target);
+      const shift = diffDays(fromCell, zone.dataset.dropDate || zone.dataset.date);
       if (!shift) return;
       onChange?.(occ, { startDate: addDaysISO(occ.startDate, shift), endDate: addDaysISO(occ.endDate, shift) });
     },
@@ -270,9 +378,11 @@ export function renderTimeGrid(el, opts) {
 
   return () => {
     clearInterval(nowTimer);
-    scroller.removeEventListener('scroll', onScroll);
+    scrollEl.removeEventListener('scroll', onScroll);
     body.removeEventListener('pointerdown', onPointerDown);
     body.removeEventListener('keydown', onKeyDown);
+    body.removeEventListener('contextmenu', onContextMenu);
+    cleanups.forEach((fn) => fn());
     cleanupDnd();
   };
 }

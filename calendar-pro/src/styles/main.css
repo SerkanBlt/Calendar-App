@@ -244,6 +244,16 @@ kbd {
 .settings-row-text small { color: var(--text-muted); font-size: 12.5px; }
 .option-check { color: var(--accent-text); display: inline-grid; }
 
+/* Çalışma günü seçimi */
+.workday-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.workday-chip {
+  min-width: 52px; height: 36px; padding: 0 12px; border-radius: var(--radius-pill); font-weight: 600; font-size: 13px;
+  border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); text-transform: capitalize;
+  transition: background var(--dur), color var(--dur), border-color var(--dur);
+}
+.workday-chip:hover { border-color: var(--accent); color: var(--text); }
+.workday-chip.is-on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
 /* Tema kartları */
 .theme-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--space-2); }
 .theme-card {
@@ -451,7 +461,7 @@ kbd {
 /* ---------- Etkinlik kartları / listeler (ortak) ---------- */
 .ev-chip {
   display: flex; align-items: center; gap: 5px; min-width: 0; padding: 2px 6px; border-radius: 6px;
-  font-size: 12px; line-height: 18px; cursor: pointer; user-select: none; touch-action: none;
+  font-size: 12px; line-height: 18px; cursor: pointer; user-select: none; touch-action: manipulation; -webkit-touch-callout: none;
   background: color-mix(in srgb, var(--ev-color) 16%, transparent);
   color: var(--text); border-left: 3px solid var(--ev-color);
   transition: background var(--dur);
@@ -519,6 +529,8 @@ kbd {
 .empty-state > .icon { width: 36px; height: 36px; opacity: 0.6; }
 
 /* Sürükle-bırak */
+/* Dokunmatik: etkinliklerin üzerinden de sayfa kaydırılabilir; sürükleme basılı tutunca başlar (bkz. touchHold.js) */
+.is-touch-dragging, .is-touch-dragging * { touch-action: none !important; user-select: none !important; }
 .dnd-ghost {
   position: fixed; top: 0; left: 0; z-index: 300; pointer-events: none; margin: 0;
   box-shadow: var(--shadow-lg); opacity: 0.92; rotate: 1.5deg;

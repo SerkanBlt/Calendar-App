@@ -61,7 +61,7 @@
   position: absolute; z-index: 2; height: calc(var(--row-h) - 18px); border-radius: 8px;
   background: color-mix(in srgb, var(--ev-color) 30%, var(--surface-solid));
   border: 1px solid color-mix(in srgb, var(--ev-color) 60%, transparent);
-  cursor: grab; touch-action: none; user-select: none; overflow: visible;
+  cursor: grab; touch-action: manipulation; -webkit-touch-callout: none; user-select: none; overflow: visible;
   transition: box-shadow var(--dur);
 }
 .gantt-bar:hover { box-shadow: var(--shadow); z-index: 3; }

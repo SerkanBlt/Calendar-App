@@ -19,7 +19,7 @@
 
 .ev-card {
   display: flex; flex-direction: column; gap: var(--space-2); padding: 12px 14px; border-radius: var(--radius-md);
-  background: var(--surface-solid); border: 1px solid var(--border); cursor: grab; touch-action: none; user-select: none;
+  background: var(--surface-solid); border: 1px solid var(--border); cursor: grab; touch-action: manipulation; -webkit-touch-callout: none; user-select: none;
   box-shadow: var(--shadow-sm); transition: transform var(--dur) var(--ease), box-shadow var(--dur), border-color var(--dur);
 }
 .ev-card:hover { transform: translateY(-1px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--ev-color) 40%, transparent); }

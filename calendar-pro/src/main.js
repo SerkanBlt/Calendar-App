@@ -28,7 +28,7 @@ import { userBackgroundRepo } from './core/userBackgroundRepo.js';
 import { html } from './core/dom.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
-import { exportData, importData, moveOccurrence, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed } from './core/actions.js';
+import { exportData, importData, moveOccurrence, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed, toggleShowOffDays } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
@@ -144,6 +144,7 @@ viewEl.addEventListener('click', (e) => {
   else if (action === 'next') shiftCursor(1);
   else if (action === 'today') ctx.today();
   else if (action === 'new') ctx.openEditor({ startDate: store.get().cursor });
+  else if (action === 'toggle-offdays') toggleShowOffDays();
 });
 
 // ---------------------------------------------------------------------------
@@ -164,6 +165,14 @@ const palette = createCommandPalette({
     { id: 'bg-picker', title: 'Arka Planlar…', keywords: 'arka plan background görsel duvar kağıdı wallpaper', icon: 'image', run: () => openSettings({ section: 'background' }) },
     { id: 'bg-add', title: 'Arka Plan Ekle (kendi görselin)…', keywords: 'arka plan yükle görsel fotoğraf resim upload background image', icon: 'upload', run: addUserBackground },
     ...BACKGROUND_FITS.map((f) => ({ id: `bg-fit-${f.value}`, title: `Arka Plan Yerleşimi: ${f.label}`, keywords: `background fit tile stretch yerleşim ${f.value} ${f.hint}`, icon: 'image', run: () => setBackgroundFit(f.value) })),
+    {
+      id: 'toggle-offdays',
+      title: store.get().settings.showOffDays === false ? 'Çalışma Dışı Günleri Göster' : 'Çalışma Dışı Günleri Gizle',
+      keywords: 'hafta sonu weekend tatil off gün çalışma günleri göster gizle',
+      icon: 'eye',
+      run: () => toggleShowOffDays(),
+    },
+    { id: 'work-days', title: 'Çalışma Günleri…', keywords: 'çalışma günleri hafta sonu ayar takvim', icon: 'month', run: () => openSettings({ section: 'calendar' }) },
     {
       id: 'sidebar-collapse',
       title: store.get().settings.sidebarCollapsed ? 'Kenar Çubuğunu Genişlet' : 'Kenar Çubuğunu Daralt',

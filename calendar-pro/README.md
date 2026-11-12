@@ -38,7 +38,19 @@ Tek seferlik ayar:
 | Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı |
 | Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre |
 
-Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır.
+Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır:
+
+- **Fare:** öğeyi tutup sürükleyin. Izgaranın/alanın kenarına yaklaşınca otomatik kaydırma yapılır.
+- **Dokunmatik:** dokunmak öğeyi açar, parmakla kaydırmak sayfayı kaydırır, **basılı tutmak** sürüklemeyi başlatır.
+- Hafta/Gün/Scheduler'da saatli bir etkinliği **Tüm gün** satırına bırakmak onu tüm gün yapar; tek günlük bir tüm gün
+  etkinliğini saat ızgarasına bırakmak, bırakılan saatte 1 saatlik etkinliğe çevirir (çok günlü olanlar yalnızca gün kaydırır).
+
+## Çalışma günleri
+
+**Ayarlar → Takvim** bölümünden çalışma günleri seçilir (varsayılan: Pazartesi–Cuma; Cumartesi ve Pazar çalışma dışı).
+Çalışma dışı günler Ay ve Hafta görünümünde soluk/taranmış gösterilir. **Çalışma dışı günleri göster** anahtarı kapatılırsa
+bu günlerin sütunları Ay ve Hafta görünümünden kalkar. Aynı ayar, Ay ve Hafta başlığında **Yeni** düğmesinin solundaki
+düğmeyle (Tüm günler / Çalışma günleri) ve `Ctrl + K` → "Çalışma Dışı Günleri Göster/Gizle" ile de değiştirilebilir.
 
 ## Temalar
 
@@ -87,7 +99,7 @@ Yeni arka plan eklemek için:
 ## Kenar çubuğu
 
 Üstte Yeni etkinlik ve Ara, ardından sekiz görünüm ve mini takvim yer alır; hepsi aynı boyuttaki düğmelerdir.
-Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesi; tema, arka plan, kenar çubuğu,
+Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesi; tema, arka plan, takvim (çalışma günleri), kenar çubuğu,
 hatırlatmalar ve veri (JSON dışa/içe aktarma) seçeneklerini içeren paneli açar (`Ctrl + K` → "Ayarlar").
 
 Sol üstteki **logoya** tıklamak (veya `[` tuşu) kenar çubuğunu ikon moduna daraltır: yalnızca ikonlar kalır,
