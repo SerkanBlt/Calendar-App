@@ -34,6 +34,13 @@ export const CUSTOM_THEMES = Object.freeze([
     meta: '#1c1e3a',
     swatches: ['#1c1e3a', '#40263a', '#6d324f', '#b85c4a', '#e89f6e', '#f7e6c4'],
   },
+  {
+    value: 'ocean',
+    label: 'Okyanus',
+    description: 'Derin deniz mavisi üzerinde turkuaz ve köpük tonları',
+    meta: '#04222b',
+    swatches: ['#04222b', '#0a3d4a', '#10606f', '#1d8b94', '#4fb8b4', '#98d8d0', '#e2f4f0'],
+  },
 ]);
 
 const META_COLORS = { dark: '#0b0d12', light: '#f5f6fa', ...Object.fromEntries(CUSTOM_THEMES.map((t) => [t.value, t.meta])) };

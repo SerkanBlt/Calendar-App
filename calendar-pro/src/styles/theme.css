@@ -176,3 +176,45 @@
   --scrim: rgba(12, 10, 24, 0.65);
   --glass-blur: 18px;
 }
+
+/* --------------------------------------------------------------------------
+   Okyanus (ocean):
+   #04222B derin deniz · #0A3D4A petrol · #10606F deniz mavisi · #1D8B94 turkuaz
+   #4FB8B4 açık turkuaz · #98D8D0 nane · #E2F4F0 köpük
+   Derin deniz zemin, petrol cam yüzeyler, turkuaz vurgu, köpük beyazı metin.
+   -------------------------------------------------------------------------- */
+:root[data-theme='ocean'] {
+  color-scheme: dark;
+  --bg: #04222b;
+  --bg-glow-1: rgba(79, 184, 180, 0.14);
+  --bg-glow-2: rgba(16, 96, 111, 0.4);
+  --surface: rgba(10, 61, 74, 0.55);
+  --surface-solid: #083340;
+  --surface-2: rgba(226, 244, 240, 0.04);
+  --surface-3: rgba(226, 244, 240, 0.08);
+  --surface-hover: rgba(226, 244, 240, 0.07);
+  --border: rgba(152, 216, 208, 0.12);
+  --border-strong: rgba(152, 216, 208, 0.24);
+  --text: #e2f4f0;
+  --text-muted: #8fbfba;
+  --text-faint: #548486;
+  --accent: #4fb8b4;
+  --accent-2: #1d8b94;
+  --accent-strong: #3aa5a2;
+  --accent-glow: rgba(79, 184, 180, 0.3);
+  --accent-glow-strong: rgba(79, 184, 180, 0.45);
+  --on-accent: #04222b;
+  --accent-soft: rgba(79, 184, 180, 0.16);
+  --accent-text: #98d8d0;
+  --info: #4fb8b4;
+  --status-todo: #7fa7a6;
+  --status-doing: #98d8d0;
+  --grid-line: rgba(152, 216, 208, 0.06);
+  --grid-line-strong: rgba(152, 216, 208, 0.11);
+  --weekend: rgba(16, 96, 111, 0.18);
+  --shadow-sm: 0 1px 2px rgba(0, 10, 14, 0.5);
+  --shadow: 0 8px 30px rgba(0, 10, 14, 0.4);
+  --shadow-lg: 0 24px 80px rgba(0, 10, 14, 0.6);
+  --scrim: rgba(1, 12, 16, 0.65);
+  --glass-blur: 18px;
+}
