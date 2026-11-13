@@ -3,9 +3,12 @@
    ========================================================================== */
 
 /* ---------- Ay ---------- */
-.month { display: flex; flex-direction: column; }
+/* Ay ızgarası kullanılabilir yüksekliği doldurur ama 6 haftalık en küçük yüksekliğin altına sıkışmaz;
+   sığmazsa (ör. telefon yatay) görünüm aşağı kaydırılır. (overflow: hidden, flex öğesinin otomatik en küçük
+   boyutunu sıfırladığı için alt sınır min-height ile açıkça verilir.) Hücre taşanı kendi içinde keser. */
+.month { display: flex; flex-direction: column; flex: 1 0 auto; }
 .month-grid {
-  flex: 1; display: grid; grid-template-columns: repeat(var(--month-cols, 7), minmax(0, 1fr)); /* çalışma dışı günler gizlenince azalır */
+  flex: 1 1 0; min-height: calc(40px + 6 * 96px); display: grid; grid-template-columns: repeat(var(--month-cols, 7), minmax(0, 1fr)); /* çalışma dışı günler gizlenince azalır */
   grid-template-rows: auto repeat(6, minmax(96px, 1fr)); overflow: hidden;
 }
 .month-dow {
@@ -13,7 +16,7 @@
   text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border);
 }
 .month-cell {
-  position: relative; min-width: 0; padding: 6px; display: flex; flex-direction: column; gap: 4px;
+  position: relative; min-width: 0; min-height: 0; overflow: hidden; padding: 6px; display: flex; flex-direction: column; gap: 4px;
   border-right: 1px solid var(--grid-line); border-bottom: 1px solid var(--grid-line);
   cursor: pointer; transition: background var(--dur);
 }
@@ -156,7 +159,7 @@
   .day-side { overflow: visible; }
 }
 @media (max-width: 760px) {
-  .month-grid { grid-template-rows: auto repeat(6, minmax(72px, 1fr)); }
+  .month-grid { grid-template-rows: auto repeat(6, minmax(72px, 1fr)); min-height: calc(36px + 6 * 72px); }
   .month-cell { padding: 3px; }
   .month-dow { padding: 8px 4px; text-align: center; font-size: 10.5px; }
   .ev-chip { font-size: 10.5px; padding: 1px 4px; }
@@ -173,3 +176,4 @@
   .tl-time { min-width: 0; }
   .tl-title { flex-basis: 100%; order: -1; white-space: normal; }
 }
+

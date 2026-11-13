@@ -216,7 +216,8 @@ export function openSettings({ section } = {}) {
   let activeTab = tabForSection(section) || lastTab;
   render(body, busy, activeTab);
 
-  const modal = openModal({ title: 'Ayarlar', body, size: 'lg', onClose: () => {
+  // Sabit boyutlu: sekmeler arasında geçerken panel büyüyüp küçülmez; telefonda tam ekran (bkz. .modal--settings)
+  const modal = openModal({ title: 'Ayarlar', body, size: 'lg', className: 'modal--settings', onClose: () => {
     unsubscribe();
     current = null;
   } });

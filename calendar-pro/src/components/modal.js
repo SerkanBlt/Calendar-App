@@ -15,16 +15,17 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
 export const isModalOpen = () => openStack.length > 0;
 
 /**
- * @param {{title: string, body: Node|string, footer?: Node, size?: 'sm'|'md'|'lg', onClose?: Function}} options
+ * @param {{title: string, body: Node|string, footer?: Node, size?: 'sm'|'md'|'lg', className?: string, onClose?: Function}} options
+ *   className: modal öğesine eklenecek ek sınıf (ör. sabit boyutlu paneller için)
  * @returns {{el: HTMLElement, body: HTMLElement, footer: HTMLElement, close: Function}}
  */
-export function openModal({ title, body, footer, size = 'md', onClose }) {
+export function openModal({ title, body, footer, size = 'md', className = '', onClose }) {
   const id = `modal-title-${++uid}`;
   const previousFocus = document.activeElement;
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = html`
-    <div class="modal modal--${size} glass" role="dialog" aria-modal="true" aria-labelledby="${id}">
+    <div class="modal modal--${size} ${className} glass" role="dialog" aria-modal="true" aria-labelledby="${id}">
       <header class="modal-header">
         <h2 id="${id}" class="modal-title">${title}</h2>
         <button type="button" class="icon-btn" data-close aria-label="Kapat">${icon('x')}</button>

@@ -1,7 +1,7 @@
 {
   "name": "calendar-pro",
   "private": true,
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Calendar Pro — modüler, offline çalışan takvim ve üretkenlik SPA'sı (Vanilla JS + IndexedDB + PWA).",
   "type": "module",
   "scripts": {
