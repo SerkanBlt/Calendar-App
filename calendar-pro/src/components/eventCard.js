@@ -2,6 +2,7 @@
  * eventCard.js — Etkinliklerin görsel temsilleri (çip, kart, liste satırı).
  * Saf fonksiyonlardır; SafeHTML döndürür, olay bağlama işini view'lar yapar.
  */
+import { stripMarkdown } from '../core/markdown.js';
 import { html } from '../core/dom.js';
 import { formatDate, relativeDayLabel } from '../core/dateUtils.js';
 import { isAllDay, isOverdue, STATUS_LABELS } from '../core/eventModel.js';
@@ -42,7 +43,7 @@ export function eventCard(ev, { showProgress = true, showDate = true } = {}) {
         <h3 class="ev-card-title">${ev.title}</h3>
         ${ev.critical ? html`<span class="badge badge--danger" title="Kritik görev">${icon('flag')}</span>` : ''}
       </div>
-      ${ev.description ? html`<p class="ev-card-desc">${ev.description}</p>` : ''}
+      ${ev.description ? html`<p class="ev-card-desc">${stripMarkdown(ev.description)}</p>` : ''}
       <div class="ev-card-meta">
         ${showDate ? html`<span class="meta ${overdue ? 'is-overdue' : ''}">${overdue ? icon('alert') : icon('month')} ${dateRangeLabel(ev)}</span>` : ''}
         ${ev.category ? html`<span class="tag">${ev.category}</span>` : ''}

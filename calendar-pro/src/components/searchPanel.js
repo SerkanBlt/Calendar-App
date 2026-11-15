@@ -10,6 +10,7 @@
  *  - Klavye: ↑/↓ gezin, Enter aç, Esc (her yerde) kapat; sağ üstteki × da kapatır.
  * Bir sonuç seçilince takvim o güne gider ve etkinlik düzenleyicide açılır.
  */
+import { stripMarkdown } from '../core/markdown.js';
 import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
 import { addDaysISO, formatDate, relativeDayLabel, todayISO } from '../core/dateUtils.js';
@@ -160,7 +161,7 @@ export function openSearch({ onOpenEvent }) {
               ${o.category ? html` · ${highlight(o.category, tokens)}` : ''}
               ${o.isRecurring ? html` · ${icon('repeat')} tekrarlıyor` : ''}
             </span>
-            ${o.description && tokens.some((t) => normalizeText(o.description).includes(t)) ? html`<span class="search-desc">${highlight(o.description.slice(0, 140), tokens)}</span>` : ''}
+            ${o.description && tokens.some((t) => normalizeText(stripMarkdown(o.description)).includes(t)) ? html`<span class="search-desc">${highlight(stripMarkdown(o.description).slice(0, 140), tokens)}</span>` : ''}
           </span>
           <span class="status status--${o.status}">${STATUS_LABELS[o.status]}</span>
         </li>`,

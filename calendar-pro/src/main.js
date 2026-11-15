@@ -24,7 +24,7 @@ import { buildSeedEvents } from './core/seed.js';
 import { applyTheme, BASE_THEMES, CUSTOM_THEMES } from './core/theme.js';
 import { openSettings } from './components/settingsPanel.js';
 import { closeSearch, isSearchOpen, openSearch } from './components/searchPanel.js';
-import { allBackgrounds, applyBackground, BACKGROUND_FITS } from './core/backgrounds.js';
+import { allBackgrounds, applyBackgroundSettings, BACKGROUND_FITS } from './core/backgrounds.js';
 import { userBackgroundRepo } from './core/userBackgroundRepo.js';
 import { html } from './core/dom.js';
 import { icon } from './components/icons.js';
@@ -130,9 +130,12 @@ store.subscribe((s, prev) => {
   if (
     s.settings.background !== prev.settings.background ||
     s.settings.backgroundFit !== prev.settings.backgroundFit ||
+    s.settings.bgColorMode !== prev.settings.bgColorMode ||
+    s.settings.bgColor1 !== prev.settings.bgColor1 ||
+    s.settings.bgColor2 !== prev.settings.bgColor2 ||
     s.userBackgrounds !== prev.userBackgrounds
   ) {
-    applyBackground(s.settings.background, s.settings.backgroundFit);
+    applyBackgroundSettings(s.settings);
   }
   if (!s.ready) return;
   if (s.view !== prev.view) viewEl.scrollTop = 0;
@@ -284,7 +287,9 @@ async function boot() {
     } catch (err) {
       console.warn('Kullanıcı arka planları yüklenemedi:', err);
     }
-    applyBackground(settings.background, settings.backgroundFit);
+    // Kaldırılmış (ör. eski "Deri") veya silinmiş bir arka plan seçiliyse Standart'a dön
+    if (!allBackgrounds().some((b) => b.value === settings.background)) await settingsRepo.set('background', 'standard');
+    applyBackgroundSettings(store.get().settings);
     await eventRepo.loadAll();
     if (!settings.seeded) {
       if (!store.get().events.length) await eventRepo.mergeMany(buildSeedEvents());

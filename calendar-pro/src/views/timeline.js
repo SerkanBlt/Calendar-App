@@ -1,6 +1,6 @@
 /**
  * timeline.js — Kronolojik etkinlik akışı (aya ve güne göre gruplu).
- * Filtreler: Tümü / Yaklaşan / Geçmiş + metin araması. Varsayılan aralık: -30 / +90 gün.
+ * Filtreler: Yaklaşan / Tümü / Geçmiş + metin araması (başlıkta). Varsayılan aralık: -30 / +90 gün.
  */
 import { html } from '../core/dom.js';
 import { addDaysISO, formatDate, relativeDayLabel, todayISO } from '../core/dateUtils.js';
@@ -31,20 +31,21 @@ export default {
     const all = expandEvents(events, addDaysISO(today, -30), addDaysISO(today, 90)).sort(compareByStart);
     const byId = new Map(all.map((o) => [o.id, o]));
 
+    // Yaklaşan / Geçmiş / Tümü ve arama alanı başlıktadır (mobilde eylem satırında sola dayalı)
+    const extra = html`
+      <div class="segmented segmented--sm" role="radiogroup" aria-label="Filtre">
+        ${FILTERS.map((f) => html`<button type="button" role="radio" data-filter="${f.id}">${f.label}</button>`)}
+      </div>
+      <label class="search-input search-input--sm">${icon('search')}<input type="search" placeholder="Etkinliklerde ara…" value="${viewState.query}" aria-label="Etkinliklerde ara" /></label>`;
+
     el.innerHTML = html`
-      ${toolbar({ title: 'Timeline', subtitle: 'Son 30 gün ve önümüzdeki 90 gün' })}
+      ${toolbar({ title: 'Timeline', subtitle: 'Son 30 gün ve önümüzdeki 90 gün', extra })}
       <div class="view-body timeline">
-        <div class="timeline-controls">
-          <div class="segmented" role="radiogroup" aria-label="Filtre">
-            ${FILTERS.map((f) => html`<button type="button" role="radio" data-filter="${f.id}">${f.label}</button>`)}
-          </div>
-          <label class="search-input">${icon('search')}<input type="search" placeholder="Etkinliklerde ara…" value="${viewState.query}" aria-label="Etkinliklerde ara" /></label>
-        </div>
         <div class="timeline-stream"></div>
       </div>`;
 
     const stream = el.querySelector('.timeline-stream');
-    const searchInput = el.querySelector('.search-input input');
+    const searchInput = el.querySelector('.toolbar .search-input input');
 
     function paint() {
       el.querySelectorAll('[data-filter]').forEach((b) => {
@@ -104,7 +105,7 @@ export default {
       )}`;
     }
 
-    el.querySelector('.timeline-controls').addEventListener('click', (e) => {
+    el.querySelector('.toolbar').addEventListener('click', (e) => {
       const f = e.target.closest('[data-filter]');
       if (f) {
         viewState.filter = f.dataset.filter;

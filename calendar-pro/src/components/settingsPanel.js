@@ -13,7 +13,7 @@
 import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
 import { BASE_THEMES, CUSTOM_THEMES } from '../core/theme.js';
-import { allBackgrounds, BACKGROUND_FITS, backgroundUrl, hasImage } from '../core/backgrounds.js';
+import { allBackgrounds, applyBackgroundSettings, BACKGROUND_FITS, backgroundUrl, COLOR_BG, colorBackgroundCss, colorBackgroundCssFromSettings, hasImage } from '../core/backgrounds.js';
 import { normalizeWorkDays, orderedWeekdays } from '../core/workDays.js';
 import { formatDate } from '../core/dateUtils.js';
 import {
@@ -25,6 +25,7 @@ import {
   removeUserBackground,
   resetData,
   setBackground,
+  setBackgroundColors,
   setBackgroundFit,
   setTheme,
   toggleNotifications,
@@ -74,9 +75,10 @@ function backgroundSection(settings, busy) {
         ${allBackgrounds().map((bg) => {
           const selected = settings.background === bg.value;
           const url = backgroundUrl(bg);
+          const colorCss = bg.isColor ? colorBackgroundCssFromSettings(settings) : '';
           return html`<div class="bg-tile ${selected ? 'is-active' : ''}">
             <button type="button" role="radio" class="bg-tile-btn" data-fk="bg-${bg.value}" data-bg-value="${bg.value}" aria-checked="${String(selected)}" title="${bg.label}">
-              <span class="bg-thumb ${url ? '' : 'bg-thumb--standard'}" aria-hidden="true" ${url ? html`style="background-image:url('${url}')"` : ''}>
+              <span class="bg-thumb ${url || colorCss ? '' : 'bg-thumb--standard'}" aria-hidden="true" ${url ? html`style="background-image:url('${url}')"` : colorCss ? html`style="background:${colorCss}"` : ''}>
                 ${selected ? html`<span class="bg-thumb-check">${icon('check')}</span>` : ''}
               </span>
               <span class="bg-thumb-label">${bg.label}</span>
@@ -88,6 +90,7 @@ function backgroundSection(settings, busy) {
           ${icon(busy ? 'scheduler' : 'upload')}<span>${busy ? 'Hazırlanıyor…' : 'Kendi görselini ekle'}</span>
         </button>
       </div>
+      ${settings.background === COLOR_BG ? colorPanel(settings) : ''}
       <p class="settings-sub">Yerleşim${imageSelected ? '' : html` <span class="muted">— görsel arka planlarda</span>`}</p>
       <div class="segmented segmented--sm fit-options" role="radiogroup" aria-label="Görsel yerleşimi">
         ${BACKGROUND_FITS.map(
@@ -96,6 +99,35 @@ function backgroundSection(settings, busy) {
         )}
       </div>
     </section>`;
+}
+
+/** "Renk" arka planı seçiliyken: tek/çift renk, renk seçiciler ve önizleme. */
+function colorPanel(settings) {
+  const dual = settings.bgColorMode === 'dual';
+  const css = colorBackgroundCssFromSettings(settings);
+  const field = (n, label, value) => html`
+    <label class="color-field">
+      <input type="color" data-bg-color="${n}" value="${value}" aria-label="${label}" />
+      <span>${label}</span><code>${value}</code>
+    </label>`;
+  const c1 = colorBackgroundCss({ mode: 'single', color1: settings.bgColor1 });
+  const c2 = colorBackgroundCss({ mode: 'single', color1: settings.bgColor2 });
+  return html`
+    <div class="bg-colors">
+      <p class="settings-sub">Renk arka planı</p>
+      <div class="segmented segmented--sm" role="radiogroup" aria-label="Renk sayısı">
+        <button type="button" role="radio" data-fk="bg-mode-single" data-bg-mode="single" aria-checked="${String(!dual)}" class="${dual ? '' : 'is-active'}">Tek renk</button>
+        <button type="button" role="radio" data-fk="bg-mode-dual" data-bg-mode="dual" aria-checked="${String(dual)}" class="${dual ? 'is-active' : ''}">Çift renk · gradient</button>
+      </div>
+      <div class="bg-color-fields">
+        ${field(1, dual ? 'Renk 1' : 'Renk', c1)}
+        ${dual
+          ? html`${field(2, 'Renk 2', c2)}
+              <button type="button" class="icon-btn" data-fk="bg-swap" data-bg-swap aria-label="Renkleri değiştir" title="Renkleri değiştir">${icon('swap')}</button>`
+          : ''}
+      </div>
+      <div class="bg-color-preview" style="background:${css}" aria-hidden="true"></div>
+    </div>`;
 }
 
 /** 4 Ocak 2026 Pazar olduğu için 4 + gün numarası o günün tarihini verir. */
@@ -271,7 +303,12 @@ export function openSettings({ section } = {}) {
     if (remove) return removeUserBackground(remove.dataset.removeBg);
     // Not: <html> öğesinin de data-bg özniteliği var; bu yüzden ayrı bir öznitelik (data-bg-value) kullanılır
     const bg = t.closest('[data-bg-value]');
-    if (bg) return setBackground(bg.dataset.bgValue);
+    if (bg) {
+      await setBackground(bg.dataset.bgValue);
+      // "Renk" seçilince renk ayarları panelin altında kalmasın
+      if (bg.dataset.bgValue === COLOR_BG) body.querySelector('.bg-colors')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      return undefined;
+    }
     if (t.closest('[data-add-bg]')) {
       if (busy) return undefined;
       busy = true;
@@ -289,6 +326,12 @@ export function openSettings({ section } = {}) {
     if (t.closest('[data-export-ics]')) return exportCalendar();
     if (t.closest('[data-import-ics]')) return importCalendar();
     if (t.closest('[data-reset]')) return resetData();
+    const mode = t.closest('[data-bg-mode]');
+    if (mode) return setBackgroundColors({ mode: mode.dataset.bgMode });
+    if (t.closest('[data-bg-swap]')) {
+      const cur = store.get().settings;
+      return setBackgroundColors({ color1: cur.bgColor2, color2: cur.bgColor1 });
+    }
     return undefined;
   });
 
@@ -304,7 +347,30 @@ export function openSettings({ section } = {}) {
     selectTab(ids[(next + ids.length) % ids.length]);
   });
 
+  // Renk seçici sürüklenirken canlı önizleme (kaydetmeden); seçim bitince (change) kaydedilir.
+  // Kaydetmek paneli yeniden çizdiği için sürükleme sırasında store güncellenmez.
+  body.addEventListener('input', (e) => {
+    const input = e.target.closest?.('[data-bg-color]');
+    if (!input) return;
+    const cur = store.get().settings;
+    const value = (n) => body.querySelector(`[data-bg-color="${n}"]`)?.value;
+    const css = colorBackgroundCss({ mode: cur.bgColorMode, color1: value(1) ?? cur.bgColor1, color2: value(2) ?? cur.bgColor2 });
+    document.documentElement.style.setProperty('--app-bg-color', css);
+    body.querySelector('.bg-color-preview')?.style.setProperty('background', css);
+    const code = input.closest('.color-field')?.querySelector('code');
+    if (code) code.textContent = input.value;
+  });
+  // Seçici iptal edilirse (değişiklik kaydedilmediyse) sayfa kaydedilmiş arka plana döner
+  body.addEventListener('focusout', (e) => {
+    if (e.target.closest?.('[data-bg-color]')) applyBackgroundSettings(store.get().settings);
+  });
+
   body.addEventListener('change', (e) => {
+    const colorInput = e.target.closest('[data-bg-color]');
+    if (colorInput) {
+      setBackgroundColors({ [colorInput.dataset.bgColor === '2' ? 'color2' : 'color1']: colorInput.value });
+      return;
+    }
     const toggle = e.target.closest('[data-toggle]');
     if (!toggle) return;
     if (toggle.dataset.toggle === 'sidebar') {

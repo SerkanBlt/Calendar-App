@@ -4,6 +4,19 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.15.0
+- **Timeline**: renkli noktalar zaman çizgisinin tam üstünde (her ekran boyutunda; çizgi ve noktalar aynı ölçülerden türetiliyor);
+  **Yaklaşan / Tümü / Geçmiş** filtresi ve arama alanı sayfa gövdesinden **başlığa** taşındı
+- **Tüm günler / Çalışma günleri** düğmesi (Ay ve Hafta) mobilde başlığın sağ ucuna dayalı
+- **Açıklamada Markdown**: Yaz / Önizle sekmeleri ve araç çubuğu (kalın, italik, üstü çizili, kod, bağlantı, başlık, listeler, görev listesi, alıntı;
+  Ctrl/⌘+B ve +I). Tam ekran düzenleyici de aynı araçlara sahip. Çıktı güvenlidir: ham HTML çalışmaz, yalnızca http(s)/mailto bağlantıları kabul edilir.
+  Kanban kartı ve arama özetlerinde işaretler gizlenir
+- **Modern renk paleti**: 12 ton × 3 yoğunluk (Açık / Canlı / Koyu), seçili renk onay işaretiyle; özel renk için sistem seçicisi ve hex alanı;
+  telefonda 6 sütun, ok tuşlarıyla gezilebilir. Eski etkinlik renkleri paletin "Canlı" satırında korunur
+- **Arka plan**: **Deri** kaldırıldı (seçmiş olanlar otomatik Standart'a taşınır). Yeni **Renk** arka planı: **tek renk** veya **çift renk · gradient**
+  (135° degrade, renkleri değiştir düğmesi, sürüklerken canlı önizleme). Seçim ilk boyamada da uygulanır
+- Test: Markdown (XSS vektörleri dahil), renk paleti/ayrıştırma ve renk arka planı CSS'i için birim testleri
+
 ## 1.14.0
 - **Mobil/tablet (≤900px) başlık**: Geri / Bugün / İleri bloğu sola dayalı ve her zaman en başta; eylem satırı (Gantt'ta S-M-L ve Kritik yol dahil) sola dayalı
 - **Bugün düğmesi** artık "Bugün: 15.Kas" gibi bugünün tarihini gösterir (tüm ekran boyutlarında)

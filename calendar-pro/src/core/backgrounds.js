@@ -1,7 +1,8 @@
 /**
  * backgrounds.js — Arka plan kaydı ve uygulanması (temadan bağımsız).
  *
- * "Standart" temanın kendi degrade arka planıdır. Diğerleri bir görseli sayfanın arkasına yerleştirir;
+ * "Standart" temanın kendi degrade arka planıdır. "Renk", kullanıcının seçtiği tek rengi veya iki renkli (135°)
+ * degradeyi gösterir (ayarlar: bgColorMode / bgColor1 / bgColor2). Diğerleri bir görseli sayfanın arkasına yerleştirir;
  * görselin üzerine temanın zemin rengi `dim` oranında bindirilir, böylece her temada okunabilirlik korunur.
  *
  * Yeni arka plan eklemek için:
@@ -15,11 +16,31 @@
  * Seçimler ilk boyamada kullanılmak üzere localStorage'a da yansıtılır (bkz. index.html).
  */
 import { store } from './state.js';
+import { normalizeHexColor } from './eventModel.js';
+
+export const COLOR_BG = 'color';
 
 export const BACKGROUNDS = Object.freeze([
   { value: 'standard', label: 'Standart', src: null, dim: 0 },
-  { value: 'leather', label: 'Deri', src: 'backgrounds/leather.webp', dim: 30 },
+  { value: COLOR_BG, label: 'Renk', src: null, dim: 0, isColor: true },
 ]);
+
+/** Renk arka planının varsayılanları (ayarlarda bgColorMode / bgColor1 / bgColor2 olarak saklanır). */
+export const DEFAULT_BG_COLORS = Object.freeze({ mode: 'single', color1: '#1e293b', color2: '#7c6cff' });
+
+/**
+ * Renk arka planının CSS değeri: tek renk ya da iki renkli 135° degrade. Geçersiz renkler varsayılana düşer.
+ * @param {{mode?: 'single'|'dual', color1?: string, color2?: string}} colors
+ */
+export function colorBackgroundCss({ mode, color1, color2 } = {}) {
+  const c1 = normalizeHexColor(color1) || DEFAULT_BG_COLORS.color1;
+  const c2 = normalizeHexColor(color2) || DEFAULT_BG_COLORS.color2;
+  return mode === 'dual' ? `linear-gradient(135deg, ${c1}, ${c2})` : c1;
+}
+
+/** Ayarlar nesnesinden renk arka planı CSS'i. */
+export const colorBackgroundCssFromSettings = (settings) =>
+  colorBackgroundCss({ mode: settings.bgColorMode, color1: settings.bgColor1, color2: settings.bgColor2 });
 
 /**
  * Yerleşim seçenekleri → CSS background-size / repeat / position.
@@ -64,31 +85,44 @@ export const hasImage = (value) => Boolean(find(value)?.src || find(value)?.url)
 /** Görselin adresi: kullanıcı görsellerinde object URL, hazır görsellerde yayın klasörüne göre tam adres. */
 export const backgroundUrl = (bg) => bg?.url || (bg?.src ? new URL(bg.src, document.baseURI).href : null);
 
-const CSS_VARS = ['--app-bg-image', '--app-bg-dim', '--app-bg-size', '--app-bg-repeat', '--app-bg-position'];
+const CSS_VARS = ['--app-bg-color', '--app-bg-image', '--app-bg-dim', '--app-bg-size', '--app-bg-repeat', '--app-bg-position'];
 
 /**
  * Arka planı uygular. Seçili değer bulunamazsa (ör. silinmiş kullanıcı görseli) Standart'a düşer.
  * Not: kullanıcı görselleri ilk boyamada uygulanamaz (object URL sayfa yenilenince geçersizdir);
  * bu durumda görsel, veritabanı açılır açılmaz main.js tarafından uygulanır.
  */
-export function applyBackground(value = 'standard', fitValue = 'fill') {
+export function applyBackground(value = 'standard', fitValue = 'fill', colors = DEFAULT_BG_COLORS) {
   const bg = find(value) || BACKGROUNDS[0];
   const fit = fitByValue.get(fitValue) || fitByValue.get('fill');
   const root = document.documentElement;
   root.dataset.bg = bg.value;
-  if (bg.src || bg.url) {
+  let cache;
+  if (bg.isColor) {
+    const css = colorBackgroundCss(colors);
+    CSS_VARS.forEach((v) => root.style.removeProperty(v));
+    root.style.setProperty('--app-bg-color', css);
+    cache = { value: bg.value, css };
+  } else if (bg.src || bg.url) {
+    root.style.removeProperty('--app-bg-color');
     root.style.setProperty('--app-bg-image', `url("${backgroundUrl(bg)}")`);
     root.style.setProperty('--app-bg-dim', `${bg.dim}%`);
     root.style.setProperty('--app-bg-size', fit.size);
     root.style.setProperty('--app-bg-repeat', fit.repeat);
     root.style.setProperty('--app-bg-position', fit.position);
+    // Kullanıcı görsellerinde src kaydedilmez; ilk boyama betiği yalnızca hazır görselleri uygular
+    cache = { value: bg.value, src: bg.src || null, dim: bg.dim, size: fit.size, repeat: fit.repeat, position: fit.position };
   } else {
     CSS_VARS.forEach((v) => root.style.removeProperty(v));
+    cache = { value: bg.value, src: null, dim: bg.dim, size: fit.size, repeat: fit.repeat, position: fit.position };
   }
   try {
-    // Kullanıcı görsellerinde src kaydedilmez; ilk boyama betiği yalnızca hazır görselleri uygular
-    localStorage.setItem('cp-bg', JSON.stringify({ value: bg.value, src: bg.src || null, dim: bg.dim, size: fit.size, repeat: fit.repeat, position: fit.position }));
+    localStorage.setItem('cp-bg', JSON.stringify(cache));
   } catch {
     /* özel modda localStorage erişilemeyebilir */
   }
 }
+
+/** Ayarlar nesnesindeki arka plan seçimlerini uygular (görsel/renk, yerleşim, renkler). */
+export const applyBackgroundSettings = (s) =>
+  applyBackground(s.background, s.backgroundFit, { mode: s.bgColorMode, color1: s.bgColor1, color2: s.bgColor2 });

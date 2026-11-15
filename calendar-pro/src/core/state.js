@@ -12,6 +12,9 @@ export const DEFAULT_SETTINGS = Object.freeze({
   background: 'standard', // arka plan adı (bkz. core/backgrounds.js)
   sidebarCollapsed: false, // kenar çubuğu ikon modunda mı (logoya tıklanınca değişir)
   backgroundFit: 'fill', // görsel yerleşimi: fill | fit | stretch | tile | center
+  bgColorMode: 'single', // "Renk" arka planı: 'single' (tek renk) | 'dual' (iki renkli degrade)
+  bgColor1: '#1e293b',
+  bgColor2: '#7c6cff',
   weekStartsOn: 1, // 0 = Pazar, 1 = Pazartesi
   workDays: [1, 2, 3, 4, 5], // çalışma günleri (0 = Pazar … 6 = Cumartesi); varsayılan: Cumartesi ve Pazar çalışma dışı
   showOffDays: true, // Ay ve Hafta görünümünde çalışma dışı günler gösterilsin mi

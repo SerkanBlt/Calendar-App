@@ -128,28 +128,33 @@
 
 /* ---------- Timeline ---------- */
 .timeline { display: flex; flex-direction: column; gap: var(--space-4); max-width: 920px; width: 100%; margin: 0 auto; }
-.timeline-controls { display: flex; gap: var(--space-3); flex-wrap: wrap; }
-.timeline-controls .segmented { flex: 0 0 auto; }
-.timeline-controls .search-input { flex: 1; min-width: 200px; width: auto; }
 .timeline-stream { display: flex; flex-direction: column; gap: var(--space-5); padding-bottom: var(--space-6); }
 .tl-month-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: var(--space-3); }
-.tl-day { display: grid; grid-template-columns: 84px 1fr; gap: var(--space-4); position: relative; padding-bottom: var(--space-4); }
-.tl-day::before { content: ''; position: absolute; left: 96px; top: 6px; bottom: 0; width: 2px; background: var(--border); border-radius: 2px; }
+/* Çizgi ve noktalar aynı ölçülerden türetilir (--tl-*), böylece her ekran boyutunda noktanın merkezi çizginin tam üstündedir */
+.tl-day {
+  --tl-date-w: 84px; --tl-gap: var(--space-4); --tl-pad: var(--space-4); --tl-line: 2px; --tl-dot: 12px;
+  display: grid; grid-template-columns: var(--tl-date-w) 1fr; gap: var(--tl-gap); position: relative; padding-bottom: var(--space-4);
+}
+.tl-day::before {
+  content: ''; position: absolute; top: 6px; bottom: 0; width: var(--tl-line); background: var(--border); border-radius: 2px;
+  left: calc(var(--tl-date-w) + var(--tl-gap) + var(--tl-pad) / 2 - var(--tl-line) / 2);
+}
 .tl-date { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
 .tl-dnum { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
 .tl-dow { font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
 .tl-rel { font-size: 11px; color: var(--text-faint); }
 .tl-day.is-today .tl-dnum, .tl-day.is-today .tl-rel { color: var(--accent-text); }
 .tl-day.is-past { opacity: 0.6; }
-.tl-items { display: flex; flex-direction: column; gap: var(--space-2); padding-left: var(--space-4); }
+.tl-items { display: flex; flex-direction: column; gap: var(--space-2); padding-left: var(--tl-pad); }
 .tl-item {
   position: relative; display: flex; align-items: center; gap: var(--space-3); width: 100%; text-align: left;
   padding: 12px 14px; border-radius: var(--radius-md); box-shadow: none; transition: transform var(--dur) var(--ease), border-color var(--dur);
 }
 .tl-item:hover { transform: translateX(3px); border-color: color-mix(in srgb, var(--ev-color) 50%, transparent); }
 .tl-dot {
-  position: absolute; left: -27px; width: 12px; height: 12px; border-radius: 50%; background: var(--ev-color);
-  box-shadow: 0 0 0 3px var(--bg);
+  /* -1px: kart (.glass) 1px kenarlıklıdır; mutlak konum kenarlığın içinden başlar */
+  position: absolute; left: calc(var(--tl-pad) / -2 - var(--tl-dot) / 2 - 1px); width: var(--tl-dot); height: var(--tl-dot);
+  border-radius: 50%; background: var(--ev-color); box-shadow: 0 0 0 3px var(--bg);
 }
 .tl-time { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 92px; }
 .tl-title { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -168,8 +173,7 @@
   .tg-dayhead { flex-direction: column; align-items: center; gap: 0; padding: 6px 2px; }
   .tg-dnum { font-size: 15px; width: 26px; height: 26px; }
   .tg-event { padding: 2px 4px; font-size: 11px; }
-  .tl-day { grid-template-columns: 52px 1fr; gap: var(--space-2); }
-  .tl-day::before { left: 60px; }
+  .tl-day { --tl-date-w: 52px; --tl-gap: var(--space-2); }
   .tl-dnum { font-size: 20px; }
   .tl-rel { display: none; }
   .tl-item { flex-wrap: wrap; gap: 4px 10px; }

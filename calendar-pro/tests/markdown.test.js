@@ -1,0 +1,228 @@
+/**
+ * Markdown (açıklama alanı): güvenlik (XSS), biçimler ve editör araç çubuğu dönüşümleri.
+ */
+import assert from 'node:assert/strict';
+import { describe, test } from 'node:test';
+import { applyFormat, renderMarkdown, stripMarkdown } from '../src/core/markdown.js';
+
+const md = (s) => String(renderMarkdown(s));
+
+/** Çıktıda yalnızca bu dosyanın ürettiği etiketler olmalı; başka hiçbir '<' veya '>' kalmamalı. */
+const ALLOWED_TAG = /<\/?(?:p|br|strong|em|del|code|pre|h[1-6]|hr|ul|ol|li|blockquote|label|span)(?: class="[a-z-]+")?>|<a href="[^"<>]*" target="_blank" rel="noopener noreferrer">|<\/a>|<input type="checkbox" disabled(?: checked)?>/g;
+const strayAngles = (html) => html.replace(ALLOWED_TAG, '').match(/[<>]/g);
+
+describe('renderMarkdown — güvenlik', () => {
+  const vectors = [
+    '<script>alert(1)</script>',
+    '<img src=x onerror=alert(1)>',
+    '<a href="javascript:alert(1)">x</a>',
+    '<svg/onload=alert(1)>',
+    '"><script>alert(1)</script>',
+    "'><img src=x onerror=alert(1)>",
+    '**<b onclick=alert(1)>x</b>**',
+    '# <iframe src=javascript:alert(1)>',
+    '> <style>body{display:none}</style>',
+    '- <img src=x onerror=alert(1)>',
+    '`<script>alert(1)</script>`',
+    '```\n<script>alert(1)</script>\n```',
+    '[<img src=x onerror=alert(1)>](https://a.com)',
+  ];
+  for (const v of vectors) {
+    test(`ham HTML çalışmaz: ${v.slice(0, 40).replace(/\n/g, '⏎')}`, () => {
+      const out = md(v);
+      assert.equal(strayAngles(out), null, out);
+      assert.ok(!/<script|<img|<svg|<iframe|<style/i.test(out), out);
+    });
+  }
+
+  for (const url of ['javascript:alert(1)', 'JaVaScRiPt:alert(1)', 'data:text/html,<script>alert(1)</script>', 'vbscript:msgbox(1)', '//evil.com', ' javascript:alert(1)']) {
+    test(`tehlikeli bağlantı reddedilir: ${url}`, () => {
+      const out = md(`[tıkla](${url})`);
+      assert.ok(!/<a /i.test(out), out);
+      assert.equal(strayAngles(out), null);
+    });
+  }
+
+  test('izinli bağlantılar güvenli öznitelikle açılır', () => {
+    assert.match(md('[Google](https://google.com/?a=1&b=2)'), /<a href="https:\/\/google\.com\/\?a=1&amp;b=2" target="_blank" rel="noopener noreferrer">Google<\/a>/);
+    assert.match(md('[mail](mailto:ben@ornek.com)'), /<a href="mailto:ben@ornek\.com"/);
+    assert.match(md('[ok](http://a.com)'), /<a href="http:\/\/a\.com"/);
+  });
+
+  test('tırnakla öznitelikten çıkma denemesi: href değeri tırnak içermez', () => {
+    const out = md('[x](https://a.com" onmouseover="alert(1))');
+    for (const m of out.matchAll(/href="([^"]*)"/g)) assert.ok(!/[<>"]/.test(m[1]), m[1]);
+    assert.ok(!/ onmouseover=/.test(out.replace(/&quot;/g, '')) || !/<a [^>]* onmouseover=/.test(out), out);
+    assert.equal(strayAngles(out), null);
+  });
+
+  test('girdideki NUL karakterleri yer tutucuyu taklit edemez', () => {
+    const out = md('a \u00000\u0000 b `kod`');
+    assert.ok(!out.includes('\u0000'));
+    assert.match(out, /<code>kod<\/code>/);
+  });
+
+  test('boş / null girdi', () => {
+    assert.equal(md(''), '');
+    assert.equal(md(null), '');
+    assert.equal(md(undefined), '');
+  });
+});
+
+describe('renderMarkdown — satır içi biçimler', () => {
+  test('kalın, italik, üstü çizili, kod', () => {
+    assert.equal(md('**kalın** ve __kalın2__'), '<p><strong>kalın</strong> ve <strong>kalın2</strong></p>');
+    assert.equal(md('*italik* ve _italik2_'), '<p><em>italik</em> ve <em>italik2</em></p>');
+    assert.equal(md('~~yanlış~~'), '<p><del>yanlış</del></p>');
+    assert.equal(md('`a < b`'), '<p><code>a &lt; b</code></p>');
+    assert.equal(md('***ikisi***'), '<p><strong><em>ikisi</em></strong></p>');
+  });
+
+  test('kod içinde biçim işaretleri işlenmez', () => {
+    assert.equal(md('`**kalın değil**`'), '<p><code>**kalın değil**</code></p>');
+  });
+
+  test('snake_case ve matematik yıldızları italik olmaz', () => {
+    assert.equal(md('dosya_adi_son.txt'), '<p>dosya_adi_son.txt</p>');
+    assert.equal(md('2 * 3 * 4'), '<p>2 * 3 * 4</p>');
+  });
+
+  test('ters eğik çizgi ile kaçış', () => {
+    assert.equal(md('\\*yıldız\\*'), '<p>*yıldız*</p>');
+  });
+
+  test('çıplak adresler bağlanır; sondaki noktalama ve tırnak dışarıda kalır', () => {
+    assert.match(md('bkz https://ornek.com/a_b_c.'), /<a href="https:\/\/ornek\.com\/a_b_c"[^>]*>https:\/\/ornek\.com\/a_b_c<\/a>\.<\/p>$/);
+    assert.ok(!md('https://ornek.com/a_b_c').includes('<em>'), 'adres içindeki _ italik yapmaz');
+    const quoted = md('"https://ornek.com"');
+    assert.match(quoted, /<a href="https:\/\/ornek\.com"/);
+  });
+
+  test('bağlantı metni içinde biçim', () => {
+    assert.match(md('[**kalın** link](https://a.com)'), /<a [^>]*><strong>kalın<\/strong> link<\/a>/);
+  });
+});
+
+describe('renderMarkdown — bloklar', () => {
+  test('başlıklar ve çizgi', () => {
+    assert.equal(md('# Bir\n## İki\n###### Altı'), '<h1 class="md-h">Bir</h1><h2 class="md-h">İki</h2><h6 class="md-h">Altı</h6>');
+    assert.equal(md('---'), '<hr>');
+    assert.equal(md('* * *'), '<hr>');
+  });
+
+  test('paragraflar boş satırla ayrılır; satır sonu <br> olur', () => {
+    assert.equal(md('bir\niki\n\nüç'), '<p>bir<br>iki</p><p>üç</p>');
+  });
+
+  test('madde işaretli ve numaralı listeler', () => {
+    assert.equal(md('- a\n- b'), '<ul><li>a</li><li>b</li></ul>');
+    assert.equal(md('1. a\n2. b'), '<ol><li>a</li><li>b</li></ol>');
+  });
+
+  test('iç içe liste', () => {
+    assert.equal(md('- a\n  - a1\n  - a2\n- b'), '<ul><li>a<ul><li>a1</li><li>a2</li></ul></li><li>b</li></ul>');
+  });
+
+  test('aynı seviyede liste türü değişince yeni liste açılır', () => {
+    assert.equal(md('- a\n1. b'), '<ul><li>a</li></ul><ol><li>b</li></ol>');
+  });
+
+  test('görev listesi', () => {
+    const out = md('- [ ] yap\n- [x] bitti');
+    assert.match(out, /<input type="checkbox" disabled> <span>yap<\/span>/);
+    assert.match(out, /<input type="checkbox" disabled checked> <span>bitti<\/span>/);
+  });
+
+  test('alıntı (içinde biçim ve iç içe alıntı)', () => {
+    assert.equal(md('> **not**\n> ikinci'), '<blockquote><p><strong>not</strong><br>ikinci</p></blockquote>');
+  });
+
+  test('kod bloğu içeriği olduğu gibi (kaçırılmış) kalır', () => {
+    assert.equal(md('```js\nlet a = "<b>";\n**x**\n```'), '<pre class="md-code"><code>let a = &quot;&lt;b&gt;&quot;;\n**x**</code></pre>');
+  });
+
+  test('kapanmamış kod bloğu sonuna kadar kod sayılır (donmaz)', () => {
+    assert.match(md('```\nabc'), /<pre class="md-code"><code>abc<\/code><\/pre>/);
+  });
+
+  test('CRLF satır sonları', () => {
+    assert.equal(md('a\r\nb'), '<p>a<br>b</p>');
+  });
+
+  test('çok uzun / patolojik girdi makul sürede işlenir', () => {
+    const t = Date.now();
+    md('*'.repeat(5000) + '_'.repeat(5000) + '['.repeat(2000) + '`'.repeat(2000) + '\n' + '- '.repeat(500));
+    assert.ok(Date.now() - t < 1500, `${Date.now() - t} ms`);
+  });
+});
+
+describe('stripMarkdown', () => {
+  test('biçim işaretlerini kaldırır', () => {
+    assert.equal(stripMarkdown('# Başlık\n**kalın** ve *italik* [link](https://a.com)'), 'Başlık kalın ve italik link');
+    assert.equal(stripMarkdown('- [x] iş\n- [ ] iş2\n1. bir'), 'iş iş2 bir');
+    assert.equal(stripMarkdown('> alıntı\n`kod` ~~sil~~'), 'alıntı kod sil');
+  });
+  test('snake_case korunur; boş girdi', () => {
+    assert.equal(stripMarkdown('dosya_adi.txt'), 'dosya_adi.txt');
+    assert.equal(stripMarkdown(null), '');
+  });
+});
+
+describe('applyFormat', () => {
+  test('seçimi sarar ve seçimi korur', () => {
+    const r = applyFormat('merhaba dünya', 0, 7, 'bold');
+    assert.deepEqual(r, { value: '**merhaba** dünya', start: 2, end: 9 });
+  });
+  test('seçim yoksa yer tutucu ekler ve onu seçer', () => {
+    const r = applyFormat('', 0, 0, 'italic');
+    assert.equal(r.value, '*italik*');
+    assert.equal(r.value.slice(r.start, r.end), 'italik');
+  });
+  test('zaten sarılıysa kaldırır (seçim işaretlerin içinde)', () => {
+    const r = applyFormat('**merhaba** dünya', 2, 9, 'bold');
+    assert.deepEqual(r, { value: 'merhaba dünya', start: 0, end: 7 });
+  });
+  test('zaten sarılıysa kaldırır (seçim işaretlerle birlikte)', () => {
+    const r = applyFormat('**merhaba**', 0, 11, 'bold');
+    assert.equal(r.value, 'merhaba');
+  });
+  test('italik, **kalın** içindeki seçimi italiğe çevirmez', () => {
+    const r = applyFormat('**x**', 2, 3, 'italic');
+    assert.equal(r.value, '***x***'); // kalın korunur, üstüne italik eklenir
+  });
+  test('kod ve üstü çizili', () => {
+    assert.equal(applyFormat('a', 0, 1, 'code').value, '`a`');
+    assert.equal(applyFormat('a', 0, 1, 'strike').value, '~~a~~');
+  });
+  test('bağlantı: seçili metin etiket olur, adres seçilir', () => {
+    const r = applyFormat('bkz site', 4, 8, 'link');
+    assert.equal(r.value, 'bkz [site](https://)');
+    assert.equal(r.value.slice(r.start, r.end), 'https://');
+  });
+  test('bağlantı: seçili adres bağlantının hedefi olur', () => {
+    const r = applyFormat('https://a.com', 0, 13, 'link');
+    assert.equal(r.value, '[bağlantı](https://a.com)');
+    assert.equal(r.value.slice(r.start, r.end), 'bağlantı');
+  });
+  test('satır başı biçimleri seçili tüm satırlara uygulanır ve geri alınır', () => {
+    const text = 'bir\niki\nüç';
+    const added = applyFormat(text, 0, text.length, 'ul');
+    assert.equal(added.value, '- bir\n- iki\n- üç');
+    const removed = applyFormat(added.value, added.start, added.end, 'ul');
+    assert.equal(removed.value, text);
+  });
+  test('numaralı liste sıralı numaralanır', () => {
+    assert.equal(applyFormat('a\nb\nc', 0, 5, 'ol').value, '1. a\n2. b\n3. c');
+  });
+  test('liste türü değişirken eski işaret atılır', () => {
+    assert.equal(applyFormat('- a\n- b', 0, 7, 'task').value, '- [ ] a\n- [ ] b');
+    assert.equal(applyFormat('1. a', 0, 4, 'ul').value, '- a');
+  });
+  test('başlık ve alıntı; yalnızca imlecin bulunduğu satır etkilenir', () => {
+    assert.equal(applyFormat('ilk\nikinci', 6, 6, 'h').value, 'ilk\n## ikinci');
+    assert.equal(applyFormat('söz', 0, 0, 'quote').value, '> söz');
+  });
+  test('boş satırlar atlanır', () => {
+    assert.equal(applyFormat('a\n\nb', 0, 4, 'ul').value, '- a\n\n- b');
+  });
+});

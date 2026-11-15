@@ -35,7 +35,7 @@ Tek seferlik ayar:
 | Hafta     | 7 günlük saat ızgarası, sürükle-bırak (30 dk snap), boyutlandırma |
 | Gün       | Saat bazlı ızgara, çakışmaların yan yana yerleşimi, çakışma paneli ve "boş zamana kaydır" |
 | Scheduler | 24 saat, 15 dk snap, sürükle-bırak, boyutlandırma, tüm gün satırı, 1/3/5/7 gün, yakınlaştırma |
-| Timeline  | Ay/gün gruplu kronolojik akış, yaklaşan/tümü/geçmiş filtresi, arama |
+| Timeline  | Ay/gün gruplu kronolojik akış; yaklaşan / tümü / geçmiş filtresi ve arama başlıkta; noktalar zaman çizgisinin tam üstünde |
 | Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı |
 | Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (seçim kaydedilir) |
 
@@ -70,6 +70,18 @@ Arka plan temadan bağımsızdır; her tema her arka planla kullanılabilir. **A
 önizlemeli bir ızgara bulunur (`Ctrl + K` → "Arka Planlar…" veya "Arka Plan: …"). **Standart**, temanın kendi
 degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bindirilir; böylece her temada yazılar okunur kalır.
 
+### Renk arka planı
+
+**Renk** karosu seçilince altında renk ayarları açılır:
+
+- **Tek renk**: düz bir renk. **Çift renk · gradient**: iki renk arasında 135° çapraz degrade; ⇄ düğmesi renkleri değiştirir.
+- Renk seçicide sürüklerken arka plan canlı önizlenir; seçim bitince kaydedilir (iptal edilirse eski arka plana dönülür).
+- Renk olduğu gibi gösterilir (görsellerdeki gibi tema bindirmesi yoktur); paneller cam yüzeyli olduğu için metinler okunur kalır.
+  Çok açık bir renk seçerseniz koyu tema metinleri zor okunabilir; açık temayı deneyin.
+- Ayarlar: `bgColorMode` (`single` | `dual`), `bgColor1`, `bgColor2`. Değerler `#rrggbb` olarak doğrulanır; ilk boyamada (`index.html`)
+  yalnızca tek renk veya `linear-gradient(135deg, #rrggbb, #rrggbb)` biçimleri kabul edilir.
+- Kaldırılan arka plan: eski **Deri** artık yok; onu seçmiş olanlar açılışta otomatik olarak Standart'a taşınır.
+
 Görsel arka planlarda ızgaranın altındaki **Yerleşim** seçenekleriyle görselin ekrana nasıl oturacağı belirlenir:
 
 | Yerleşim | Davranış |
@@ -92,7 +104,7 @@ görsel hemen arka plan olarak uygulanır ve listeye eklenir. Kendi görsellerin
 - Büyük fotoğraflar uzun kenarı 2560 px olacak şekilde küçültülüp WebP'ye çevrilir (ör. 8 MB → ~130 KB).
 - Görseller yalnızca bu tarayıcıda (IndexedDB) saklanır; JSON dışa aktarımına dahil değildir.
 
-Yeni arka plan eklemek için:
+Yeni hazır görsel arka plan eklemek için:
 1. Görseli `public/backgrounds/` klasörüne kopyalayın (webp/jpg önerilir, ~300 KB altı).
 2. `src/core/backgrounds.js` içindeki `BACKGROUNDS` listesine `{ value, label, src, dim }` ekleyin.
    `dim` (0–90): tema renginin görsel üzerindeki yoğunluğu; koyu/yoğun desenler için daha yüksek bir değer seçin.
@@ -115,11 +127,36 @@ Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinl
 
 | Sekme | İçerik |
 |-------|--------|
-| Görünüm | Tema, arka plan, yerleşim |
+| Görünüm | Tema, arka plan (Standart / Renk / kendi görselin), yerleşim |
 | Takvim | Çalışma günleri, çalışma dışı günleri göster/gizle |
 | Genel | Kenar çubuğu ikon modu, hatırlatmalar |
 | Veri | JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma, tüm verileri sıfırlama |
 | Hakkında | Sürüm bilgisi |
+
+## Açıklamada Markdown
+
+Etkinlik açıklaması Markdown ile yazılır. Açıklamanın üstündeki **Yaz / Önizle** sekmeleri ve biçimlendirme araç çubuğu
+(kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı; `Ctrl/⌘ + B` ve `+ I`) kullanılır;
+köşedeki düğme açıklamayı **tam ekranda** düzenletir. Metin ham Markdown olarak saklanır; Kanban kartı ve arama özetlerinde işaretler gizlenir.
+
+| Yazım | Sonuç |
+|-------|-------|
+| `# Başlık` … `###### Başlık` | Başlıklar |
+| `**kalın**` `*italik*` `~~çizili~~` `` `kod` `` | Satır içi biçimler |
+| `[metin](https://…)`, çıplak `https://…` adresleri | Bağlantı (yeni sekmede, `noopener noreferrer`) |
+| `- madde`, `1. madde`, iç içe girintili | Listeler |
+| `- [ ] yapılacak`, `- [x] bitti` | Görev listesi (önizlemede işaret kutusu) |
+| `> alıntı`, `---`, ` ``` ` kod bloğu | Alıntı, çizgi, kod bloğu |
+
+**Güvenlik:** metin önce tümüyle HTML'e kaçırılır, sonra yalnızca `src/core/markdown.js`'in ürettiği etiketler eklenir; ham HTML (`<script>`, `<img onerror>` …)
+çalışmaz, metin olarak görünür. Bağlantılar yalnızca `http(s)` ve `mailto` olabilir (`javascript:`, `data:` reddedilir). `tests/markdown.test.js` bu vektörleri sınar.
+Satır sonları korunur (not tutma alışkanlığı için tek satır sonu da yeni satırdır). Başka uygulamalara aktarılan ICS dosyalarında açıklama ham Markdown olarak görünür.
+
+## Etkinlik rengi
+
+Renk seçici (`src/components/colorPicker.js`) **12 ton × 3 yoğunluk** (Açık / Canlı / Koyu) bir palet sunar; "Canlı" satırı uygulamanın klasik etkinlik renklerini içerir.
+Palet elle yazılmaz, taban renklerden üretilir (`src/core/colors.js` → `PALETTE_HUES`, `PALETTE_TONES`). Paletin altında **özel renk**: yuvarlak düğme sistemin renk seçicisini açar,
+yanındaki alana hex kod yazılabilir (`#abc`, `aabbcc` …); seçili rengin adı ("Mavi · Canlı" / "Özel renk") yazılır. Telefonda palet 6 sütundur.
 
 ## Mobil düzen
 
@@ -129,6 +166,8 @@ Ekran genişliği **900 px ve altındayken** (telefon, dikey tablet):
   bugünün tarihini gösterir ("Bugün: 15.Kas").
 - Başlıktaki "Yeni" düğmesi gizlenir; yerine sağ altta yüzen, yuvarlak ve büyük (56 px) bir **yeni etkinlik düğmesi** (FAB) gösterilir (`src/main.js`, `.fab`).
   Bildirimler düğmenin üstünde çıkar, sayfanın altına düğmeye yer bırakan boşluk eklenir. `N` kısayolu aynen çalışır.
+- Ay ve Hafta başlığındaki **Tüm günler / Çalışma günleri** düğmesi eylem satırının sağ ucuna dayanır (`.offdays-toggle`).
+- Timeline'da Yaklaşan / Tümü / Geçmiş filtresi ve arama alanı başlıktadır (eylem satırında, sola dayalı).
 - Masaüstünde (>900 px) başlık eskisi gibidir: eylemler sağda, "Yeni" başlıktadır.
 
 ## Takvim dosyası (ICS)
@@ -212,14 +251,15 @@ Telefonda menü her zaman tam genişlikte açılır.
 ```
 src/
   core/        state (store + bus), router (hash), db (IndexedDB), eventRepo, eventModel,
-               settingsRepo, actions, theme, dateUtils, overlap, dom (güvenli şablon), utils, seed
+               settingsRepo, actions, theme, backgrounds, colors (renk paleti), markdown (güvenli Markdown), dateUtils, overlap,
+               dom (güvenli şablon), utils, seed
   services/    recurrenceService, notificationService, exportService, icsService, resetService, updateService, criticalPathService
   components/  sidebar, commandPalette, modal, toast, eventCard, eventEditor, timeGrid,
-               dragDrop, toolbar, icons
+               dragDrop, toolbar, icons, markdownEditor, colorPicker
   views/       dashboard, month, week, day, scheduler, timeline, gantt, kanban
   styles/      theme, main, dashboard, calendar, scheduler, gantt, kanban
 public/        manifest.json, service-worker.js, icons/
-tests/         icsService ve sürüm tutarlılığı testleri (node --test)
+tests/         ICS, Markdown (XSS dahil), renk/palet, arayüz mantığı ve sürüm tutarlılığı testleri (node --test)
 ```
 
 - **Tek yönlü veri akışı:** View → `ctx` / `actions` → `eventRepo` → IndexedDB + `store` → yeniden çizim.
@@ -237,7 +277,8 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
 ```
 
 - `startTime` boşsa etkinlik tüm gündür (formda "Tüm gün" açılınca bitiş tarihi başlangıca eşitlenir).
-- `color`: 8 hazır renkten biri veya formdaki renk seçiciden (`<input type="color">`) seçilen herhangi bir `#rrggbb`.
+- `color`: paletten veya özel olarak seçilen herhangi bir `#rrggbb` (bkz. "Etkinlik rengi").
+- `description`: ham Markdown metni olarak saklanır (bkz. "Açıklamada Markdown").
 - `recurrence`: `{ freq: 'daily'|'weekly'|'monthly'|'yearly', interval, until, count, exdates }` — yalnızca ana kayıt saklanır, tekrarlar görüntüleme anında üretilir; `exdates` üretilmeyecek tarihlerdir.
 - `seriesId` / `originalDate`: seriden ayrılıp tek başına düzenlenmiş örneğin bağlantısı.
 - `reminder`: 0 / 5 / 15 / 60 dakika.

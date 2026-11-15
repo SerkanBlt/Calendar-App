@@ -11,7 +11,8 @@ import { exportICS, exportJSON, importICS, importJSON, pickFile } from '../servi
 import { notificationService } from '../services/notificationService.js';
 import { resetAllData } from '../services/resetService.js';
 import { userBackgroundRepo } from './userBackgroundRepo.js';
-import { USER_PREFIX } from './backgrounds.js';
+import { COLOR_BG, USER_PREFIX } from './backgrounds.js';
+import { normalizeHexColor } from './eventModel.js';
 
 /** Onay alıp siler; "Geri al" ile etkinlik geri yüklenir (ekler hariç). */
 export async function deleteEventWithUndo(id, { skipConfirm = false } = {}) {
@@ -195,6 +196,21 @@ export async function importCalendar() {
 export const setTheme = (theme) => settingsRepo.set('theme', theme);
 export const setBackground = (background) => settingsRepo.set('background', background);
 export const setBackgroundFit = (fit) => settingsRepo.set('backgroundFit', fit);
+
+/**
+ * "Renk" arka planının modunu (tek/çift renk) ve renklerini kaydeder ve bu arka planı seçer.
+ * Verilmeyen alanlar mevcut ayarlardan alınır; geçersiz renkler yok sayılır.
+ * @param {{mode?: 'single'|'dual', color1?: string, color2?: string}} patch
+ */
+export function setBackgroundColors({ mode, color1, color2 } = {}) {
+  const s = store.get().settings;
+  return settingsRepo.setMany({
+    bgColorMode: mode ? (mode === 'dual' ? 'dual' : 'single') : s.bgColorMode,
+    bgColor1: normalizeHexColor(color1) || s.bgColor1,
+    bgColor2: normalizeHexColor(color2) || s.bgColor2,
+    background: COLOR_BG,
+  });
+}
 
 /** Ay ve Hafta görünümünde çalışma dışı günleri göster / gizle. */
 export const toggleShowOffDays = (force) => settingsRepo.set('showOffDays', force ?? store.get().settings.showOffDays === false);
