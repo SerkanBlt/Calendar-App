@@ -16,7 +16,7 @@ import { buildICS, parseICS, planImport } from './icsService.js';
 const MAX_ICS_BYTES = 20 * 1024 * 1024;
 
 const SCHEMA = 1;
-const IMPORTABLE_SETTINGS = ['theme', 'workDays', 'showOffDays', 'sidebarCollapsed', 'background', 'backgroundFit', 'weekStartsOn', 'defaultReminder', 'schedulerDays', 'schedulerHourHeight', 'ganttDayWidth', 'ganttShowCriticalPath'];
+const IMPORTABLE_SETTINGS = ['theme', 'workDays', 'showOffDays', 'sidebarCollapsed', 'background', 'backgroundFit', 'weekStartsOn', 'defaultReminder', 'schedulerDays', 'schedulerHourHeight', 'ganttDayWidth', 'ganttShowCriticalPath', 'kanbanLayout'];
 
 function download(filename, text, type = 'application/json') {
   const url = URL.createObjectURL(new Blob([text], { type }));

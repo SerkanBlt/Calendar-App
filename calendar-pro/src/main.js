@@ -27,6 +27,7 @@ import { closeSearch, isSearchOpen, openSearch } from './components/searchPanel.
 import { allBackgrounds, applyBackground, BACKGROUND_FITS } from './core/backgrounds.js';
 import { userBackgroundRepo } from './core/userBackgroundRepo.js';
 import { html } from './core/dom.js';
+import { icon } from './components/icons.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
 import { exportCalendar, exportData, importCalendar, importData, moveOccurrence, resetData, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed, toggleShowOffDays } from './core/actions.js';
@@ -56,7 +57,8 @@ const appEl = document.getElementById('app');
 appEl.innerHTML = html`
   <aside class="sidebar glass" id="sidebar" aria-label="Kenar çubuğu"></aside>
   <div class="sidebar-scrim" data-scrim></div>
-  <main class="main" id="main"><div class="view" id="view"></div></main>`;
+  <main class="main" id="main"><div class="view" id="view"></div></main>
+  <button type="button" class="fab" data-fab aria-label="Yeni etkinlik" title="Yeni etkinlik (N)">${icon('plus')}</button>`;
 const sidebarEl = document.getElementById('sidebar');
 const viewEl = document.getElementById('view');
 
@@ -89,6 +91,9 @@ const ctx = {
   updateEvent: (id, patch) => eventRepo.update(id, patch).catch((err) => toast(err.message, { type: 'error' })),
   setSetting: (key, value) => settingsRepo.set(key, value),
 };
+
+// Sağ alttaki yuvarlak "Yeni etkinlik" düğmesi (mobil/tablet; masaüstünde başlıktaki "Yeni" kullanılır)
+appEl.querySelector('[data-fab]').addEventListener('click', () => ctx.openEditor({ startDate: store.get().cursor }));
 
 // ---------------------------------------------------------------------------
 // View çizimi
@@ -165,25 +170,33 @@ function openEventSearch() {
   });
 }
 
+// Paletteki açılıp kapanabilen gruplar; komutlar `group` alanıyla bağlanır (bkz. components/commandPalette.js)
+const PALETTE_GROUPS = [
+  { id: 'data', label: 'Veri', icon: 'layers' },
+  { id: 'theme', label: 'Tema', icon: 'palette' },
+  { id: 'background', label: 'Arka plan', icon: 'image' },
+];
+
 const palette = createCommandPalette({
+  groups: PALETTE_GROUPS,
   getCommands: () => [
     { id: 'new', title: 'Yeni Event', keywords: 'yeni etkinlik oluştur ekle new', icon: 'plus', hint: 'N', run: () => ctx.openEditor({ startDate: store.get().cursor }) },
     { id: 'today', title: 'Bugüne Git', keywords: 'today bugün', icon: 'target', hint: 'T', run: ctx.today },
     ...NAV_ITEMS.map((item, i) => ({ id: `go-${item.id}`, title: `${item.label} Aç`, keywords: `görünüm view ${item.id}`, icon: item.icon, hint: String(i + 1), run: () => ctx.go(item.id) })),
-    { id: 'export', title: 'Export Data (JSON)', keywords: 'dışa aktar yedek indir export', icon: 'download', run: exportData },
-    { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', run: importData },
-    { id: 'export-ics', title: 'Export Calendar (ICS)', keywords: 'dışa aktar takvim ics outlook gmail google indir export', icon: 'download', run: exportCalendar },
-    { id: 'import-ics', title: 'Import Calendar (ICS)', keywords: 'içe aktar takvim ics outlook gmail google yükle import', icon: 'upload', run: importCalendar },
-    { id: 'reset-data', title: 'Reset All Data…', keywords: 'sıfırla temizle sil tüm veriler fabrika reset clear erase factory', icon: 'trash', run: resetData },
-    ...BASE_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `theme ${t.value}`, icon: t.icon, run: () => setTheme(t.value) })),
-    ...CUSTOM_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `özel custom theme ${t.value} ${t.description}`, icon: 'palette', run: () => setTheme(t.value) })),
+    { id: 'export', title: 'Export Data (JSON)', keywords: 'dışa aktar yedek indir export', icon: 'download', group: 'data', run: exportData },
+    { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', group: 'data', run: importData },
+    { id: 'export-ics', title: 'Export Calendar (ICS)', keywords: 'dışa aktar takvim ics outlook gmail google indir export', icon: 'download', group: 'data', run: exportCalendar },
+    { id: 'import-ics', title: 'Import Calendar (ICS)', keywords: 'içe aktar takvim ics outlook gmail google yükle import', icon: 'upload', group: 'data', run: importCalendar },
+    { id: 'reset-data', title: 'Reset All Data…', keywords: 'sıfırla temizle sil tüm veriler fabrika reset clear erase factory', icon: 'trash', group: 'data', run: resetData },
+    ...BASE_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `theme ${t.value}`, icon: t.icon, group: 'theme', run: () => setTheme(t.value) })),
+    ...CUSTOM_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `özel custom theme ${t.value} ${t.description}`, icon: 'palette', group: 'theme', run: () => setTheme(t.value) })),
     { id: 'search', title: 'Etkinlik Ara', keywords: 'arama search bul find etkinlik', icon: 'search', hint: '/', run: () => openEventSearch() },
     { id: 'settings', title: 'Ayarlar', keywords: 'settings ayarlar tercihler tema arka plan veri', icon: 'settings', run: () => openSettings() },
-    { id: 'theme-picker', title: 'Özel Temalar…', keywords: 'tema theme renk palet custom', icon: 'palette', run: () => openSettings({ section: 'theme' }) },
-    ...allBackgrounds().map((b) => ({ id: `bg-${b.value}`, title: `Arka Plan: ${b.label}`, keywords: `background arkaplan duvar kağıdı ${b.value}`, icon: 'image', run: () => setBackground(b.value) })),
-    { id: 'bg-picker', title: 'Arka Planlar…', keywords: 'arka plan background görsel duvar kağıdı wallpaper', icon: 'image', run: () => openSettings({ section: 'background' }) },
-    { id: 'bg-add', title: 'Arka Plan Ekle (kendi görselin)…', keywords: 'arka plan yükle görsel fotoğraf resim upload background image', icon: 'upload', run: addUserBackground },
-    ...BACKGROUND_FITS.map((f) => ({ id: `bg-fit-${f.value}`, title: `Arka Plan Yerleşimi: ${f.label}`, keywords: `background fit tile stretch yerleşim ${f.value} ${f.hint}`, icon: 'image', run: () => setBackgroundFit(f.value) })),
+    { id: 'theme-picker', title: 'Özel Temalar…', keywords: 'tema theme renk palet custom', icon: 'palette', group: 'theme', run: () => openSettings({ section: 'theme' }) },
+    ...allBackgrounds().map((b) => ({ id: `bg-${b.value}`, title: `Arka Plan: ${b.label}`, keywords: `background arkaplan duvar kağıdı ${b.value}`, icon: 'image', group: 'background', run: () => setBackground(b.value) })),
+    { id: 'bg-picker', title: 'Arka Planlar…', keywords: 'arka plan background görsel duvar kağıdı wallpaper', icon: 'image', group: 'background', run: () => openSettings({ section: 'background' }) },
+    { id: 'bg-add', title: 'Arka Plan Ekle (kendi görselin)…', keywords: 'arka plan yükle görsel fotoğraf resim upload background image', icon: 'upload', group: 'background', run: addUserBackground },
+    ...BACKGROUND_FITS.map((f) => ({ id: `bg-fit-${f.value}`, title: `Arka Plan Yerleşimi: ${f.label}`, keywords: `background fit tile stretch yerleşim ${f.value} ${f.hint}`, icon: 'image', group: 'background', run: () => setBackgroundFit(f.value) })),
     {
       id: 'toggle-offdays',
       title: store.get().settings.showOffDays === false ? 'Çalışma Dışı Günleri Göster' : 'Çalışma Dışı Günleri Gizle',

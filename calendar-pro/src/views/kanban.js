@@ -1,6 +1,7 @@
 /**
  * kanban.js — Todo / Doing / Done panosu.
  * Kartlar kolonlar arasında sürüklenerek durum değiştirir; "Done"a taşınan görevin ilerlemesi %100 olur.
+ * Düzen seçilebilir (settings.kanbanLayout): kolonlar yan yana (varsayılan) veya alt alta.
  */
 import { html } from '../core/dom.js';
 import { compareByStart, STATUSES, STATUS_LABELS } from '../core/eventModel.js';
@@ -20,11 +21,22 @@ export default {
     const { events, cursor } = ctx.state;
     const byId = new Map(events.map((e) => [e.id, e]));
 
-    const extra = html`<label class="search-input search-input--sm">${icon('search')}<input type="search" placeholder="Filtrele…" value="${viewState.query}" aria-label="Görevleri filtrele" /></label>`;
+    const layout = ctx.state.settings.kanbanLayout === 'rows' ? 'rows' : 'columns';
+    const extra = html`
+      <div class="segmented segmented--sm" role="radiogroup" aria-label="Kolon düzeni">
+        <button type="button" role="radio" data-layout="columns" aria-checked="${String(layout === 'columns')}" class="${layout === 'columns' ? 'is-active' : ''}" title="Kolonlar yan yana">${icon('kanban')}<span>Yan yana</span></button>
+        <button type="button" role="radio" data-layout="rows" aria-checked="${String(layout === 'rows')}" class="${layout === 'rows' ? 'is-active' : ''}" title="Kolonlar alt alta">${icon('timeline')}<span>Alt alta</span></button>
+      </div>
+      <label class="search-input search-input--sm">${icon('search')}<input type="search" placeholder="Filtrele…" value="${viewState.query}" aria-label="Görevleri filtrele" /></label>`;
 
     el.innerHTML = html`
       ${toolbar({ title: 'Kanban', subtitle: `${events.length} görev`, extra })}
-      <div class="view-body kanban"></div>`;
+      <div class="view-body kanban kanban--${layout}"></div>`;
+
+    el.querySelector('.toolbar').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-layout]');
+      if (btn && btn.dataset.layout !== layout) ctx.setSetting('kanbanLayout', btn.dataset.layout);
+    });
 
     const board = el.querySelector('.kanban');
 

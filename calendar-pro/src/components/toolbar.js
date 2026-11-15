@@ -4,8 +4,12 @@
  * Kabuk eylemleri `data-action` ile işaretlenir ve main.js tarafından delegasyonla işlenir:
  *  menu (mobil kenar çubuğu), prev, next, today, new
  * View'a özgü kontroller `extra` parametresiyle eklenir; `beforeNew` ise doğrudan "Yeni" düğmesinin soluna yerleşir.
+ *
+ * Mobil/tablette (≤900px) eylem satırı tam genişlikte ve sola dayalıdır; Geri/Bugün/İleri bloğu (`.toolbar-nav`)
+ * her zaman en başta durur ve "Yeni" düğmesi gizlenir — onun yerine sağ alttaki yuvarlak düğme (FAB, bkz. main.js) kullanılır.
  */
 import { html } from '../core/dom.js';
+import { dayMonthShort } from '../core/dateUtils.js';
 import { icon } from './icons.js';
 
 export function toolbar({ title, subtitle = '', nav = false, extra = '', beforeNew = '' }) {
@@ -19,9 +23,9 @@ export function toolbar({ title, subtitle = '', nav = false, extra = '', beforeN
       <div class="toolbar-actions">
         ${extra}
         ${nav
-          ? html`<div class="btn-group">
+          ? html`<div class="btn-group toolbar-nav">
               <button type="button" class="icon-btn" data-action="prev" aria-label="Önceki" title="Önceki (←)">${icon('chevronLeft')}</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-action="today" title="Bugün (T)">Bugün</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-action="today" title="Bugüne git (T)">Bugün: ${dayMonthShort()}</button>
               <button type="button" class="icon-btn" data-action="next" aria-label="Sonraki" title="Sonraki (→)">${icon('chevronRight')}</button>
             </div>`
           : ''}

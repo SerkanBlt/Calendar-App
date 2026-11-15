@@ -8,12 +8,15 @@
  *      "Tüm seri"             → ana etkinlik düzenlenir
  *  - Seriden ayrılmış bir kayıt açıldığında "Seriye geri döndür" seçeneği sunulur.
  *  - aksi halde input ön doldurma alanları kabul edilir: { startDate, endDate, startTime, endTime, status }
+ *  - "Tüm gün" açılınca bitiş tarihi başlangıçla aynı olur.
+ *  - Açıklama alanının köşesindeki düğme, açıklamayı tam ekran bir modalda düzenletir.
+ *  - Renk: 8 hazır renk + paletten (native renk seçici) seçilen özel renk.
  */
 import { html } from '../core/dom.js';
 import { eventRepo, attachmentRepo } from '../core/eventRepo.js';
 import { store } from '../core/state.js';
 import { formatDate, todayISO } from '../core/dateUtils.js';
-import { EVENT_COLORS, REMINDER_OPTIONS, STATUSES, STATUS_LABELS } from '../core/eventModel.js';
+import { EVENT_COLORS, normalizeHexColor, REMINDER_OPTIONS, STATUSES, STATUS_LABELS } from '../core/eventModel.js';
 import { FREQUENCIES } from '../services/recurrenceService.js';
 import { deleteEventWithUndo, deleteOccurrence } from '../core/actions.js';
 import { openModal } from './modal.js';
@@ -51,6 +54,9 @@ export function openEventEditor(input = {}) {
     dependencies: [],
   };
   const allDay = !ev.startTime;
+  // Renk: hazır paletten biri veya paletten seçilen özel renk. Özel seçici, mevcut renkten başlar.
+  const currentColor = normalizeHexColor(ev.color) || EVENT_COLORS[0];
+  const isCustomColor = !EVENT_COLORS.includes(currentColor);
   const categories = [...new Set(events.map((e) => e.category).filter(Boolean))];
   const depCandidates = events.filter((e) => e.id !== ev.id && !e.recurrence);
   const pendingFiles = []; // yeni etkinlikte kayıttan sonra yüklenecek ekler
@@ -101,7 +107,13 @@ export function openEventEditor(input = {}) {
       <label class="field time-field"><span>Saat</span><input type="time" name="endTime" value="${ev.endTime || '10:00'}" step="300" /></label>
     </div>
 
-    <label class="field"><span>Açıklama</span><textarea name="description" rows="3" placeholder="Notlar, bağlantılar…">${ev.description}</textarea></label>
+    <div class="field">
+      <div class="field-head">
+        <label for="event-description">Açıklama</label>
+        <button type="button" class="icon-btn icon-btn-sm" data-expand-description aria-label="Açıklamayı tam ekranda düzenle" title="Tam ekran">${icon('expand')}</button>
+      </div>
+      <textarea id="event-description" name="description" rows="3" placeholder="Notlar, bağlantılar…">${ev.description}</textarea>
+    </div>
 
     <div class="field-grid field-grid--3">
       <label class="field"><span>Durum</span>
@@ -123,7 +135,12 @@ export function openEventEditor(input = {}) {
     <fieldset class="field">
       <legend>Renk</legend>
       <div class="swatches">
-        ${EVENT_COLORS.map((c) => html`<label class="swatch" style="--sw:${c}"><input type="radio" name="color" value="${c}" ${ev.color === c ? 'checked' : ''} aria-label="${c}" /><span></span></label>`)}
+        ${EVENT_COLORS.map((c) => html`<label class="swatch" style="--sw:${c}"><input type="radio" name="color" value="${c}" ${currentColor === c ? 'checked' : ''} aria-label="${c}" /><span></span></label>`)}
+        <label class="swatch swatch--custom ${isCustomColor ? 'is-custom' : ''}" style="--sw:${currentColor}" title="Paletten özel renk seç">
+          <input type="radio" name="color" value="${currentColor}" ${isCustomColor ? 'checked' : ''} aria-label="Özel renk" />
+          <span></span>
+          <input type="color" class="swatch-picker" value="${currentColor}" aria-label="Paletten özel renk seç" />
+        </label>
       </div>
     </fieldset>
 
@@ -171,7 +188,11 @@ export function openEventEditor(input = {}) {
   const syncRecurrence = () => form.classList.toggle('has-recurrence', Boolean(f.freq.value));
   syncAllDay();
   syncRecurrence();
-  f.allDay.addEventListener('change', syncAllDay);
+  f.allDay.addEventListener('change', () => {
+    syncAllDay();
+    // Tüm gün seçilince başlangıç ve bitiş tarihi aynı olur (çok günlü yapmak için bitiş sonradan değiştirilebilir)
+    if (f.allDay.checked) f.endDate.value = f.startDate.value;
+  });
   f.freq.addEventListener('change', syncRecurrence);
   f.progress.addEventListener('input', () => (f.progressOut.value = `${f.progress.value}%`));
   f.startDate.addEventListener('change', () => {
@@ -182,6 +203,43 @@ export function openEventEditor(input = {}) {
       f.progress.value = 100;
       f.progressOut.value = '100%';
     }
+  });
+
+  // --- Özel renk: paletten seçilen renk, "özel" yuvarlağının değeri olur ve seçili sayılır ---
+  const customSwatch = form.querySelector('.swatch--custom');
+  const customRadio = customSwatch.querySelector('input[type="radio"]');
+  const picker = customSwatch.querySelector('.swatch-picker');
+  const applyCustomColor = () => {
+    customRadio.value = picker.value;
+    customRadio.checked = true;
+    customSwatch.style.setProperty('--sw', picker.value);
+    customSwatch.classList.add('is-custom');
+  };
+  picker.addEventListener('input', applyCustomColor);
+  picker.addEventListener('change', applyCustomColor);
+  // Daha önce seçilmiş özel renge dokununca seçici açılırken o renk de seçili olur
+  picker.addEventListener('click', () => {
+    if (customSwatch.classList.contains('is-custom')) customRadio.checked = true;
+  });
+
+  // --- Açıklama: tam ekran düzenleme ---
+  // Ayrı bir modal olarak açılır (üstteki modal Esc ile kapanır, editör açık kalır); yazılanlar anında forma yansır.
+  form.querySelector('[data-expand-description]').addEventListener('click', () => {
+    const big = document.createElement('textarea');
+    big.className = 'desc-fullscreen';
+    big.value = f.description.value;
+    big.placeholder = f.description.placeholder;
+    big.setAttribute('aria-label', 'Açıklama');
+    big.addEventListener('input', () => {
+      f.description.value = big.value;
+    });
+    const doneBar = document.createElement('div');
+    doneBar.className = 'modal-actions';
+    doneBar.innerHTML = html`<button type="button" class="btn btn-primary" data-done>${icon('collapse')} Bitti</button>`;
+    const full = openModal({ title: 'Açıklama', body: big, footer: doneBar, size: 'lg', className: 'modal--fullscreen' });
+    doneBar.querySelector('[data-done]').addEventListener('click', () => full.close());
+    big.focus();
+    big.setSelectionRange(big.value.length, big.value.length);
   });
 
   // --- Tekrarlayan örnek: kapsam seçimi ---

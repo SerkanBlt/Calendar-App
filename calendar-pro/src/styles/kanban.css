@@ -37,3 +37,10 @@
   .kanban { grid-template-columns: repeat(3, minmax(240px, 82vw)); scroll-snap-type: x mandatory; }
   .kanban-col { scroll-snap-align: start; }
 }
+
+/* Alt alta düzen: her durum tam genişlikte bir bant, kartlar bandın içinde ızgara (dar ekranda tek sütun).
+   Sayfa kaydırılır; .kanban kendi yüksekliğini içeriğe göre alır (flex: none). */
+.kanban.kanban--rows { grid-template-columns: 1fr; align-items: start; overflow: visible; flex: none; scroll-snap-type: none; }
+.kanban--rows .kanban-col { scroll-snap-align: none; }
+.kanban--rows .kanban-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); align-content: start; overflow: visible; min-height: 0; }
+.kanban--rows .kanban-empty { grid-column: 1 / -1; min-height: 64px; }

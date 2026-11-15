@@ -3,6 +3,8 @@
  *
  * Komutları ve etkinlik başlıklarını bulanık (fuzzy) arama ile filtreler.
  * Klavye: ↑/↓ gezin, Enter çalıştır. Esc, odak nerede olursa olsun paleti kapatır; sağ üstteki × de kapatır.
+ * Sorgu boşken bazı komutlar açılıp kapanabilen gruplarda toplanır (Enter/tıklama veya →/← ile aç/kapat);
+ * sorgu yazılınca gruplar yok sayılır ve eşleşen komutlar düz listelenir.
  */
 import { html } from '../core/dom.js';
 import { normalizeText } from '../core/utils.js';
@@ -30,50 +32,88 @@ export function fuzzyScore(query, text) {
 }
 
 /**
- * @param {{getCommands: () => object[], getEvents: () => object[], onSelectEvent: Function}} deps
- *   Komut: { id, title, keywords?, icon?, hint?, run: Function }
+ * Palet satırlarını üretir (saf fonksiyon; DOM yok).
+ *  - Sorgu boşken: grupsuz komutlar, ardından daraltılabilir gruplar (başlık satırı + açıksa komutları).
+ *  - Sorgu varken: eşleşen komutlar düz bir listede (grubu sağda ipucu olarak), ardından eşleşen etkinlikler.
+ * @param {{commands: object[], groups?: {id: string, label: string, icon?: string}[], expanded?: Set<string>, query?: string, events?: object[]}} input
+ * @returns {{kind: 'command'|'group'|'event', item?: object, group?: {id: string, label: string, icon?: string, count: number, open: boolean}, nested?: boolean, score?: number}[]}
  */
-export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) {
+export function buildRows({ commands, groups = [], expanded = new Set(), query = '', events = [] }) {
+  const q = query.trim();
+  const groupById = new Map(groups.map((g) => [g.id, g]));
+  if (q) {
+    const found = commands
+      .map((c) => ({ kind: 'command', item: c, score: fuzzyScore(q, `${c.title} ${c.keywords || ''} ${groupById.get(c.group)?.label ?? ''}`) }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score);
+    const matchedEvents = events
+      .map((e) => ({ kind: 'event', item: e, score: fuzzyScore(q, `${e.title} ${e.category}`) * 0.9 }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+    return [...found, ...matchedEvents];
+  }
+  const rows = commands.filter((c) => !groupById.has(c.group)).map((item) => ({ kind: 'command', item }));
+  for (const g of groups) {
+    const items = commands.filter((c) => c.group === g.id);
+    if (!items.length) continue;
+    const open = expanded.has(g.id);
+    rows.push({ kind: 'group', group: { ...g, count: items.length, open } });
+    if (open) rows.push(...items.map((item) => ({ kind: 'command', item, nested: true })));
+  }
+  return rows;
+}
+
+/**
+ * @param {{getCommands: () => object[], getEvents: () => object[], onSelectEvent: Function, groups?: {id: string, label: string, icon?: string}[]}} deps
+ *   Komut: { id, title, keywords?, icon?, hint?, group?, run: Function }
+ *   groups: komutların `group` alanıyla bağlandığı, açılıp kapanabilen gruplar (varsayılan: kapalı; açık olanlar oturum boyunca hatırlanır).
+ *   Sorgu yazılınca gruplar yok sayılır ve eşleşen komutlar düz listelenir.
+ */
+export function createCommandPalette({ getCommands, getEvents, onSelectEvent, groups = [] }) {
   let backdrop = null;
   let input = null;
   let listEl = null;
   let results = [];
   let active = 0;
   let previousFocus = null;
+  const expanded = new Set();
+  const groupLabels = new Map(groups.map((g) => [g.id, g.label]));
 
-  function compute(query) {
-    const commands = getCommands()
-      .map((c) => ({ kind: 'command', item: c, score: fuzzyScore(query, `${c.title} ${c.keywords || ''}`) }))
-      .filter((r) => r.score > 0);
-    const events = query.trim()
-      ? getEvents()
-          .map((e) => ({ kind: 'event', item: e, score: fuzzyScore(query, `${e.title} ${e.category}`) * 0.9 }))
-          .filter((r) => r.score > 0)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 6)
-      : [];
-    if (query.trim()) commands.sort((a, b) => b.score - a.score);
-    return [...commands, ...events];
-  }
+  const compute = (query) => buildRows({ commands: getCommands(), groups, expanded, query, events: getEvents() });
 
   function renderList() {
     if (!results.length) {
       listEl.innerHTML = html`<li class="palette-empty">Sonuç bulunamadı</li>`;
       return;
     }
-    let lastKind = null;
+    const searching = Boolean(input.value.trim());
+    let lastSection = null;
     listEl.innerHTML = html`${results.map((r, i) => {
-      const header = r.kind !== lastKind ? html`<li class="palette-group" role="presentation">${r.kind === 'command' ? 'Komutlar' : 'Etkinlikler'}</li>` : '';
-      lastKind = r.kind;
+      const section = r.kind === 'event' ? 'Etkinlikler' : 'Komutlar';
+      const header = section !== lastSection ? html`<li class="palette-group" role="presentation">${section}</li>` : '';
+      lastSection = section;
       const selected = i === active;
+      const common = html`role="option" aria-selected="${String(selected)}" data-index="${i}" id="pal-${i}"`;
+      if (r.kind === 'group') {
+        const g = r.group;
+        return html`${header}<li class="palette-item palette-group-row ${selected ? 'is-active' : ''}" ${common} aria-expanded="${String(g.open)}">
+          <span class="palette-icon">${icon(g.icon || 'layers')}</span>
+          <span class="palette-title">${g.label}</span>
+          <span class="palette-meta palette-count">${g.count}</span>
+          <span class="palette-chevron">${icon(g.open ? 'chevronDown' : 'chevronRight')}</span>
+        </li>`;
+      }
       if (r.kind === 'command') {
-        return html`${header}<li class="palette-item ${selected ? 'is-active' : ''}" role="option" aria-selected="${String(selected)}" data-index="${i}" id="pal-${i}">
+        const groupLabel = searching ? groupLabels.get(r.item.group) : '';
+        return html`${header}<li class="palette-item ${r.nested ? 'palette-item--nested' : ''} ${selected ? 'is-active' : ''}" ${common}>
           <span class="palette-icon">${icon(r.item.icon || 'command')}</span>
           <span class="palette-title">${r.item.title}</span>
+          ${groupLabel ? html`<span class="palette-meta">${groupLabel}</span>` : ''}
           ${r.item.hint ? html`<kbd>${r.item.hint}</kbd>` : ''}
         </li>`;
       }
-      return html`${header}<li class="palette-item ${selected ? 'is-active' : ''}" role="option" aria-selected="${String(selected)}" data-index="${i}" id="pal-${i}">
+      return html`${header}<li class="palette-item ${selected ? 'is-active' : ''}" ${common}>
         <span class="palette-icon"><span class="dot" style="--ev-color:${r.item.color}"></span></span>
         <span class="palette-title">${r.item.title}</span>
         <span class="palette-meta">${formatDate(r.item.startDate, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
@@ -89,9 +129,24 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) 
     renderList();
   }
 
+  /** Grubu açar/kapatır; seçili satır başlıkta kalır. */
+  function toggleGroup(id, index, open = !expanded.has(id)) {
+    if (open) expanded.add(id);
+    else expanded.delete(id);
+    results = compute(input.value);
+    active = Math.min(index, results.length - 1);
+    renderList();
+    // Açılan grubun komutları görünsün diye başlık listenin üstüne kaydırılır
+    if (open) listEl.querySelector('.is-active')?.scrollIntoView({ block: 'start' });
+  }
+
   function execute(index) {
     const r = results[index];
     if (!r) return;
+    if (r.kind === 'group') {
+      toggleGroup(r.group.id, index); // başlığa Enter/tıklama: aç/kapat, palet açık kalır
+      return;
+    }
     close();
     if (r.kind === 'command') r.item.run();
     else onSelectEvent(r.item);
@@ -106,6 +161,20 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) 
     } else if (e.key === 'Enter') {
       e.preventDefault();
       execute(active);
+    } else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !input.value) {
+      // Sorgu boşken → grubu aç, ← grubu kapat veya grup içindeki komuttan başlığa dön
+      const r = results[active];
+      if (e.key === 'ArrowRight' && r?.kind === 'group' && !r.group.open) {
+        e.preventDefault();
+        toggleGroup(r.group.id, active, true);
+      } else if (e.key === 'ArrowLeft' && r?.kind === 'group' && r.group.open) {
+        e.preventDefault();
+        toggleGroup(r.group.id, active, false);
+      } else if (e.key === 'ArrowLeft' && r?.nested) {
+        e.preventDefault();
+        active = results.findIndex((x) => x.kind === 'group' && x.group.id === r.item.group);
+        renderList();
+      }
     }
   }
 
@@ -148,6 +217,8 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent }) 
         renderList();
       }
     });
+    // Satıra tıklamak arama kutusundan odağı almasın: grup açılıp kapanınca palet açık kalır, klavye çalışmaya devam eder
+    listEl.addEventListener('mousedown', (e) => e.preventDefault());
     listEl.addEventListener('click', (e) => {
       const li = e.target.closest('[data-index]');
       if (li) execute(Number(li.dataset.index));

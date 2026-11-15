@@ -37,7 +37,7 @@ Tek seferlik ayar:
 | Scheduler | 24 saat, 15 dk snap, sürükle-bırak, boyutlandırma, tüm gün satırı, 1/3/5/7 gün, yakınlaştırma |
 | Timeline  | Ay/gün gruplu kronolojik akış, yaklaşan/tümü/geçmiş filtresi, arama |
 | Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı |
-| Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre |
+| Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (seçim kaydedilir) |
 
 Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır:
 
@@ -103,6 +103,10 @@ Yeni arka plan eklemek için:
 takvim yer alır. Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesinin sağında
 uygulamanın sürüm numarası görünür.
 
+**Hızlı komut** paletinde Kanban'dan sonraki komutlardan gruplanabilenler açılıp kapanabilen gruplarda toplanır (**Veri**, **Tema**, **Arka plan**;
+başlığa tıklayın veya `Enter` / `→` `←`). Arama yazınca gruplar yok sayılır, eşleşen komutlar düz listelenir. Yeni bir grup için `src/main.js` içindeki
+`PALETTE_GROUPS` listesine ekleyip komutlara `group: '<id>'` verin.
+
 **Arama paneli** başlık, açıklama ve kategoride arar (birden fazla kelime → hepsi eşleşmeli), eşleşmeleri vurgular;
 Yaklaşan / Tümü / Geçmiş ve durum filtreleri vardır. Tekrarlayan etkinlikler bir sonraki tekrarıyla tek satırda görünür.
 Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinliği düzenleyicide açar.
@@ -116,6 +120,16 @@ Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinl
 | Genel | Kenar çubuğu ikon modu, hatırlatmalar |
 | Veri | JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma, tüm verileri sıfırlama |
 | Hakkında | Sürüm bilgisi |
+
+## Mobil düzen
+
+Ekran genişliği **900 px ve altındayken** (telefon, dikey tablet):
+
+- Başlığın eylem satırı tam genişlikte ve **sola dayalıdır**; Geri / Bugün / İleri bloğu (`.toolbar-nav`) her zaman en başta durur. Bugün düğmesi
+  bugünün tarihini gösterir ("Bugün: 15.Kas").
+- Başlıktaki "Yeni" düğmesi gizlenir; yerine sağ altta yüzen, yuvarlak ve büyük (56 px) bir **yeni etkinlik düğmesi** (FAB) gösterilir (`src/main.js`, `.fab`).
+  Bildirimler düğmenin üstünde çıkar, sayfanın altına düğmeye yer bırakan boşluk eklenir. `N` kısayolu aynen çalışır.
+- Masaüstünde (>900 px) başlık eskisi gibidir: eylemler sağda, "Yeni" başlıktadır.
 
 ## Takvim dosyası (ICS)
 
@@ -222,7 +236,8 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
   progress, category, critical, recurrence, reminder, dependencies, createdAt, updatedAt }
 ```
 
-- `startTime` boşsa etkinlik tüm gündür.
+- `startTime` boşsa etkinlik tüm gündür (formda "Tüm gün" açılınca bitiş tarihi başlangıca eşitlenir).
+- `color`: 8 hazır renkten biri veya formdaki renk seçiciden (`<input type="color">`) seçilen herhangi bir `#rrggbb`.
 - `recurrence`: `{ freq: 'daily'|'weekly'|'monthly'|'yearly', interval, until, count, exdates }` — yalnızca ana kayıt saklanır, tekrarlar görüntüleme anında üretilir; `exdates` üretilmeyecek tarihlerdir.
 - `seriesId` / `originalDate`: seriden ayrılıp tek başına düzenlenmiş örneğin bağlantısı.
 - `reminder`: 0 / 5 / 15 / 60 dakika.

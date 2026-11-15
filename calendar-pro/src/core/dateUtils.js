@@ -113,6 +113,12 @@ export function formatDate(date, options = { day: 'numeric', month: 'long', year
   return formatterCache.get(key).format(toDate(date));
 }
 
+/** "15.Kas" — gün numarası ve kısa ay adı (ör. başlıktaki "Bugün: 15.Kas" düğmesi). */
+export function dayMonthShort(date = new Date()) {
+  const d = toDate(date);
+  return `${d.getDate()}.${formatDate(d, { month: 'short' })}`;
+}
+
 /** Hafta başlangıcına göre sıralı gün adları. */
 export function weekdayNames(weekStartsOn = 1, style = 'short') {
   // 4 Ocak 2026 bir Pazar günüdür.

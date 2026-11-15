@@ -4,6 +4,19 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.14.0
+- **Mobil/tablet (≤900px) başlık**: Geri / Bugün / İleri bloğu sola dayalı ve her zaman en başta; eylem satırı (Gantt'ta S-M-L ve Kritik yol dahil) sola dayalı
+- **Bugün düğmesi** artık "Bugün: 15.Kas" gibi bugünün tarihini gösterir (tüm ekran boyutlarında)
+- **Yeni etkinlik düğmesi**: mobil/tablette başlıktaki "+" yerine sağ altta yüzen, yuvarlak ve daha büyük (56 px) bir düğme; bildirimler bunun üstünde çıkar,
+  içerik son satırlarını kapatmasın diye sayfanın altına boşluk eklendi. Masaüstünde başlıktaki "Yeni" düğmesi aynen duruyor
+- **Etkinlik formu**: "Tüm gün" açılınca bitiş tarihi başlangıçla aynı olur; açıklama alanının köşesindeki düğmeyle açıklama **tam ekranda** düzenlenir
+  (Esc yalnızca tam ekranı kapatır); renk seçiminde 8 hazır renge ek olarak **paletten özel renk** seçilebilir
+- **Ara paneli**: sonuçlar arasında küçük boşluk
+- **Hızlı komut paneli**: Kanban'dan sonraki komutlar açılıp kapanabilen gruplarda toplandı (Veri, Tema, Arka plan). Başlığa tıklayın/Enter ya da →/← ile açıp kapatın;
+  arama yazınca gruplar yok sayılır ve eşleşenler düz listelenir
+- **Kanban**: kolonları **yan yana** veya **alt alta** göstermek için düzen seçimi (seçim kaydedilir; alt alta düzende her durum tam genişlikte bir bant olur ve kartlar bantta ızgara halinde dizilir)
+- Test: `dayMonthShort`, `normalizeHexColor` ve palet satır üretimi (`buildRows`) için birim testleri
+
 ## 1.13.0
 - **Yeni sürüm bildirimi**: yeni bir sürüm yüklendiğinde "Yeni sürüm hazır (vX)" mesajı ve **Yenile** düğmesi çıkar; × ile kapatılabilir.
   Sayfa kendiliğinden yenilenmez (açık formlar kaybolmasın). Sayfa zaten en yeni sürümle açıldıysa ve ilk kurulumda mesaj gösterilmez

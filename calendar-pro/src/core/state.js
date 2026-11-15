@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   schedulerHourHeight: 56,
   ganttDayWidth: 36,
   ganttShowCriticalPath: true,
+  kanbanLayout: 'columns', // Kanban düzeni: 'columns' (kolonlar yan yana) | 'rows' (alt alta)
   seeded: false,
 });
 

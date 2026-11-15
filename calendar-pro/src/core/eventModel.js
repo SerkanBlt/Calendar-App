@@ -35,6 +35,15 @@ export const REMINDER_OPTIONS = Object.freeze([
 const REMINDER_VALUES = REMINDER_OPTIONS.map((o) => o.value);
 const COLOR_RE = /^#[0-9a-f]{3,8}$/i;
 
+/** "#abc" / "#aabbcc" / "#aabbccdd" → "#aabbcc" (<input type="color"> biçimi). Geçersizse ''. */
+export function normalizeHexColor(value) {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(String(value ?? ''));
+  if (!m) return '';
+  let hex = m[1].toLowerCase();
+  if (hex.length === 3) hex = [...hex].map((c) => c + c).join('');
+  return `#${hex.slice(0, 6)}`;
+}
+
 /**
  * Ham girdiyi geçerli bir etkinlik nesnesine dönüştürür.
  * @param {object} input Kısmi alanlar
