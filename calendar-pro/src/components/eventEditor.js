@@ -11,6 +11,7 @@
  *  - Etkinlik tam sayfa açılır; başlıkta etkinliğin adı görünür (uzunsa üç nokta) ve dokunulunca metin kutusuna dönüşür.
  *  - "Tüm gün" açılınca bitiş tarihi başlangıçla aynı olur.
  *  - Açıklama Markdown ile yazılır; canlı önizleme: aktif satır ham markup, diğer satırlar işlenmiş (bkz. markdownEditor.js).
+ *    İlk açılışta (tam ekranda da) tüm satırlar önizlemededir; bir satıra dokununca o satır ham hale geçer.
  *    Köşesindeki düğme tam ekran düzenleme açar.
  *  - Renk: modern palet (12 ton × 3 yoğunluk) + özel renk (renk seçici veya hex kodu); bkz. colorPicker.js.
  */
@@ -108,7 +109,7 @@ export function openEventEditor(input = {}) {
 
     <div class="field">
       <div class="field-head">
-        <label data-description-label>Açıklama <span class="muted">· Markdown</span></label>
+        <label data-description-label>Açıklama</label>
         <button type="button" class="icon-btn icon-btn-sm" data-expand-description aria-label="Açıklamayı tam ekranda düzenle" title="Tam ekran">${icon('expand')}</button>
       </div>
       <div data-description-host></div>
@@ -243,9 +244,9 @@ export function openEventEditor(input = {}) {
     const doneBar = document.createElement('div');
     doneBar.className = 'modal-actions';
     doneBar.innerHTML = html`<button type="button" class="btn btn-primary" data-done>${icon('collapse')} Bitti</button>`;
-    const fullModal = openModal({ title: 'Açıklama', body: full.el, footer: doneBar, size: 'lg', className: 'modal--fullscreen' });
+    // Tam ekran da önizlemede açılır (hiçbir satır ham değil); düzenlemek için bir satıra dokunulur
+    const fullModal = openModal({ title: 'Açıklama', body: full.el, footer: doneBar, size: 'lg', className: 'modal--fullscreen', initialFocus: 'dialog' });
     doneBar.querySelector('[data-done]').addEventListener('click', () => fullModal.close());
-    full.focus();
   });
 
   // --- Tekrarlayan örnek: kapsam seçimi ---

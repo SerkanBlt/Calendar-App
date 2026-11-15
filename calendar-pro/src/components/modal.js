@@ -2,9 +2,11 @@
  * modal.js — Erişilebilir modal pencere ve onay diyaloğu.
  *
  * - Esc ile en üstteki modal kapanır, arka plana tıklama kapatır.
+ * - Dokunmayla açılan pencerede, dokunulan noktadaki "hayalet" fare olayları yutulur (bkz. core/ghostClick.js).
  * - Tab ile odak modal içinde döner (focus trap); kapanınca önceki odağa geri döner.
  */
 import { html } from '../core/dom.js';
+import { swallowGhostClicks } from '../core/ghostClick.js';
 import { icon } from './icons.js';
 
 const openStack = [];
@@ -89,6 +91,7 @@ export function openModal({ title, titleNode, body, footer, size = 'md', classNa
   backdrop.querySelector('[data-close]').addEventListener('click', () => close());
   document.addEventListener('keydown', onKey, true);
 
+  swallowGhostClicks(); // dokunmayla açıldıysa, dokunulan noktadaki sahte fare olayları yeni pencerenin öğelerini tetiklemesin
   openStack.push(entry);
   document.body.appendChild(backdrop);
   requestAnimationFrame(() => backdrop.classList.add('is-visible'));

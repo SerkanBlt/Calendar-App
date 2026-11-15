@@ -77,6 +77,10 @@ kbd {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
+/* Sayfalardaki ana paneller (Ay/Hafta/Gün ızgarası, Dashboard kartları, Kanban kolonları, listeler…) saydamdır: arka plan rengi veya görseli
+   panelin arkasından görünür; okunabilirlik bulanıklaştırmayla (backdrop-filter) korunur. --panel-mix: yüzey renginin yüzdesi (düşük = daha saydam).
+   Modallar, komut paleti ve kenar çubuğu .view dışında olduğu için değişmez. */
+.view .glass { background: color-mix(in srgb, var(--surface) var(--panel-mix, 42%), transparent); }
 
 .boot-screen {
   display: grid; place-items: center; height: 100vh; width: 100%;
@@ -170,7 +174,7 @@ kbd {
   padding: var(--space-3) var(--space-3) var(--space-4);
   position: sticky; top: 0; z-index: 5;
   /* Kaydırılan içerik başlığın arkasından görünmesin (buzlu cam) */
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
   backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
   border-radius: 0 0 var(--radius) var(--radius);
 }
@@ -182,14 +186,19 @@ kbd {
 /* ---------- Yeni etkinlik düğmesi (FAB) — yalnızca mobil/tablet (≤900px), sağ altta yüzer ---------- */
 .fab {
   display: none; position: fixed; z-index: 50; place-items: center;
-  right: calc(var(--space-4) + env(safe-area-inset-right)); bottom: calc(var(--space-4) + env(safe-area-inset-bottom));
+  right: calc(var(--space-4) + env(safe-area-inset-right)); bottom: calc(var(--fab-bottom, var(--space-4)) + env(safe-area-inset-bottom));
   width: 56px; height: 56px; padding: 0; border-radius: 50%; border: 0;
   background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: var(--on-accent);
-  box-shadow: 0 8px 24px var(--accent-glow-strong), 0 2px 6px rgba(0, 0, 0, 0.25);
-  transition: transform var(--dur) var(--ease), box-shadow var(--dur);
+  box-shadow: 0 8px 24px var(--accent-glow), 0 2px 6px rgba(0, 0, 0, 0.2);
+  opacity: 0.82; /* biraz saydam: altındaki içerik hafifçe görünür */
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; /* basılı tutup taşımak için */
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur), opacity var(--dur);
 }
+.fab:active { opacity: 1; }
+/* Taşıma modu (basılı tutunca): büyür, tam opak olur; konum anında izler */
+.fab.is-dragging { opacity: 1; transform: scale(1.1); box-shadow: 0 14px 36px var(--accent-glow-strong), 0 4px 10px rgba(0, 0, 0, 0.3); transition: transform var(--dur) var(--ease), box-shadow var(--dur); }
 .fab .icon { width: 26px; height: 26px; stroke-width: 2.2; }
-.fab:active { transform: scale(0.93); }
+.fab:active:not(.is-dragging) { transform: scale(0.93); } /* taşıma modunda büyümüş hâli korunur (.is-dragging) */
 .fab:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; }
 
 /* ---------- Butonlar ---------- */
@@ -647,7 +656,10 @@ kbd {
   border-radius: 4px; opacity: 0.7;
 }
 .ev-chip-del .icon { width: 12px; height: 12px; }
-.ev-chip:hover .ev-chip-del { display: inline-grid; place-items: center; }
+/* Yalnızca gerçek hover'lı aygıtlarda: dokunmatik ekranlarda ilk dokunuş "yapışkan hover" bırakır ve Sil düğmesi parmağın altında belirirdi */
+@media (hover: hover) {
+  .ev-chip:hover .ev-chip-del { display: inline-grid; place-items: center; }
+}
 .ev-chip-del:hover { opacity: 1; background: rgba(0, 0, 0, 0.2); }
 
 .ev-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -739,7 +751,7 @@ kbd {
     padding: var(--space-3);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
+    background: color-mix(in srgb, var(--surface-solid) 56%, transparent);
   }
   /* Hamburger ve sayfa adı büyük; panel yüksekliği değişmesin diye satır yüksekliği sabit (27px) ve uzun ad üç noktayla kısalır.
      Başlık bloğu (27px ad + altyazı) 44px'lik hamburgerden yüksek kaldığı için satır yüksekliğini o belirler. */
@@ -823,6 +835,10 @@ kbd {
 .md-marker { flex: none; min-width: 1em; text-align: right; color: var(--text-muted); }
 .md-li-body { flex: 1; min-width: 0; }
 .md-check { flex: none; width: 1.05em; height: 1.05em; margin: 0.28em 0 0; accent-color: var(--accent); cursor: pointer; }
+/* ToDo satırları: kutu metne göre dikeyde ortalı; tamamlanan ToDo'nun üstü çizili ve soluk */
+.md-row[data-task='true'] .md-view { align-items: center; }
+.md-row[data-task='true'] .md-check { margin: 0; }
+.md-row[data-done='true'] .md-li-body { text-decoration: line-through; color: var(--text-muted); }
 .md-row[data-kind='quote'] .md-view { padding-left: calc(10px + var(--depth, 0) * 14px); border-left: 3px solid var(--accent); color: var(--text-muted); }
 .md-row[data-kind='hr'] .md-view { min-height: 0; height: 0; margin: 0.7em 0; border-top: 1px solid var(--border-strong); }
 .md-row[data-kind='code'] .md-view, .md-row[data-kind='fence'] .md-view { padding: 0 10px; background: var(--surface-3); font-family: var(--font-mono); font-size: 0.92em; }
@@ -844,7 +860,9 @@ kbd {
 .md li { margin: 0.15em 0; }
 .md ul:has(.md-task) { list-style: none; padding-left: 2px; }
 .md .md-task { display: inline-flex; align-items: flex-start; gap: 6px; }
-.md .md-task input { margin-top: 0.3em; accent-color: var(--accent); }
+.md .md-task { align-items: center; }
+.md .md-task input { margin: 0; accent-color: var(--accent); }
+.md .md-task-done span { text-decoration: line-through; color: var(--text-muted); }
 .md blockquote { padding: 2px 12px; border-left: 3px solid var(--accent); color: var(--text-muted); background: var(--surface-2); border-radius: 0 8px 8px 0; }
 .md code { font-family: var(--font-mono); font-size: 0.9em; padding: 1px 5px; border-radius: 5px; background: var(--surface-3); }
 .md pre.md-code { padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-3); overflow-x: auto; }

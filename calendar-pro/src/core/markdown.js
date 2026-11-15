@@ -74,7 +74,10 @@ const indentOf = (ws) => ws.replace(/\t/g, '    ').length;
 function itemHtml(text) {
   const task = /^\[([ xX])\]\s+([\s\S]*)$/.exec(text);
   const body = (t) => t.split('\n').map(inline).join('<br>');
-  if (task) return `<label class="md-task"><input type="checkbox" disabled${task[1] === ' ' ? '' : ' checked'}> <span>${body(task[2])}</span></label>`;
+  if (task) {
+    const done = task[1] !== ' ';
+    return `<label class="md-task${done ? ' md-task-done' : ''}"><input type="checkbox" disabled${done ? ' checked' : ''}> <span>${body(task[2])}</span></label>`;
+  }
   return body(text);
 }
 
@@ -190,9 +193,9 @@ const QUOTE_LINE = /^ {0,3}(>+)[ \t]?(.*)$/;
  * imlecin bulunmadığı satırları bununla gösterir. Satır içi biçimler renderMarkdown ile aynı yoldan (`inline`) geçer;
  * yani aynı güvenlik garantisi geçerlidir (önce HTML kaçırma, yalnızca izinli etiketler/bağlantılar).
  * @param {string[]} lines kaynak satırları (satır sonu içermez)
- * @returns {{kind: string, depth: number, html: string, edge?: 'open'|'close'}[]} her satır için bir kayıt
+ * @returns {{kind: string, depth: number, html: string, edge?: 'open'|'close', task?: boolean, done?: boolean}[]} her satır için bir kayıt
  *   kind: p | blank | h1…h6 | li | quote | code | fence | hr; depth: liste girintisi / alıntı derinliği;
- *   edge: kod çitinin açılış/kapanış satırı
+ *   edge: kod çitinin açılış/kapanış satırı; task/done: görev kutusu olan ve tamamlanmış liste satırları
  */
 export function renderLineRows(lines) {
   const rows = [];
@@ -237,7 +240,13 @@ export function renderLineRows(lines) {
       const lead = task
         ? `<input type="checkbox" class="md-check" tabindex="-1"${task[1] === ' ' ? '' : ' checked'}>`
         : `<span class="md-marker">${escapeHtml(ordered ? item[2] : '•')}</span>`;
-      rows.push({ kind: 'li', depth: Math.min(Math.floor(indentOf(item[1]) / 2), 6), html: `${lead}<span class="md-li-body">${inline(task ? task[2] : item[3]) || '&nbsp;'}</span>` });
+      rows.push({
+        kind: 'li',
+        depth: Math.min(Math.floor(indentOf(item[1]) / 2), 6),
+        task: Boolean(task),
+        done: Boolean(task) && task[1] !== ' ',
+        html: `${lead}<span class="md-li-body">${inline(task ? task[2] : item[3]) || '&nbsp;'}</span>`,
+      });
       continue;
     }
     rows.push({ kind: 'p', depth: 0, html: inline(line) });

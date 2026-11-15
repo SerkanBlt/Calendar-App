@@ -8,7 +8,7 @@ import { applyFormat, lineContentStart, listContinuation, renderLineRows, render
 const md = (s) => String(renderMarkdown(s));
 
 /** Çıktıda yalnızca bu dosyanın ürettiği etiketler olmalı; başka hiçbir '<' veya '>' kalmamalı. */
-const ALLOWED_TAG = /<\/?(?:p|br|strong|em|del|code|pre|h[1-6]|hr|ul|ol|li|blockquote|label|span)(?: class="[a-z-]+")?>|<a href="[^"<>]*" target="_blank" rel="noopener noreferrer">|<\/a>|<input type="checkbox" disabled(?: checked)?>/g;
+const ALLOWED_TAG = /<\/?(?:p|br|strong|em|del|code|pre|h[1-6]|hr|ul|ol|li|blockquote|label|span)(?: class="[a-z -]+")?>|<a href="[^"<>]*" target="_blank" rel="noopener noreferrer">|<\/a>|<input type="checkbox" disabled(?: checked)?>/g;
 const strayAngles = (html) => html.replace(ALLOWED_TAG, '').match(/[<>]/g);
 
 describe('renderMarkdown — güvenlik', () => {
@@ -131,6 +131,8 @@ describe('renderMarkdown — bloklar', () => {
     const out = md('- [ ] yap\n- [x] bitti');
     assert.match(out, /<input type="checkbox" disabled> <span>yap<\/span>/);
     assert.match(out, /<input type="checkbox" disabled checked> <span>bitti<\/span>/);
+    assert.match(out, /<label class="md-task md-task-done">/); // tamamlanan görev ayrı sınıfla (üstü çizili) işaretlenir
+    assert.match(out, /<label class="md-task"><input type="checkbox" disabled> <span>yap/);
   });
 
   test('alıntı (içinde biçim ve iç içe alıntı)', () => {
@@ -256,6 +258,7 @@ describe('renderLineRows (canlı önizleme editörü)', () => {
     assert.match(rows[3].html, /^<span class="md-marker">2\.<\/span>/);
     assert.match(rows[4].html, /^<input type="checkbox" class="md-check" tabindex="-1"><span class="md-li-body">yap<\/span>$/);
     assert.match(rows[5].html, /<input type="checkbox" class="md-check" tabindex="-1" checked>/);
+    assert.deepEqual(rows.map((r) => [Boolean(r.task), Boolean(r.done)]), [[false, false], [false, false], [false, false], [false, false], [true, false], [true, true]]);
   });
 
   test('alıntı derinliği ve satır içi biçimler', () => {

@@ -36,6 +36,7 @@ import { registerServiceWorker } from './services/updateService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
 import { openEventEditor } from './components/eventEditor.js';
+import { applyFabBottom, setupFab } from './components/fab.js';
 import { isModalOpen } from './components/modal.js';
 import { toast } from './components/toast.js';
 
@@ -92,8 +93,15 @@ const ctx = {
   setSetting: (key, value) => settingsRepo.set(key, value),
 };
 
-// Sağ alttaki yuvarlak "Yeni etkinlik" düğmesi (mobil/tablet; masaüstünde başlıktaki "Yeni" kullanılır)
-appEl.querySelector('[data-fab]').addEventListener('click', () => ctx.openEditor({ startDate: store.get().cursor }));
+// Sağ alttaki yuvarlak "Yeni etkinlik" düğmesi (mobil/tablet; masaüstünde başlıktaki "Yeni" kullanılır).
+// Kısa dokunuş etkinlik açar; basılı tutunca dikey eksende taşınır, konum ayarlarda saklanır (bkz. components/fab.js).
+setupFab(appEl.querySelector('[data-fab]'), {
+  onActivate: () => ctx.openEditor({ startDate: store.get().cursor }),
+  getBottom: () => store.get().settings.fabBottom,
+  onMoved: (bottom) => settingsRepo.set('fabBottom', bottom),
+});
+const placeFab = () => applyFabBottom(store.get().settings.fabBottom);
+window.addEventListener('resize', placeFab); // yön değişince/ekran küçülünce konum sınırlara çekilir
 
 // ---------------------------------------------------------------------------
 // View çizimi
@@ -126,6 +134,7 @@ function scheduleRender() {
 
 store.subscribe((s, prev) => {
   if (s.settings.theme !== prev.settings.theme) applyTheme(s.settings.theme);
+  if (s.settings.fabBottom !== prev.settings.fabBottom) placeFab();
   if (s.settings.sidebarCollapsed !== prev.settings.sidebarCollapsed) appEl.classList.toggle('sidebar-collapsed', Boolean(s.settings.sidebarCollapsed));
   if (
     s.settings.background !== prev.settings.background ||
@@ -290,6 +299,7 @@ async function boot() {
     // Kaldırılmış (ör. eski "Deri") veya silinmiş bir arka plan seçiliyse Standart'a dön
     if (!allBackgrounds().some((b) => b.value === settings.background)) await settingsRepo.set('background', 'standard');
     applyBackgroundSettings(store.get().settings);
+    placeFab();
     await eventRepo.loadAll();
     if (!settings.seeded) {
       if (!store.get().events.length) await eventRepo.mergeMany(buildSeedEvents());

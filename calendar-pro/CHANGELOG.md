@@ -4,6 +4,19 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.18.0
+- **Saydam ana paneller**: sayfalardaki ana paneller (Ay/Hafta/Gün ızgarası, Dashboard kartları, Kanban kolonları, listeler) ve yapışkan başlık paneli artık **saydam cam**
+  yüzeydedir; arka plan rengi/görseli arkalarından görünür, bulanıklaştırma okunabilirliği korur. Pencereler, komut paleti ve kenar çubuğu değişmedi
+- **Hayalet tıklama düzeltmesi**: dokunmatik ekranda bir etkinliğe dokununca, açılan pencerede dokunulan noktanın altındaki öğe (satır, tarih kutusu, anahtar…) kendiliğinden
+  tetikleniyordu. Pencere açılışından sonra o noktadaki sahte fare olayları kısa süre yutulur (`core/ghostClick.js`); gerçek tıklamalar ve başka noktalara dokunuşlar etkilenmez
+- Ay görünümü: etkinlik çubuğunun **Sil** düğmesi yalnızca hover'lı aygıtlarda görünür (dokunmatikte "yapışkan hover" ile parmağın altında beliriyordu)
+- **ToDo kutuları** satırın metnine göre **dikeyde ortalı** (çok satırlı görevlerde de); **tamamlanan görevin üstü çizili** ve soluk
+- **Açıklama ilk açıldığında** (ve tam ekranda) tüm satırlar **önizleme** halindedir; hiçbir satır ham değildir, klavye açılmaz. Başlıkta "Markdown" yazısı kaldırıldı
+- **Yüzen "+" düğmesi** biraz saydam (%82); **basılı tutup dikey eksende sürüklenerek** yeri değiştirilir (hafif titreşim, büyür; sınırlar: altta 16 px, üstte başlığa 72 px).
+  Konum `fabBottom` ayarında saklanır, dışa/içe aktarılır; taşımadan sonra yeni etkinlik açılmaz, basılı tutmadan önce kayma taşımayı başlatmaz
+- Test: `clampFabBottom`, ToDo `task`/`done` bayrakları ve `md-task-done` çıktısı; gerçek tarayıcıda ToDo ortalama/çizgi, ilk açılış önizlemesi, saydamlık, FAB sürükleme ve
+  kalıcılık, hayalet tıklama (koruma açık/kapalı karşılaştırmalı)
+
 ## 1.17.0
 - **Açıklamada canlı önizleme**: Yaz / Önizle düğmeleri kaldırıldı. İmlecin bulunduğu (aktif) satır **ham Markdown** olarak (işaretleriyle) görünür ve düzenlenir,
   **diğer tüm satırlar önizleme halinde** kalır (Obsidian tarzı). Bir satıra dokununca o satır ham hale geçer; editörden çıkınca hepsi işlenmiş görünür

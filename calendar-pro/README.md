@@ -76,7 +76,8 @@ degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bin
 
 - **Tek renk**: düz bir renk. **Çift renk · gradient**: iki renk arasında 135° çapraz degrade; ⇄ düğmesi renkleri değiştirir.
 - Renk seçicide sürüklerken arka plan canlı önizlenir; seçim bitince kaydedilir (iptal edilirse eski arka plana dönülür).
-- Renk olduğu gibi gösterilir (görsellerdeki gibi tema bindirmesi yoktur); paneller cam yüzeyli olduğu için metinler okunur kalır.
+- Renk olduğu gibi gösterilir (görsellerdeki gibi tema bindirmesi yoktur). Sayfalardaki ana paneller ve başlık paneli **saydam cam** yüzeylidir:
+  arka plan rengi/görseli arkalarından görünür, bulanıklaştırma sayesinde metinler okunur kalır (`--panel-mix`, `.view .glass`).
   Çok açık bir renk seçerseniz koyu tema metinleri zor okunabilir; açık temayı deneyin.
 - Ayarlar: `bgColorMode` (`single` | `dual`), `bgColor1`, `bgColor2`. Değerler `#rrggbb` olarak doğrulanır; ilk boyamada (`index.html`)
   yalnızca tek renk veya `linear-gradient(135deg, #rrggbb, #rrggbb)` biçimleri kabul edilir.
@@ -142,6 +143,9 @@ Etkinlik açıklaması Markdown ile yazılır ve **canlı önizleme** ile göste
   Bir satıra dokunmak/tıklamak onu ham hale geçirir (imleç tıklanan konuma yakın düşer); editörden çıkınca hepsi işlenmiş görünür.
 - Biçimlendirme araç çubuğu (kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı; `Ctrl/⌘ + B` ve `+ I`) **aktif satıra** uygulanır.
   Köşedeki düğme açıklamayı **tam ekranda** düzenletir. Metin ham Markdown olarak saklanır; Kanban kartı ve arama özetlerinde işaretler gizlenir.
+- Açıklama (ve tam ekran düzenleyici) **ilk açıldığında tüm satırlar önizleme halindedir**; hiçbir satır ham değildir ve klavye açılmaz. Düzenlemek için bir satıra dokunulur.
+- **Görev listesi** (`- [ ]` / `- [x]`): onay kutusu satırın **dikeyde ortasındadır** (çok satırlı görevde de); tamamlanan görevin metni **üstü çizili ve soluk** görünür
+  (düzenleyicide ve işlenmiş Markdown çıktısında).
 
 | Tuş / eylem | Davranış |
 |-------------|----------|
@@ -199,6 +203,15 @@ Ekran genişliği **900 px ve altındayken** (telefon, dikey tablet):
   bugünün tarihini gösterir ("Bugün: 15.Kas").
 - Başlıktaki "Yeni" düğmesi gizlenir; yerine sağ altta yüzen, yuvarlak ve büyük (56 px) bir **yeni etkinlik düğmesi** (FAB) gösterilir (`src/main.js`, `.fab`).
   Bildirimler düğmenin üstünde çıkar, sayfanın altına düğmeye yer bırakan boşluk eklenir. `N` kısayolu aynen çalışır.
+  Düğme **biraz saydamdır** (%82; basılıyken tam opak). **Basılı tutup** (≈0,4 sn; hafif titreşim, düğme büyür) **dikey eksende** sürükleyerek yeri değiştirilir;
+  yatay konum sağ kenarda sabittir. Alt kenardan en az 16 px, üstten başlığa 72 px yer bırakılır. Konum `settings.fabBottom` olarak saklanır (dışa/içe aktarmaya dahildir),
+  yeniden açılışta ve ekran döndürmede korunur. Basılı tutmadan önce parmak kayarsa taşıma başlamaz; taşımadan sonra yeni etkinlik açılmaz (`src/components/fab.js`).
+- **Hayalet tıklama koruması** (`src/core/ghostClick.js`): dokunmatik ekranda bir etkinliğe dokunulunca tarayıcı, parmak kalkınca aynı noktaya sahte fare olayları gönderir.
+  Pencere `pointerup` anında açıldığından bu olaylar açılan pencerenin o noktadaki öğesini tetikliyordu (ör. açıklamada satır kendiliğinden ham olur, bitiş tarihi kutusu odaklanır).
+  Son dokunuşun yeri ve zamanı izlenir; pencere hemen ardından açılırsa o noktadaki (14 px) sahte fare olayları ≈0,7 sn yutulur. Gerçek fare tıklamaları ve başka bir noktaya
+  yapılan dokunuşlar etkilenmez.
+- Ay görünümündeki etkinlik çubuğunun **Sil** düğmesi yalnızca gerçek hover'lı aygıtlarda (`@media (hover: hover)`) görünür; dokunmatikte ilk dokunuşun bıraktığı "yapışkan hover" artık
+  düğmeyi parmağın altında açmaz.
 - Ay ve Hafta başlığındaki **Tüm günler / Çalışma günleri** düğmesi eylem satırının sağ ucuna dayanır (`.offdays-toggle`).
 - Gantt'ta S-M-L solda kalır; **Kritik yol** ve sağındaki düğme eylem satırının sağ ucuna dayanır (`.gantt-push`).
 - Hamburger (44 px, 28 px ikon) ve sayfa adı (24 px) büyüktür; başlık paneli yüksekliği değişmez: ad satır yüksekliği sabit (27 px) ve uzun
@@ -287,11 +300,11 @@ Telefonda menü her zaman tam genişlikte açılır.
 ```
 src/
   core/        state (store + bus), router (hash), db (IndexedDB), eventRepo, eventModel,
-               settingsRepo, actions, theme, backgrounds, colors (renk paleti), markdown (güvenli Markdown), dateUtils, overlap,
+               settingsRepo, actions, theme, backgrounds, colors (renk paleti), markdown (güvenli Markdown), ghostClick, dateUtils, overlap,
                dom (güvenli şablon), utils, seed
   services/    recurrenceService, notificationService, exportService, icsService, resetService, updateService, criticalPathService
   components/  sidebar, commandPalette, modal, toast, eventCard, eventEditor, timeGrid,
-               dragDrop, toolbar, icons, markdownEditor, colorPicker
+               dragDrop, toolbar, icons, markdownEditor, colorPicker, fab
   views/       dashboard, month, week, day, scheduler, timeline, gantt, kanban
   styles/      theme, main, dashboard, calendar, scheduler, gantt, kanban
 public/        manifest.json, service-worker.js, icons/

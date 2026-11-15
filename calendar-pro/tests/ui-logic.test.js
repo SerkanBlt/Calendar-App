@@ -6,6 +6,7 @@ process.env.TZ = 'Europe/Istanbul';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { buildRows } from '../src/components/commandPalette.js';
+import { clampFabBottom, FAB_SIZE } from '../src/components/fab.js';
 import { dayMonthShort } from '../src/core/dateUtils.js';
 import { normalizeHexColor } from '../src/core/eventModel.js';
 
@@ -78,5 +79,21 @@ describe('buildRows (komut paleti)', () => {
     const rows = buildRows({ commands: commands.map(({ group, ...c }) => c) });
     assert.equal(rows.length, commands.length);
     assert.ok(rows.every((r) => r.kind === 'command'));
+  });
+});
+
+describe('clampFabBottom (yüzen düğme konumu)', () => {
+  test('alt kenara ve üstte başlığa yer bırakacak şekilde sıkıştırır', () => {
+    assert.equal(clampFabBottom(0, 800), 16); // en az 16 px alt boşluk
+    assert.equal(clampFabBottom(-50, 800), 16);
+    assert.equal(clampFabBottom(300, 800), 300);
+    assert.equal(clampFabBottom(5000, 800), 800 - FAB_SIZE - 72); // üstte 72 px boşluk kalır
+  });
+  test('küçük ekranda bile alt sınırın altına inmez; geçersiz değer varsayılana döner', () => {
+    assert.equal(clampFabBottom(100, 120), 16);
+    assert.equal(clampFabBottom(NaN, 800), 16);
+    assert.equal(clampFabBottom(undefined, 800), 16);
+    assert.equal(clampFabBottom('240', 800), 240);
+    assert.equal(clampFabBottom(100.6, 800), 101);
   });
 });

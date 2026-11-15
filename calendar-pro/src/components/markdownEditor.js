@@ -99,6 +99,8 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
       const item = list[i];
       r.el.dataset.kind = item.kind;
       r.el.dataset.edge = item.edge ?? '';
+      r.el.dataset.task = item.task ? 'true' : '';
+      r.el.dataset.done = item.done ? 'true' : '';
       r.el.style.setProperty('--depth', String(item.depth));
       const markup = empty ? String(html`<span class="md-placeholder">${placeholder}</span>`) : item.html;
       if (i !== active && r.shown !== markup) {
