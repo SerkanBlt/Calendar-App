@@ -6,7 +6,7 @@
  *   - Görünüm: tema (Açık / Koyu / Sistem + özel temalar) ve arka plan (görseller, yerleşim)
  *   - Takvim: çalışma günleri ve çalışma dışı günlerin Ay/Hafta görünümünde gösterilmesi
  *   - Genel: kenar çubuğu ikon modu, hatırlatmalar
- *   - Veri: JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma
+ *   - Veri: JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma, tüm verileri sıfırlama
  *   - Hakkında: sürüm bilgisi
  * Panel açıkken store değiştikçe içerik yeniden çizilir (kaydırma konumu ve odak korunur).
  */
@@ -23,6 +23,7 @@ import {
   importCalendar,
   importData,
   removeUserBackground,
+  resetData,
   setBackground,
   setBackgroundFit,
   setTheme,
@@ -160,6 +161,11 @@ function dataSection() {
         <button type="button" class="btn btn-ghost" data-fk="import-ics" data-import-ics>${icon('upload')} ICS içe aktar</button>
       </div>
       <p class="settings-note">Outlook, Gmail ve diğer takvim uygulamalarıyla uyumlu .ics dosyası. Gmail'de Ayarlar → İçe aktar ve dışa aktar, Outlook'ta Takvim ekle → Dosyadan yükle ile içe aktarabilirsiniz. Bu tek seferlik bir aktarımdır; iki yönlü senkron değildir.</p>
+      <p class="settings-sub">Sıfırla</p>
+      <div class="settings-actions">
+        <button type="button" class="btn btn-danger-ghost" data-fk="reset" data-reset>${icon('trash')} Tüm verileri sıfırla</button>
+      </div>
+      <p class="settings-note">Etkinlikler, ekler, kendi arka plan görselleriniz ve ayarlar silinir; uygulama ilk kurulum haline döner. Önce onayınız istenir ve isteğe bağlı olarak yedek alınır.</p>
     </section>`;
 }
 
@@ -282,6 +288,7 @@ export function openSettings({ section } = {}) {
     if (t.closest('[data-import]')) return importData();
     if (t.closest('[data-export-ics]')) return exportCalendar();
     if (t.closest('[data-import-ics]')) return importCalendar();
+    if (t.closest('[data-reset]')) return resetData();
     return undefined;
   });
 

@@ -64,6 +64,16 @@ export const userBackgroundRepo = {
     return record;
   },
 
+  /**
+   * Tüm görsellerin object URL'lerini serbest bırakır (veritabanı başka yerde temizlendiğinde; bkz. resetService).
+   * Görsel hâlâ ekranda olabilir; bir sonraki çizimden sonra bırakılır.
+   */
+  releaseAll() {
+    const urls = [...objectUrls.values()];
+    objectUrls.clear();
+    setTimeout(() => urls.forEach((url) => URL.revokeObjectURL(url)), 1000);
+  },
+
   /** Silinmiş bir kaydı geri yükler ("Geri al"). */
   async restore(record) {
     if (!record) return;

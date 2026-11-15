@@ -114,7 +114,7 @@ Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinl
 | Görünüm | Tema, arka plan, yerleşim |
 | Takvim | Çalışma günleri, çalışma dışı günleri göster/gizle |
 | Genel | Kenar çubuğu ikon modu, hatırlatmalar |
-| Veri | JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma |
+| Veri | JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma, tüm verileri sıfırlama |
 | Hakkında | Sürüm bilgisi |
 
 ## Takvim dosyası (ICS)
@@ -147,6 +147,20 @@ Bu **tek seferlik bir aktarımdır**, iki yönlü senkron değildir. Mantık `sr
 "ayın 2. salısı", `BYSETPOS`, `RDATE` gibi kurallar desteklenmez — bu etkinlikler **yalnızca ilk örnek** olarak eklenir ve içe aktarma
 bildiriminde sayısı belirtilir. Ekler (attachments) ICS'e dahil edilmez.
 
+## Verileri sıfırlama
+
+**Ayarlar → Veri → Tüm verileri sıfırla** (veya `Ctrl + K` → "Reset All Data…") uygulamayı ilk kurulum haline döndürür.
+Önce bir onay penceresi açılır:
+
+- **Yedek al ve sıfırla** (varsayılan): önce JSON yedeği indirilir, ardından sıfırlanır. Yedek alınamazsa hiçbir şey silinmez.
+- **Yedeksiz sıfırla**: doğrudan sıfırlar.
+- **Vazgeç**: hiçbir şey değişmez.
+
+Silinenler: etkinlikler, ekler, gönderilmiş hatırlatma kayıtları, kendi arka plan görselleri ve tüm ayarlar (tema, çalışma günleri, kenar çubuğu
+vb. varsayılana döner). Veritabanı tek transaction'da temizlenir, yarım kalmaz. Sıfırlanmış uygulama **boş** açılır; ilk açılıştaki örnek veriler
+geri yüklenmez. İşlem geri alınamaz; JSON yedeği etkinlikleri ve ayarları içerir, ekler ve kendi arka plan görselleri yedeğe girmez.
+Mantık `src/services/resetService.js` içindedir.
+
 ## Sürümler
 
 Sürüm numarası `package.json` → `version` alanından gelir ve derleme sırasında uygulamaya yerleştirilir
@@ -178,7 +192,7 @@ Telefonda menü her zaman tam genişlikte açılır.
 src/
   core/        state (store + bus), router (hash), db (IndexedDB), eventRepo, eventModel,
                settingsRepo, actions, theme, dateUtils, overlap, dom (güvenli şablon), utils, seed
-  services/    recurrenceService, notificationService, exportService, icsService, criticalPathService
+  services/    recurrenceService, notificationService, exportService, icsService, resetService, criticalPathService
   components/  sidebar, commandPalette, modal, toast, eventCard, eventEditor, timeGrid,
                dragDrop, toolbar, icons
   views/       dashboard, month, week, day, scheduler, timeline, gantt, kanban

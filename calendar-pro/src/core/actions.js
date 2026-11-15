@@ -9,6 +9,7 @@ import { choiceDialog, confirmDialog } from '../components/modal.js';
 import { toast } from '../components/toast.js';
 import { exportICS, exportJSON, importICS, importJSON, pickFile } from '../services/exportService.js';
 import { notificationService } from '../services/notificationService.js';
+import { resetAllData } from '../services/resetService.js';
 import { userBackgroundRepo } from './userBackgroundRepo.js';
 import { USER_PREFIX } from './backgrounds.js';
 
@@ -123,6 +124,33 @@ export async function importData() {
     toast(`${count} etkinlik içe aktarıldı`, { type: 'success' });
   } catch (err) {
     toast(err.message, { type: 'error', duration: 6000 });
+  }
+}
+
+/**
+ * Tüm verileri (etkinlikler, ekler, kendi arka planlar, ayarlar) kullanıcı onayıyla sıfırlar.
+ * Onay penceresi önce yedek almayı önerir (varsayılan seçenek). Yedek alınamazsa sıfırlama yapılmaz.
+ * @returns {Promise<boolean>} sıfırlandı mı
+ */
+export async function resetData() {
+  const choice = await choiceDialog({
+    title: 'Tüm veriler sıfırlansın mı?',
+    message:
+      'Bu tarayıcıdaki tüm etkinlikler, ekler, kendi arka plan görselleriniz ve ayarlarınız silinecek; uygulama ilk kurulum haline dönecek (örnek veriler geri yüklenmez). Bu işlem geri alınamaz. Yedek (JSON) etkinlikleri ve ayarları içerir; ekler ve kendi arka plan görselleriniz yedeğe girmez.',
+    choices: [
+      { value: 'backup', label: 'Yedek al ve sıfırla', variant: 'btn-primary' },
+      { value: 'reset', label: 'Yedeksiz sıfırla', variant: 'btn-danger' },
+    ],
+  });
+  if (!choice) return false;
+  try {
+    if (choice === 'backup') await exportJSON(); // başarısız olursa buradan çıkılır, hiçbir şey silinmez
+    await resetAllData();
+    toast('Tüm veriler sıfırlandı', { type: 'success' });
+    return true;
+  } catch (err) {
+    toast(`Sıfırlama başarısız: ${err.message}`, { type: 'error', duration: 6000 });
+    return false;
   }
 }
 

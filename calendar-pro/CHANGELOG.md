@@ -4,6 +4,13 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.12.0
+- **Tüm verileri sıfırlama** — Ayarlar → Veri → "Tüm verileri sıfırla" ve `Ctrl + K` → "Reset All Data…"
+- Onay penceresi sorar: **Yedek al ve sıfırla** (varsayılan; önce JSON yedeği indirir, yedek alınamazsa hiçbir şey silinmez),
+  **Yedeksiz sıfırla** veya Vazgeç
+- Silinenler: etkinlikler, ekler, hatırlatma kayıtları, kendi arka plan görselleri ve tüm ayarlar (tema, çalışma günleri vb. varsayılana döner).
+  Silme tek işlemde yapılır; yarıda kalmaz. Sıfırlanan uygulama boş açılır, örnek veriler geri yüklenmez
+
 ## 1.11.1
 - Mobilde görünüm başlığı (Ay, Hafta, Gün… üstündeki panel) dört köşesi yuvarlak, çerçeveli bir panel oldu; içeriğine her yönden 12 px dolgu uygulanır ve altındaki takvim kartıyla aynı genişliktedir. Masaüstü görünümü değişmedi
 

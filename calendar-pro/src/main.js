@@ -29,7 +29,7 @@ import { userBackgroundRepo } from './core/userBackgroundRepo.js';
 import { html } from './core/dom.js';
 import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
-import { exportCalendar, exportData, importCalendar, importData, moveOccurrence, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed, toggleShowOffDays } from './core/actions.js';
+import { exportCalendar, exportData, importCalendar, importData, moveOccurrence, resetData, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed, toggleShowOffDays } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
@@ -173,6 +173,7 @@ const palette = createCommandPalette({
     { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', run: importData },
     { id: 'export-ics', title: 'Export Calendar (ICS)', keywords: 'dışa aktar takvim ics outlook gmail google indir export', icon: 'download', run: exportCalendar },
     { id: 'import-ics', title: 'Import Calendar (ICS)', keywords: 'içe aktar takvim ics outlook gmail google yükle import', icon: 'upload', run: importCalendar },
+    { id: 'reset-data', title: 'Reset All Data…', keywords: 'sıfırla temizle sil tüm veriler fabrika reset clear erase factory', icon: 'trash', run: resetData },
     ...BASE_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `theme ${t.value}`, icon: t.icon, run: () => setTheme(t.value) })),
     ...CUSTOM_THEMES.map((t) => ({ id: `theme-${t.value}`, title: `Tema: ${t.label}`, keywords: `özel custom theme ${t.value} ${t.description}`, icon: 'palette', run: () => setTheme(t.value) })),
     { id: 'search', title: 'Etkinlik Ara', keywords: 'arama search bul find etkinlik', icon: 'search', hint: '/', run: () => openEventSearch() },

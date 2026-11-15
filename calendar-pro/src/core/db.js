@@ -88,4 +88,21 @@ export const db = {
       keys.forEach((k) => s.delete(k));
       return null;
     }),
+  /**
+   * Tüm store'ları tek transaction'da temizler (ya hepsi silinir ya hiçbiri).
+   * `settingsRows` ({key, value}), temizlikten sonra settings store'una yeniden yazılır.
+   */
+  wipe: async (settingsRows = []) => {
+    const database = await openDB();
+    const names = Object.values(STORES);
+    return new Promise((resolve, reject) => {
+      const tx = database.transaction(names, 'readwrite');
+      names.forEach((name) => tx.objectStore(name).clear());
+      const settings = tx.objectStore(STORES.SETTINGS);
+      settingsRows.forEach((row) => settings.put(row));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error('Sıfırlama iptal edildi.'));
+    });
+  },
 };
