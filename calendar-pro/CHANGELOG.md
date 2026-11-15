@@ -4,6 +4,14 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.22.0
+- **Hamburger kalktı, sol kenara çekme kulakçığı geldi**: başlıktaki hamburger düğmesi kaldırıldı. Yerine ekranın sol kenarında, dar (14 px) ve parmak boyunda (52 px), dikeyde ortada, yarı saydam bir kulakçık var;
+  kenar boşluğuna sığar (içeriği örtmez). **Dokununca** kenar çubuğunu açar, **sağa çekilince** çekmece parmağı izler (arkada perde belirir); bırakınca ≥%35 açıksa tamamlanır, değilse geri kapanır.
+  Dikey/sola kayma çekme sayılmaz. Klavyeyle (Tab → Enter) açılır, `aria-expanded` güncellenir; açıkken kulakçık gizlenir. Dar ekranlarda ve yatay telefonda görünür; masaüstü/yatay tablette (kalıcı kenar çubuğu) yoktur
+- Başlık panelinin yüksekliği **birebir aynı** kaldı (5 boyut × 8 sayfa: dikey 85–215 px, kompakt yatay 50 px; ölçülerek karşılaştırıldı); kompakt başlıkta satır yüksekliği artık başlık bloğuyla sabitlenir
+- Test: kulakçık geometrisi, dokunma, gerçek dokunma olaylarıyla (CDP) çekme (izleme, perde, uzun/kısa çekme, dikey kaydırma), klavye, kapatma yolları, masaüstünde yokluk
+- Sınırlama: Android'in kenardan içeri "geri" hareketi işletim sisteminde işlenebilir; bu yüzden dokunma her zaman açar, çekme işletim sisteminin izin verdiği yerde çalışır (gerçek telefonda denenmedi)
+
 ## 1.21.1
 - **Yatay telefon düzeni düzeltildi**: telefon yan çevrilince genişlik 900 px'i aşıyor (~950×375) ve **masaüstü düzeni** devreye giriyordu: sabit kenar çubuğu (272 px, öğeleri kesiliyor) ve 127 px'lik başlık,
   içeriğe yalnızca ~225 px yükseklik bırakıyordu. Mobil kabuk (kenar çubuğu çekmece + hamburger + yüzen düğme) artık genişliğe **veya** kısa yüksekliğe (≤500 px) bağlı
