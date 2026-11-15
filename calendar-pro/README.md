@@ -76,8 +76,7 @@ degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bin
 
 - **Tek renk**: düz bir renk. **Çift renk · gradient**: iki renk arasında 135° çapraz degrade; ⇄ düğmesi renkleri değiştirir.
 - Renk seçicide sürüklerken arka plan canlı önizlenir; seçim bitince kaydedilir (iptal edilirse eski arka plana dönülür).
-- Renk olduğu gibi gösterilir (görsellerdeki gibi tema bindirmesi yoktur). Sayfalardaki ana paneller ve başlık paneli **saydam cam** yüzeylidir:
-  arka plan rengi/görseli arkalarından görünür, bulanıklaştırma sayesinde metinler okunur kalır (`--panel-mix`, `.view .glass`).
+- Renk olduğu gibi gösterilir (görsellerdeki gibi tema bindirmesi yoktur); paneller cam yüzeyli olduğu için metinler okunur kalır.
   Çok açık bir renk seçerseniz koyu tema metinleri zor okunabilir; açık temayı deneyin.
 - Ayarlar: `bgColorMode` (`single` | `dual`), `bgColor1`, `bgColor2`. Değerler `#rrggbb` olarak doğrulanır; ilk boyamada (`index.html`)
   yalnızca tek renk veya `linear-gradient(135deg, #rrggbb, #rrggbb)` biçimleri kabul edilir.

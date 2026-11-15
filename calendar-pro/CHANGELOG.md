@@ -4,6 +4,11 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.18.1
+- **Geri alındı**: 1.18.0'daki panel saydamlığı. Sayfa içi paneller (Dashboard kartları, Kanban kolonları, Ay/Hafta/Gün ızgarası, listeler) ve başlık paneli
+  1.17.0'daki görünümüne döndü. (1.18.0 bunları birlikte saydamlaştırmıştı; istenen yalnızca en alttaki ana panelin saydam olmasıydı.)
+  1.18.0'ın diğer değişiklikleri (hayalet tıklama, ToDo, ilk açılış önizlemesi, yüzen düğme) aynen duruyor
+
 ## 1.18.0
 - **Saydam ana paneller**: sayfalardaki ana paneller (Ay/Hafta/Gün ızgarası, Dashboard kartları, Kanban kolonları, listeler) ve yapışkan başlık paneli artık **saydam cam**
   yüzeydedir; arka plan rengi/görseli arkalarından görünür, bulanıklaştırma okunabilirliği korur. Pencereler, komut paleti ve kenar çubuğu değişmedi

@@ -77,10 +77,6 @@ kbd {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
-/* Sayfalardaki ana paneller (Ay/Hafta/Gün ızgarası, Dashboard kartları, Kanban kolonları, listeler…) saydamdır: arka plan rengi veya görseli
-   panelin arkasından görünür; okunabilirlik bulanıklaştırmayla (backdrop-filter) korunur. --panel-mix: yüzey renginin yüzdesi (düşük = daha saydam).
-   Modallar, komut paleti ve kenar çubuğu .view dışında olduğu için değişmez. */
-.view .glass { background: color-mix(in srgb, var(--surface) var(--panel-mix, 42%), transparent); }
 
 .boot-screen {
   display: grid; place-items: center; height: 100vh; width: 100%;
@@ -174,7 +170,7 @@ kbd {
   padding: var(--space-3) var(--space-3) var(--space-4);
   position: sticky; top: 0; z-index: 5;
   /* Kaydırılan içerik başlığın arkasından görünmesin (buzlu cam) */
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
   backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
   border-radius: 0 0 var(--radius) var(--radius);
 }
@@ -751,7 +747,7 @@ kbd {
     padding: var(--space-3);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    background: color-mix(in srgb, var(--surface-solid) 56%, transparent);
+    background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
   }
   /* Hamburger ve sayfa adı büyük; panel yüksekliği değişmesin diye satır yüksekliği sabit (27px) ve uzun ad üç noktayla kısalır.
      Başlık bloğu (27px ad + altyazı) 44px'lik hamburgerden yüksek kaldığı için satır yüksekliğini o belirler. */
