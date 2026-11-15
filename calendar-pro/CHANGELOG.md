@@ -4,6 +4,9 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.11.1
+- Mobilde görünüm başlığı (Ay, Hafta, Gün… üstündeki panel) dört köşesi yuvarlak, çerçeveli bir panel oldu; içeriğine her yönden 12 px dolgu uygulanır ve altındaki takvim kartıyla aynı genişliktedir. Masaüstü görünümü değişmedi
+
 ## 1.11.0
 - **ICS (.ics) dışa/içe aktarma** — Ayarlar → Veri sekmesi ve `Ctrl + K` → "Export/Import Calendar (ICS)"; Outlook, Gmail ve diğer takvim uygulamalarıyla uyumlu
 - Dışa aktarma: tek ve tekrarlayan etkinlikler (RRULE/EXDATE), seriden ayrılmış tek örnekler (RECURRENCE-ID), hatırlatmalar (VALARM);

@@ -642,7 +642,14 @@ kbd {
   .sidebar-scrim { position: fixed; inset: 0; z-index: 55; background: var(--scrim); }
   .sidebar-open .sidebar-scrim { display: block; }
   .only-mobile { display: inline-grid !important; }
-  .toolbar { padding: var(--space-2) var(--space-1) var(--space-3); }
+  /* Mobil: başlık, dört köşesi yuvarlak çerçeveli bir panel; içerikle (view-body) aynı genişlikte */
+  .toolbar {
+    margin: 0 var(--space-2) var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
+  }
   .toolbar-title h1 { font-size: 18px; }
   .field-grid { grid-template-columns: 1fr 1fr; }
   .field-grid--3 { grid-template-columns: 1fr; }
