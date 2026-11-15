@@ -158,6 +158,16 @@ Renk seçici (`src/components/colorPicker.js`) **12 ton × 3 yoğunluk** (Açık
 Palet elle yazılmaz, taban renklerden üretilir (`src/core/colors.js` → `PALETTE_HUES`, `PALETTE_TONES`). Paletin altında **özel renk**: yuvarlak düğme sistemin renk seçicisini açar,
 yanındaki alana hex kod yazılabilir (`#abc`, `aabbcc` …); seçili rengin adı ("Mavi · Canlı" / "Özel renk") yazılır. Telefonda palet 6 sütundur.
 
+## Etkinlik sayfası
+
+Etkinlik (yeni veya düzenleme) **tam sayfa** açılır (`modal--page`): ekranı kaplar, içerik en çok 760 px'lik ortalanmış bir sütundadır, gövde kayar,
+Kaydet / İptal / Sil çubuğu altta sabittir. `Esc` kapatır; açıklamanın tam ekran düzenleyicisi bunun üstüne ayrı bir pencere olarak açılır.
+
+**Başlık:** sayfanın başlığında etkinliğin **kendi adı** görünür ("Etkinliği düzenle" yazmaz). Ad düz metin gibi durur, **dokununca metin kutusuna dönüşür**
+(zemin + vurgu kenarlığı); uzunsa **üç nokta** ile kısalır (tamamı ipucu olarak görünür). Yeni etkinlikte ad boştur, "Yeni etkinlik" ipucu görünür ve kutu açılışta odaklıdır;
+düzenlemede hiçbir alan kendiliğinden odaklanmaz (telefonda klavye açılmaz). Adda `Enter` veya `Ctrl/⌘ + Enter` kaydeder. Ad girdisi formun dışında (başlıkta) durduğu için
+`form="event-form"` özniteliğiyle forma bağlanır.
+
 ## Mobil düzen
 
 Ekran genişliği **900 px ve altındayken** (telefon, dikey tablet):
@@ -167,6 +177,9 @@ Ekran genişliği **900 px ve altındayken** (telefon, dikey tablet):
 - Başlıktaki "Yeni" düğmesi gizlenir; yerine sağ altta yüzen, yuvarlak ve büyük (56 px) bir **yeni etkinlik düğmesi** (FAB) gösterilir (`src/main.js`, `.fab`).
   Bildirimler düğmenin üstünde çıkar, sayfanın altına düğmeye yer bırakan boşluk eklenir. `N` kısayolu aynen çalışır.
 - Ay ve Hafta başlığındaki **Tüm günler / Çalışma günleri** düğmesi eylem satırının sağ ucuna dayanır (`.offdays-toggle`).
+- Gantt'ta S-M-L solda kalır; **Kritik yol** ve sağındaki düğme eylem satırının sağ ucuna dayanır (`.gantt-push`).
+- Hamburger (44 px, 28 px ikon) ve sayfa adı (24 px) büyüktür; başlık paneli yüksekliği değişmez: ad satır yüksekliği sabit (27 px) ve uzun
+  adlar üç noktayla kısalır. Panel yüksekliği 3 genişlik × 8 görünümde ölçülerek doğrulanmıştır.
 - Timeline'da Yaklaşan / Tümü / Geçmiş filtresi ve arama alanı başlıktadır (eylem satırında, sola dayalı).
 - Masaüstünde (>900 px) başlık eskisi gibidir: eylemler sağda, "Yeni" başlıktadır.
 

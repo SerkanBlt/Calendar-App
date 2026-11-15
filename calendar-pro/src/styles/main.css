@@ -381,7 +381,6 @@ kbd {
 .field-head .icon-btn { margin-right: -4px; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); background: var(--surface-3); }
 .field select option { background: var(--surface-solid); }
-.field--title input { font-size: 20px !important; font-weight: 600; padding: 10px 14px !important; }
 .is-invalid { border-color: var(--danger) !important; }
 .field input[type='range'] { accent-color: var(--accent); width: 100%; }
 .field output { color: var(--text); margin-left: auto; }
@@ -510,8 +509,29 @@ kbd {
 .md-editor--full { flex: 1; min-height: 0; }
 .md-editor--full .md-input { flex: 1; min-height: 0; resize: none; font-size: 16px; line-height: 1.55; padding: 14px 16px; }
 .md-editor--full .md-preview { flex: 1; min-height: 0; overflow: auto; font-size: 16px; padding: 14px 16px; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4) var(--space-5) var(--space-2); }
-.modal-title { font-size: 17px; font-weight: 700; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5) var(--space-2); }
+.modal-title { font-size: 17px; font-weight: 700; min-width: 0; }
+
+/* Etkinlik penceresi başlığı: etkinliğin adı düz metin gibi görünür (uzunsa üç nokta); dokununca metin kutusuna dönüşür */
+.modal-header:has(.modal-title-input) .modal-title { flex: 1; }
+.modal-title-input {
+  display: block; width: 100%; min-width: 0; margin-left: -10px; padding: 6px 10px; font: inherit; color: var(--text);
+  border-radius: 10px; border: 1px solid transparent; background: transparent;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: background var(--dur), border-color var(--dur);
+}
+.modal-title-input::placeholder { color: var(--text-faint); font-weight: 600; }
+.modal-title-input:hover { background: var(--surface-2); }
+.modal-title-input:focus { outline: none; background: var(--surface-2); border-color: var(--accent); text-overflow: clip; }
+
+/* Etkinlik tam sayfa: ekranı kaplar, içerik ortalanmış bir sütundadır (en çok 760px), gövde kayar */
+.modal-backdrop:has(.modal--page) { padding: 0; }
+.modal.modal--page {
+  max-width: none; width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; border: 0;
+  padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
+}
+.modal--page .modal-title { font-size: 20px; }
+.modal--page :is(.modal-header, .modal-body, .modal-footer) { padding-inline: max(var(--space-5), calc((100% - 760px) / 2)); }
+.modal--page .modal-body { flex: 1; min-height: 0; }
 .modal-body { padding: var(--space-3) var(--space-5) var(--space-4); overflow-y: auto; }
 .modal-footer { padding: var(--space-3) var(--space-5) var(--space-4); border-top: 1px solid var(--border); }
 .modal-actions { display: flex; align-items: center; gap: var(--space-2); justify-content: flex-end; flex-wrap: wrap; }
@@ -713,11 +733,17 @@ kbd {
     border-radius: var(--radius);
     background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
   }
-  .toolbar-title h1 { font-size: 18px; }
+  /* Hamburger ve sayfa adı büyük; panel yüksekliği değişmesin diye satır yüksekliği sabit (27px) ve uzun ad üç noktayla kısalır.
+     Başlık bloğu (27px ad + altyazı) 44px'lik hamburgerden yüksek kaldığı için satır yüksekliğini o belirler. */
+  .toolbar-title h1 { font-size: 24px; line-height: 27px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toolbar-title { min-width: 0; }
+  .toolbar .icon-btn.only-mobile { width: 44px; height: 44px; }
+  .toolbar .icon-btn.only-mobile .icon { width: 28px; height: 28px; }
   /* Eylem satırı: tam genişlikte, sola dayalı; Geri/Bugün/İleri bloğu en başta. "Yeni" yerine sağ alttaki FAB kullanılır */
   .toolbar-actions { flex: 1 0 100%; margin-left: 0; justify-content: flex-start; }
   .toolbar-nav { order: -1; }
   .toolbar-actions .offdays-toggle { margin-left: auto; } /* Hafta sonlarını gizle/göster düğmesi sağa dayalı */
+  .toolbar-actions .gantt-push { margin-left: auto; } /* Gantt: Kritik yol ve sağındaki düğme sağa dayalı (S-M-L solda kalır) */
   .toolbar [data-action='new'] { display: none; }
   .fab { display: grid; }
   .view-body { padding-bottom: 80px; } /* FAB içeriğin son satırlarını kapatmasın */

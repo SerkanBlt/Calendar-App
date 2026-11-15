@@ -15,11 +15,13 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
 export const isModalOpen = () => openStack.length > 0;
 
 /**
- * @param {{title: string, body: Node|string, footer?: Node, size?: 'sm'|'md'|'lg', className?: string, onClose?: Function}} options
+ * @param {{title: string, titleNode?: Node, body: Node|string, footer?: Node, size?: 'sm'|'md'|'lg', className?: string, initialFocus?: 'first'|'dialog', onClose?: Function}} options
  *   className: modal öğesine eklenecek ek sınıf (ör. sabit boyutlu paneller için)
+ *   titleNode: verilirse başlık metni yerine bu öğe konur (ör. etkinlik adı girdisi); `title` o zaman yalnızca yedektir
+ *   initialFocus: 'first' (varsayılan: [autofocus] veya ilk odaklanabilir öğe) | 'dialog' (hiçbir denetim odaklanmaz, pencerenin kendisi odaklanır)
  * @returns {{el: HTMLElement, body: HTMLElement, footer: HTMLElement, close: Function}}
  */
-export function openModal({ title, body, footer, size = 'md', className = '', onClose }) {
+export function openModal({ title, titleNode, body, footer, size = 'md', className = '', initialFocus = 'first', onClose }) {
   const id = `modal-title-${++uid}`;
   const previousFocus = document.activeElement;
   const backdrop = document.createElement('div');
@@ -35,6 +37,7 @@ export function openModal({ title, body, footer, size = 'md', className = '', on
     </div>`;
 
   const modal = backdrop.querySelector('.modal');
+  if (titleNode) backdrop.querySelector('.modal-title').replaceChildren(titleNode);
   const bodyEl = backdrop.querySelector('.modal-body');
   const footerEl = backdrop.querySelector('.modal-footer');
   if (typeof body === 'string') bodyEl.innerHTML = body;
@@ -67,7 +70,10 @@ export function openModal({ title, body, footer, size = 'md', className = '', on
       if (!items.length) return;
       const first = items[0];
       const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      if (document.activeElement === modal) {
+        e.preventDefault(); // pencerenin kendisi odaktayken (initialFocus: 'dialog') Tab pencerenin içinde kalır
+        (e.shiftKey ? last : first).focus();
+      } else if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
         last.focus();
       } else if (!e.shiftKey && document.activeElement === last) {
@@ -86,8 +92,13 @@ export function openModal({ title, body, footer, size = 'md', className = '', on
   openStack.push(entry);
   document.body.appendChild(backdrop);
   requestAnimationFrame(() => backdrop.classList.add('is-visible'));
-  const autofocus = modal.querySelector('[autofocus]') || modal.querySelector(FOCUSABLE);
-  autofocus?.focus({ preventScroll: true });
+  if (initialFocus === 'dialog') {
+    modal.tabIndex = -1;
+    modal.focus({ preventScroll: true });
+  } else {
+    const autofocus = modal.querySelector('[autofocus]') || modal.querySelector(FOCUSABLE);
+    autofocus?.focus({ preventScroll: true });
+  }
 
   return { el: modal, body: bodyEl, footer: footerEl, close };
 }

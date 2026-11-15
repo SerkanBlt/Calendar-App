@@ -4,6 +4,14 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.16.0
+- **Etkinlik tam sayfa** açılır: ekranı kaplar, içerik en çok 760 px'lik ortalanmış sütundadır, alt çubuk sabittir
+- **Etkinlik başlığı**: "Etkinliği düzenle" yerine etkinliğin kendi adı görünür; dokununca metin kutusuna dönüşür, uzunsa üç nokta ile kısalır
+  (tamamı ipucu olarak). Yeni etkinlikte "Yeni etkinlik" ipucu ve odaklı kutu; düzenlemede klavye kendiliğinden açılmaz. Formdaki yinelenen başlık alanı kaldırıldı
+- **Gantt**: Kritik yol ve sağındaki düğme (mobilde) sağa dayalı; S-M-L solda
+- **Başlık**: hamburger menü ve sayfa adı büyüdü (mobilde 44 px düğme / 24 px ad); panel yüksekliği değişmedi (uzun adlar üç noktayla kısalır)
+- Modal: `titleNode` (başlığa özel öğe) ve `initialFocus: 'dialog'` seçenekleri; pencerenin kendisi odaktayken Tab pencerenin içinde kalır
+
 ## 1.15.0
 - **Timeline**: renkli noktalar zaman çizgisinin tam üstünde (her ekran boyutunda; çizgi ve noktalar aynı ölçülerden türetiliyor);
   **Yaklaşan / Tümü / Geçmiş** filtresi ve arama alanı sayfa gövdesinden **başlığa** taşındı

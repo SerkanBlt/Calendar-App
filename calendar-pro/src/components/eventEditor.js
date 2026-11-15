@@ -8,6 +8,7 @@
  *      "Tüm seri"             → ana etkinlik düzenlenir
  *  - Seriden ayrılmış bir kayıt açıldığında "Seriye geri döndür" seçeneği sunulur.
  *  - aksi halde input ön doldurma alanları kabul edilir: { startDate, endDate, startTime, endTime, status }
+ *  - Etkinlik tam sayfa açılır; başlıkta etkinliğin adı görünür (uzunsa üç nokta) ve dokunulunca metin kutusuna dönüşür.
  *  - "Tüm gün" açılınca bitiş tarihi başlangıçla aynı olur.
  *  - Açıklama Markdown ile yazılır (araç çubuğu + önizleme, bkz. markdownEditor.js); köşesindeki düğme tam ekran düzenleme açar.
  *  - Renk: modern palet (12 ton × 3 yoğunluk) + özel renk (renk seçici veya hex kodu); bkz. colorPicker.js.
@@ -92,11 +93,6 @@ export function openEventEditor(input = {}) {
       ? html`<div class="notice">${icon('link')}<span>"${parentSeries.title}" serisinin ${formatDate(existing.originalDate, { day: 'numeric', month: 'long' })} tarihli, ayrı düzenlenmiş örneği.</span>
           <button type="button" class="link" data-reattach>Seriye geri döndür</button></div>`
       : ''}
-    <label class="field field--title">
-      <span class="sr-only">Başlık</span>
-      <input name="title" type="text" placeholder="Etkinlik başlığı" value="${ev.title}" maxlength="200" required autofocus />
-    </label>
-
     <div class="field-row">
       <label class="switch"><input type="checkbox" name="allDay" ${allDay ? 'checked' : ''} /><span></span>Tüm gün</label>
       <label class="switch"><input type="checkbox" name="critical" ${ev.critical ? 'checked' : ''} /><span></span>Kritik görev</label>
@@ -185,7 +181,31 @@ export function openEventEditor(input = {}) {
   });
   form.querySelector('[data-description-host]').replaceWith(description.el);
 
-  const modal = openModal({ title: isEdit ? 'Etkinliği düzenle' : 'Yeni etkinlik', body: form, footer, size: 'lg' });
+  // Başlık alanı modal başlığındadır: etkinliğin adı görünür (uzunsa üç nokta), dokununca metin kutusuna dönüşür.
+  // Form dışında durduğu için `form` özniteliğiyle forma bağlanır (form.elements.title, Enter ile kaydetme çalışır).
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.name = 'title';
+  titleInput.className = 'modal-title-input';
+  titleInput.value = ev.title;
+  titleInput.title = ev.title; // uzun ad üç noktayla kısaldığında tamamı ipucu olarak görünür
+  titleInput.maxLength = 200;
+  titleInput.required = true;
+  titleInput.autocomplete = 'off';
+  titleInput.placeholder = isEdit ? 'Etkinlik adı' : 'Yeni etkinlik';
+  titleInput.setAttribute('form', 'event-form');
+  titleInput.setAttribute('aria-label', 'Etkinlik adı');
+
+  // Etkinlik tam sayfa açılır; düzenlemede hiçbir alan odaklanmaz (ad dokunulana kadar düz metin gibi görünür), yenisinde ad odaklanır
+  const modal = openModal({
+    title: isEdit ? 'Etkinliği düzenle' : 'Yeni etkinlik',
+    titleNode: titleInput,
+    body: form,
+    footer,
+    size: 'lg',
+    className: 'modal--page',
+    initialFocus: isEdit ? 'dialog' : 'first',
+  });
   const f = form.elements;
 
   // --- Dinamik alan davranışları ---
@@ -355,7 +375,14 @@ export function openEventEditor(input = {}) {
   form.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submit(e);
   });
-  f.title.addEventListener('input', () => f.title.classList.remove('is-invalid'));
+  f.title.addEventListener('input', () => {
+    f.title.classList.remove('is-invalid');
+    f.title.title = f.title.value;
+  });
+  // Başlık girdisi formun DOM'u dışında olduğu için Ctrl+Enter'ı burada da dinle
+  f.title.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submit(e);
+  });
   footer.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
   footer.querySelector('[data-delete]')?.addEventListener('click', async () => {
     const done = occurrence ? await deleteOccurrence(occurrence, scope) : await deleteEventWithUndo(ev.id);

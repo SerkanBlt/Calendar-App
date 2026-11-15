@@ -73,7 +73,7 @@ export default {
       <div class="segmented segmented--sm" role="radiogroup" aria-label="Yakınlaştırma">
         ${ZOOMS.map((z) => html`<button type="button" role="radio" aria-checked="${String(z.w === dayW)}" class="${z.w === dayW ? 'is-active' : ''}" data-zoom="${z.w}">${z.label}</button>`)}
       </div>
-      <button type="button" class="chip-btn ${showCp ? 'is-on' : ''}" data-cp>${icon('flag')}<span>Kritik yol</span></button>
+      <button type="button" class="chip-btn gantt-push ${showCp ? 'is-on' : ''}" data-cp>${icon('flag')}<span>Kritik yol</span></button>
       <button type="button" class="btn btn-ghost btn-sm" data-scroll-today>${icon('target')}<span class="hide-sm">Bugün</span></button>`;
 
     if (!tasks.length) {
