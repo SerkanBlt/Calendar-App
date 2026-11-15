@@ -6,7 +6,7 @@
  *   - Görünüm: tema (Açık / Koyu / Sistem + özel temalar) ve arka plan (görseller, yerleşim)
  *   - Takvim: çalışma günleri ve çalışma dışı günlerin Ay/Hafta görünümünde gösterilmesi
  *   - Genel: kenar çubuğu ikon modu, hatırlatmalar
- *   - Veri: JSON dışa / içe aktarma
+ *   - Veri: JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma
  *   - Hakkında: sürüm bilgisi
  * Panel açıkken store değiştikçe içerik yeniden çizilir (kaydırma konumu ve odak korunur).
  */
@@ -18,7 +18,9 @@ import { normalizeWorkDays, orderedWeekdays } from '../core/workDays.js';
 import { formatDate } from '../core/dateUtils.js';
 import {
   addUserBackground,
+  exportCalendar,
   exportData,
+  importCalendar,
   importData,
   removeUserBackground,
   setBackground,
@@ -146,11 +148,18 @@ function dataSection() {
   return html`
     <section class="settings-section" data-section="data">
       <h3>${icon('layers')} Veri</h3>
+      <p class="settings-sub">Yedek (JSON)</p>
       <div class="settings-actions">
         <button type="button" class="btn btn-ghost" data-fk="export" data-export>${icon('download')} JSON dışa aktar</button>
         <button type="button" class="btn btn-ghost" data-fk="import" data-import>${icon('upload')} JSON içe aktar</button>
       </div>
       <p class="settings-note">Etkinlikler ve ayarlar dışa aktarılır; ekler ve kendi arka plan görselleriniz bu tarayıcıda kalır.</p>
+      <p class="settings-sub">Takvim dosyası (ICS)</p>
+      <div class="settings-actions">
+        <button type="button" class="btn btn-ghost" data-fk="export-ics" data-export-ics>${icon('download')} ICS dışa aktar</button>
+        <button type="button" class="btn btn-ghost" data-fk="import-ics" data-import-ics>${icon('upload')} ICS içe aktar</button>
+      </div>
+      <p class="settings-note">Outlook, Gmail ve diğer takvim uygulamalarıyla uyumlu .ics dosyası. Gmail'de Ayarlar → İçe aktar ve dışa aktar, Outlook'ta Takvim ekle → Dosyadan yükle ile içe aktarabilirsiniz. Bu tek seferlik bir aktarımdır; iki yönlü senkron değildir.</p>
     </section>`;
 }
 
@@ -271,6 +280,8 @@ export function openSettings({ section } = {}) {
     if (fit && !fit.disabled) return setBackgroundFit(fit.dataset.fit);
     if (t.closest('[data-export]')) return exportData();
     if (t.closest('[data-import]')) return importData();
+    if (t.closest('[data-export-ics]')) return exportCalendar();
+    if (t.closest('[data-import-ics]')) return importCalendar();
     return undefined;
   });
 

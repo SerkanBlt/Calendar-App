@@ -7,7 +7,7 @@ import { settingsRepo } from './settingsRepo.js';
 import { store } from './state.js';
 import { choiceDialog, confirmDialog } from '../components/modal.js';
 import { toast } from '../components/toast.js';
-import { exportJSON, importJSON, pickFile } from '../services/exportService.js';
+import { exportICS, exportJSON, importICS, importJSON, pickFile } from '../services/exportService.js';
 import { notificationService } from '../services/notificationService.js';
 import { userBackgroundRepo } from './userBackgroundRepo.js';
 import { USER_PREFIX } from './backgrounds.js';
@@ -121,6 +121,44 @@ export async function importData() {
   try {
     const count = await importJSON(file, { mode: replace ? 'replace' : 'merge' });
     toast(`${count} etkinlik içe aktarıldı`, { type: 'success' });
+  } catch (err) {
+    toast(err.message, { type: 'error', duration: 6000 });
+  }
+}
+
+/** Etkinlikleri Outlook/Gmail ile uyumlu .ics dosyası olarak indirir. */
+export async function exportCalendar() {
+  try {
+    const count = await exportICS();
+    if (count) toast(`${count} etkinlik .ics dosyası olarak dışa aktarıldı`, { type: 'success' });
+    else toast('Dışa aktarılacak etkinlik yok', { type: 'warning' });
+  } catch (err) {
+    toast(`Dışa aktarma başarısız: ${err.message}`, { type: 'error' });
+  }
+}
+
+/** .ics dosyasındaki etkinlikleri ekler/günceller; sonuç bildirimindeki "Geri al" yeni kayıtları siler, değişenleri eski haline getirir. */
+export async function importCalendar() {
+  const file = await pickFile('.ics,text/calendar');
+  if (!file) return;
+  try {
+    const r = await importICS(file);
+    const notes = [];
+    if (r.unsupportedRecurrence) notes.push(`${r.unsupportedRecurrence} etkinliğin tekrar kuralı desteklenmediği için yalnızca ilk örneği eklendi`);
+    if (r.unknownTimezone) notes.push(`${r.unknownTimezone} etkinlikte saat dilimi tanınamadı, yerel saat varsayıldı`);
+    if (r.skipped) notes.push(`${r.skipped} kayıt atlandı (iptal edilmiş veya geçersiz)`);
+    const summary = `${r.added + r.updated} etkinlik içe aktarıldı (${r.added} yeni, ${r.updated} güncellendi)`;
+    toast(notes.length ? `${summary}. ${notes.join('; ')}.` : summary, {
+      type: notes.length ? 'warning' : 'success',
+      duration: notes.length ? 10000 : 7000,
+      action: {
+        label: 'Geri al',
+        onClick: async () => {
+          await eventRepo.removeMany(r.addedIds);
+          if (r.previous.length) await eventRepo.mergeMany(r.previous);
+        },
+      },
+    });
   } catch (err) {
     toast(err.message, { type: 'error', duration: 6000 });
   }

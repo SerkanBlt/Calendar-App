@@ -48,18 +48,27 @@ export const eventRepo = {
    * @returns {object[]} silinen kayıtlar (geri alma için)
    */
   async remove(id) {
-    const target = this.getById(id);
-    if (!target) return [];
-    const removed = [target, ...current().filter((e) => e.seriesId === id)];
-    const ids = new Set(removed.map((e) => e.id));
-    await db.bulkDelete(STORES.EVENTS, [...ids]);
+    if (!this.getById(id)) return [];
+    return this.removeMany([id]);
+  },
+
+  /**
+   * Birden fazla etkinliği tek seferde siler (remove ile aynı temizlik; store tek kez güncellenir).
+   * @returns {object[]} silinen kayıtlar (seriden ayrılmış örnekler dahil)
+   */
+  async removeMany(ids) {
+    const wanted = new Set(ids);
+    const removed = current().filter((e) => wanted.has(e.id) || (e.seriesId && wanted.has(e.seriesId)));
+    if (!removed.length) return [];
+    const gone = new Set(removed.map((e) => e.id));
+    await db.bulkDelete(STORES.EVENTS, [...gone]);
     for (const e of removed) await attachmentRepo.removeByEvent(e.id);
     const dependents = current()
-      .filter((e) => !ids.has(e.id) && e.dependencies.some((d) => ids.has(d)))
-      .map((e) => ({ ...e, dependencies: e.dependencies.filter((d) => !ids.has(d)) }));
+      .filter((e) => !gone.has(e.id) && e.dependencies.some((d) => gone.has(d)))
+      .map((e) => ({ ...e, dependencies: e.dependencies.filter((d) => !gone.has(d)) }));
     if (dependents.length) await db.bulkPut(STORES.EVENTS, dependents);
     const byId = new Map(dependents.map((e) => [e.id, e]));
-    commit(current().filter((e) => !ids.has(e.id)).map((e) => byId.get(e.id) || e));
+    commit(current().filter((e) => !gone.has(e.id)).map((e) => byId.get(e.id) || e));
     return removed;
   },
 

@@ -9,7 +9,11 @@
 import { db, STORES } from '../core/db.js';
 import { eventRepo } from '../core/eventRepo.js';
 import { settingsRepo } from '../core/settingsRepo.js';
+import { store } from '../core/state.js';
 import { todayISO } from '../core/dateUtils.js';
+import { buildICS, parseICS, planImport } from './icsService.js';
+
+const MAX_ICS_BYTES = 20 * 1024 * 1024;
 
 const SCHEMA = 1;
 const IMPORTABLE_SETTINGS = ['theme', 'workDays', 'showOffDays', 'sidebarCollapsed', 'background', 'backgroundFit', 'weekStartsOn', 'defaultReminder', 'schedulerDays', 'schedulerHourHeight', 'ganttDayWidth', 'ganttShowCriticalPath'];
@@ -68,6 +72,36 @@ export async function importJSON(file, { mode = 'merge' } = {}) {
     await settingsRepo.setMany(allowed);
   }
   return events.length;
+}
+
+/** Etkinlikleri .ics (iCalendar) dosyası olarak indirir. Dışa aktarılan kayıt sayısını döner (0 ise dosya indirilmez). */
+export async function exportICS() {
+  const events = await db.getAll(STORES.EVENTS);
+  if (!events.length) return 0;
+  download(`calendar-pro-${todayISO()}.ics`, buildICS(events), 'text/calendar;charset=utf-8');
+  return events.length;
+}
+
+/**
+ * .ics dosyasını mevcut etkinliklerle birleştirir (silme yapmaz; aynı UID'liler güncellenir).
+ * @returns {Promise<{added: number, updated: number, skipped: number, unsupportedRecurrence: number,
+ *   unknownTimezone: number, addedIds: string[], previous: object[]}>} addedIds/previous: geri alma için
+ */
+export async function importICS(file) {
+  if (file.size > MAX_ICS_BYTES) throw new Error('Dosya çok büyük (en fazla 20 MB).');
+  const { events, stats } = parseICS(await file.text());
+  if (!events.length) throw new Error(stats.total ? 'Dosyadaki etkinlikler içe aktarılamadı.' : 'Dosyada etkinlik bulunamadı; geçerli bir .ics dosyası seçin.');
+  const plan = planImport(events, store.get().events);
+  await eventRepo.mergeMany(plan.events);
+  return {
+    added: plan.added.length,
+    updated: plan.updated,
+    skipped: stats.skipped,
+    unsupportedRecurrence: stats.unsupportedRecurrence,
+    unknownTimezone: stats.unknownTimezone,
+    addedIds: plan.added,
+    previous: plan.previous,
+  };
 }
 
 /** Dosya seçici açar; kullanıcı vazgeçerse null döner. */

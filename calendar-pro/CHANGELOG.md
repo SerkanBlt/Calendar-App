@@ -4,6 +4,17 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.11.0
+- **ICS (.ics) dışa/içe aktarma** — Ayarlar → Veri sekmesi ve `Ctrl + K` → "Export/Import Calendar (ICS)"; Outlook, Gmail ve diğer takvim uygulamalarıyla uyumlu
+- Dışa aktarma: tek ve tekrarlayan etkinlikler (RRULE/EXDATE), seriden ayrılmış tek örnekler (RECURRENCE-ID), hatırlatmalar (VALARM);
+  durum, ilerleme, renk, kritik ve Gantt bağımlılıkları uygulamaya özel alanlarla korunur (diğer uygulamalar yok sayar)
+- İçe aktarma: saat dilimleri (UTC, IANA ve Outlook'un Windows adları) yerel saate çevrilir; aynı etkinlik yeniden içe aktarılınca çoğalmaz, güncellenir;
+  bildirimdeki "Geri al" yeni kayıtları siler, değişenleri eski haline getirir
+- Desteklenmeyen tekrar kuralları (ör. haftanın birden çok günü, "ayın 2. salısı") yalnızca ilk örnek olarak eklenir ve bildirilir
+- Yabancı dosyalardan gelen geçmiş etkinlikler "Tamamlandı" olarak eklenir (Dashboard'daki geciken sayacını şişirmemek için)
+- Not: tek seferlik aktarımdır, iki yönlü senkron değildir
+- Geliştirme: `npm test` — Node'un yerleşik test koşucusuyla ICS testleri (ek bağımlılık yok)
+
 ## 1.10.1
 - Düzeltme: mobilde yatay konumda Ay görünümü aşağı kaydırılamıyordu (ızgara sıkışıp alt haftalar kesiliyordu)
 - Düzeltme: kaydırınca içerik başlık çubuğunun arkasından görünüyordu; başlık artık buzlu cam zeminli

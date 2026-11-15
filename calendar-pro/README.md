@@ -10,6 +10,7 @@ npm install
 npm run dev       # http://localhost:5173
 npm run build     # dist/ klasörüne üretim çıktısı
 npm run preview   # üretim çıktısını sunar (service worker burada aktif olur)
+npm test          # ICS testleri (Node'un yerleşik test koşucusu; ek bağımlılık yok)
 ```
 
 İlk açılışta tüm görünümleri tanıtan örnek veriler yüklenir (bir kez).
@@ -113,8 +114,38 @@ Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinl
 | Görünüm | Tema, arka plan, yerleşim |
 | Takvim | Çalışma günleri, çalışma dışı günleri göster/gizle |
 | Genel | Kenar çubuğu ikon modu, hatırlatmalar |
-| Veri | JSON dışa / içe aktarma |
+| Veri | JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma |
 | Hakkında | Sürüm bilgisi |
+
+## Takvim dosyası (ICS)
+
+**Ayarlar → Veri → ICS dışa aktar / içe aktar** (veya `Ctrl + K` → "Export/Import Calendar (ICS)") ile etkinlikler
+standart `.ics` dosyası olarak Outlook, Gmail (Google Takvim), Apple Takvim ve benzerleriyle paylaşılır.
+Gmail'de *Ayarlar → İçe aktar ve dışa aktar*, Outlook'ta *Takvim ekle → Dosyadan yükle* ile içe aktarılır.
+Bu **tek seferlik bir aktarımdır**, iki yönlü senkron değildir. Mantık `src/services/icsService.js` içindedir (DOM'suz, `tests/ics.test.js` ile test edilir).
+
+| Alan | Dışa aktarma | İçe aktarma |
+|------|--------------|-------------|
+| Başlık, açıklama, kategori | `SUMMARY`, `DESCRIPTION`, `CATEGORIES` | Aynı; kategori olarak yalnızca ilki alınır |
+| Tarih / saat | Saatler **saat dilimsiz** (floating) yazılır; takvimin saat dilimine göre yorumlanır. Tüm gün: `VALUE=DATE`, bitiş ertesi gün | UTC (`Z`), IANA (`Europe/Istanbul`) ve Outlook'un Windows adları (`Turkey Standard Time`) yerel saate çevrilir. Tanınmayan dilim yerel saat sayılır ve bildirilir |
+| Tekrar | `RRULE` (günlük/haftalık/aylık/yıllık, aralık, adet, bitiş) + `EXDATE` | Aynı kurallar; aşağıdaki sınırlamalara bakın |
+| Tek örnek değişikliği | Aynı UID + `RECURRENCE-ID` ile ayrı `VEVENT` | Seriye bağlanır ("Seriye geri döndür" çalışır) |
+| Hatırlatma | `VALARM` (5/15/60 dk) | Alarm en yakın 5/15/60 dakikaya yuvarlanır |
+| Durum, ilerleme, renk, kritik, bağımlılık | `X-CALENDAR-PRO-*` ve `RELATED-TO;RELTYPE=DEPENDS-ON`; diğer uygulamalar yok sayar | Yalnızca bu uygulamanın dışa aktarımında geri yüklenir |
+
+İçe aktarma davranışı:
+
+- **Silme yapmaz**; aynı UID'li kayıt güncellenir, yenisi eklenir. Aynı dosya tekrar yüklenirse etkinlikler çoğalmaz.
+  Güncellenen kayıtlarda dosyada bulunmayan uygulama alanları (durum, ilerleme, renk, kritik, bağımlılık) korunur.
+- Bildirimdeki **Geri al** yeni eklenenleri siler, güncellenenleri eski haline getirir.
+- Yabancı bir dosyadan gelen ve geçmişte kalan etkinlikler **Tamamlandı** olarak eklenir; aksi halde hepsi Dashboard'da "geciken" sayılırdı.
+- İptal edilmiş (`STATUS:CANCELLED`) etkinlikler atlanır.
+- Dosya boyutu en fazla 20 MB.
+
+**Sınırlamalar:** uygulamanın tekrar modeli yalnızca `FREQ` / `INTERVAL` / `COUNT` / `UNTIL` bilir. Başlangıç gününden türetilebilen
+`BYDAY` / `BYMONTHDAY` / `BYMONTH` (ör. haftalık + başlangıç günü) desteklenir; haftanın birden çok günü (`BYDAY=MO,WE,FR`),
+"ayın 2. salısı", `BYSETPOS`, `RDATE` gibi kurallar desteklenmez — bu etkinlikler **yalnızca ilk örnek** olarak eklenir ve içe aktarma
+bildiriminde sayısı belirtilir. Ekler (attachments) ICS'e dahil edilmez.
 
 ## Sürümler
 
@@ -147,12 +178,13 @@ Telefonda menü her zaman tam genişlikte açılır.
 src/
   core/        state (store + bus), router (hash), db (IndexedDB), eventRepo, eventModel,
                settingsRepo, actions, theme, dateUtils, overlap, dom (güvenli şablon), utils, seed
-  services/    recurrenceService, notificationService, exportService, criticalPathService
+  services/    recurrenceService, notificationService, exportService, icsService, criticalPathService
   components/  sidebar, commandPalette, modal, toast, eventCard, eventEditor, timeGrid,
                dragDrop, toolbar, icons
   views/       dashboard, month, week, day, scheduler, timeline, gantt, kanban
   styles/      theme, main, dashboard, calendar, scheduler, gantt, kanban
 public/        manifest.json, service-worker.js, icons/
+tests/         icsService testleri (node --test)
 ```
 
 - **Tek yönlü veri akışı:** View → `ctx` / `actions` → `eventRepo` → IndexedDB + `store` → yeniden çizim.
@@ -183,6 +215,6 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
   Bu kayıt açıldığında **"Seriye geri döndür"** ile değişiklik geri alınabilir. Seri silinirse ayrılmış örnekleri de silinir.
 - Ekler, tekrar kuralı ve bağımlılıklar yalnızca seri düzeyinde düzenlenir ("Yalnızca bu" modunda gizlenir).
 - Service worker yalnızca üretim build'inde kaydedilir (geliştirmede HMR ile çakışmaması için).
-- JSON dışa aktarma ekleri (attachments) içermez.
+- JSON ve ICS dışa aktarma ekleri (attachments) içermez.
 - Hatırlatmalar sekme açıkken çalışır (30 sn'de bir kontrol); izin yoksa uygulama içi bildirim gösterilir.
 - PWA ikonları SVG'dir; bazı platformlar kurulum için PNG ikon isteyebilir.
