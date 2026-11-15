@@ -77,14 +77,6 @@ kbd {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
-/* Sayfaların en alttaki ana paneli (z-order'da en altta: içindeki kartların, satırların ve hücrelerin arkasındaki kutu) görünmez:
-   dolgu, kenar çizgisi, gölge ve bulanıklık yoktur; içerik doğrudan arka planın üzerinde durur. Kartlar, hücre çizgileri ve başlık paneli
-   (üstte durduğu için) aynen kalır. Kanban kolonunun üstündeki durum şeridi de (box-shadow) kalkar; durum rengi başlıktaki noktada görünür.
-   Kapsam: Kanban kolonları, Ay ızgarası, Hafta/Gün/Planlayıcı ızgarası, Gantt ve Dashboard/Gün sayfasındaki .panel kutuları. */
-.view :is(.kanban-col, .month-grid, .grid-host, .gantt, .panel).glass {
-  background: transparent; border-color: transparent; box-shadow: none;
-  backdrop-filter: none; -webkit-backdrop-filter: none;
-}
 
 .boot-screen {
   display: grid; place-items: center; height: 100vh; width: 100%;
@@ -102,7 +94,9 @@ kbd {
 }
 
 .main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
+/* Kaydırılan ana panel. Çocukları (kartlar, ızgaralar) bu kutunun 8 px'lik iç boşluğundan (.view-body padding) taşan büyük bir gölge çizerse, gölge kutunun
+   sınırında keskin biçimde kesilir ve ekranın kenarında koyu bir "panel şeridi" gibi görünür. Bu yüzden sayfa içinde --shadow dar (--shadow-sm) tutulur. */
+.view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: auto; --shadow: var(--shadow-sm); }
 .view-body { flex: 1; min-height: 0; padding: 0 var(--space-2) var(--space-2); }
 
 /* ---------- Sidebar ---------- */
@@ -742,10 +736,11 @@ kbd {
   .app { grid-template-columns: 1fr; padding: var(--space-2); gap: 0; }
   .sidebar {
     position: fixed; inset: 8px auto 8px 8px; width: min(300px, calc(100vw - 32px)); z-index: 60;
-    transform: translateX(calc(-100% - 16px)); transition: transform 240ms var(--ease);
+    transform: translateX(calc(-100% - 16px)); transition: transform 240ms var(--ease), box-shadow 240ms var(--ease);
     background: var(--surface-solid);
+    box-shadow: none; /* kapalıyken gölge ekranın sol kenarına taşıp koyu bir şerit bırakmasın */
   }
-  .sidebar-open .sidebar { transform: none; }
+  .sidebar-open .sidebar { transform: none; box-shadow: var(--shadow); }
   .sidebar-scrim { position: fixed; inset: 0; z-index: 55; background: var(--scrim); }
   .sidebar-open .sidebar-scrim { display: block; }
   .only-mobile { display: inline-grid !important; }

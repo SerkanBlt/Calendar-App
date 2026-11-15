@@ -13,7 +13,7 @@
  *  - message (GET_VERSION): sürümü bildirir; sayfa bununla "yeni sürüm var" kararını verir.
  * VERSION, package.json sürümüyle aynı olmalıdır (tests/version.test.js denetler).
  */
-const VERSION = 'v1.19.0'; // uygulama sürümüyle birlikte artırılır; eski önbellekler temizlenir
+const VERSION = 'v1.19.1'; // uygulama sürümüyle birlikte artırılır; eski önbellekler temizlenir
 const CACHE_NAME = `calendar-pro-${VERSION}`;
 const SCOPE = self.registration.scope; // ör. https://kullanici.github.io/Calendar-App/
 const at = (path) => new URL(path, SCOPE).href;

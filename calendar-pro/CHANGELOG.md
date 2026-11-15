@@ -4,6 +4,13 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.19.1
+- **Ekran kenarındaki panel şeridi kaldırıldı**: kaydırılan ana panelin (`.view`) kenarında, ekranın sol/sağ boşluğunda keskin kenarlı koyu bir şerit görünüyordu. Neden: sayfa içindeki
+  kartların/ızgaraların büyük gölgesi (30 px) panelin 8 px'lik iç boşluğunu aşıp panel sınırında kesiliyordu; mobilde ayrıca **kapalı kenar çubuğunun** gölgesi ekranın sol kenarına taşıyordu.
+  Düzeltme: sayfa içinde gölge dar (`--shadow-sm`), kapalı kenar çubuğunda gölge yok (açıkken var). Piksel ölçümü: Dashboard'da kenar basamağı 10.4 → 0.9, diğer sayfalarda ton farkı 4.4 → 0
+- **1.19.0'daki "en alttaki panel görünmez" değişikliği geri alındı**: o değişiklik yanlış anlaşılan bir isteğe dayanıyordu (kolonlar/ızgaralar değil, kenar şeridi kastedilmişti). Kanban kolonları,
+  Ay/Hafta/Gün/Planlayıcı ızgarası, Gantt ve liste kutuları 1.17.0'daki cam görünümüne döndü
+
 ## 1.19.0
 - **Sayfaların en alttaki ana paneli görünmez**: Kanban kolonları, Ay ızgarası, Hafta/Gün/Planlayıcı ızgarası, Gantt ve Dashboard/Gün sayfasındaki liste kutuları artık
   dolgusuz, kenarsız, gölgesiz ve bulanıklıksız; kartlar/satırlar/hücreler doğrudan arka plan rengi veya görseli üzerinde durur. Kanban kolonunun üst durum şeridi de kalktı

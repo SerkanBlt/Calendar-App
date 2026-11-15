@@ -81,13 +81,12 @@ degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bin
 - Ayarlar: `bgColorMode` (`single` | `dual`), `bgColor1`, `bgColor2`. Değerler `#rrggbb` olarak doğrulanır; ilk boyamada (`index.html`)
   yalnızca tek renk veya `linear-gradient(135deg, #rrggbb, #rrggbb)` biçimleri kabul edilir.
 
-### Sayfa panelleri
+### Sayfa kenarlarında şerit olmaması
 
-Her sayfanın **en alttaki ana paneli** (z-order'da en altta olan; içindeki kartların, satırların ve hücrelerin arkasındaki kutu) **görünmezdir**: dolgu, kenar çizgisi,
-gölge ve bulanıklık yoktur, içerik doğrudan arka planın üzerinde durur. Kapsam: Kanban kolonları (üstteki durum şeridi de kalkar; durum rengi başlıktaki noktada görünür),
-Ay ızgarası, Hafta / Gün / Planlayıcı ızgarası, Gantt ve Dashboard / Gün sayfasındaki liste kutuları (`.view :is(.kanban-col, .month-grid, .grid-host, .gantt, .panel).glass`,
-`src/styles/main.css`). Kartlar (Kanban, Dashboard istatistikleri, Timeline), hücre çizgileri, Gantt'ın yapışkan başlığı/sol sütunu, sayfa başlık paneli, pencereler ve komut paleti
-cam yüzeyli kalır. Çok açık bir arka plan rengi seçerseniz, panelsiz kalan soluk yazılar (ör. hafta günü başlıkları) zor okunabilir; koyu bir renk veya Standart arka planı deneyin.
+Kaydırılan ana panelin (`.view`) kenarında koyu bir "panel şeridi" görünmemelidir. Önceki sürümlerde sayfa içindeki kartların/ızgaraların büyük gölgesi (`--shadow`, 30 px
+yayılım) panelin 8 px'lik iç boşluğundan taşıp panel sınırında **keskin biçimde kesiliyor**, ekranın kenarında kenarlı, yarı saydam bir şerit gibi görünüyordu. Bu yüzden sayfa
+içinde `--shadow` dar tutulur (`.view { --shadow: var(--shadow-sm) }`); mobilde **kapalı kenar çubuğunun** gölgesi de ekranın sol kenarına taşmaz (gölge yalnızca açıkken vardır).
+Her ikisi de piksel düzeyinde ölçülerek doğrulanmıştır.
 - Kaldırılan arka plan: eski **Deri** artık yok; onu seçmiş olanlar açılışta otomatik olarak Standart'a taşınır.
 
 Görsel arka planlarda ızgaranın altındaki **Yerleşim** seçenekleriyle görselin ekrana nasıl oturacağı belirlenir:
