@@ -4,6 +4,13 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.19.0
+- **Sayfaların en alttaki ana paneli görünmez**: Kanban kolonları, Ay ızgarası, Hafta/Gün/Planlayıcı ızgarası, Gantt ve Dashboard/Gün sayfasındaki liste kutuları artık
+  dolgusuz, kenarsız, gölgesiz ve bulanıklıksız; kartlar/satırlar/hücreler doğrudan arka plan rengi veya görseli üzerinde durur. Kanban kolonunun üst durum şeridi de kalktı
+  (durum rengi başlıktaki noktada). Kartlar (Kanban, Dashboard istatistikleri, Timeline), başlık paneli, pencereler ve komut paleti aynen duruyor; sürüklerken hedef kolon vurgusu çalışmaya devam eder
+- Not: çok açık arka plan renklerinde panelsiz kalan soluk yazılar (ör. hafta günü başlıkları) daha zor okunur; koyu renk veya Standart arka plan önerilir
+- Test: her sayfada (masaüstü + mobil) alt panelin hesaplanan stilleri, değişmemesi gerekenler ve Kanban sürükle-bırak vurgusu gerçek tarayıcıda doğrulandı
+
 ## 1.18.1
 - **Geri alındı**: 1.18.0'daki panel saydamlığı. Sayfa içi paneller (Dashboard kartları, Kanban kolonları, Ay/Hafta/Gün ızgarası, listeler) ve başlık paneli
   1.17.0'daki görünümüne döndü. (1.18.0 bunları birlikte saydamlaştırmıştı; istenen yalnızca en alttaki ana panelin saydam olmasıydı.)

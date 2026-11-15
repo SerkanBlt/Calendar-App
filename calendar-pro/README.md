@@ -80,6 +80,14 @@ degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bin
   Çok açık bir renk seçerseniz koyu tema metinleri zor okunabilir; açık temayı deneyin.
 - Ayarlar: `bgColorMode` (`single` | `dual`), `bgColor1`, `bgColor2`. Değerler `#rrggbb` olarak doğrulanır; ilk boyamada (`index.html`)
   yalnızca tek renk veya `linear-gradient(135deg, #rrggbb, #rrggbb)` biçimleri kabul edilir.
+
+### Sayfa panelleri
+
+Her sayfanın **en alttaki ana paneli** (z-order'da en altta olan; içindeki kartların, satırların ve hücrelerin arkasındaki kutu) **görünmezdir**: dolgu, kenar çizgisi,
+gölge ve bulanıklık yoktur, içerik doğrudan arka planın üzerinde durur. Kapsam: Kanban kolonları (üstteki durum şeridi de kalkar; durum rengi başlıktaki noktada görünür),
+Ay ızgarası, Hafta / Gün / Planlayıcı ızgarası, Gantt ve Dashboard / Gün sayfasındaki liste kutuları (`.view :is(.kanban-col, .month-grid, .grid-host, .gantt, .panel).glass`,
+`src/styles/main.css`). Kartlar (Kanban, Dashboard istatistikleri, Timeline), hücre çizgileri, Gantt'ın yapışkan başlığı/sol sütunu, sayfa başlık paneli, pencereler ve komut paleti
+cam yüzeyli kalır. Çok açık bir arka plan rengi seçerseniz, panelsiz kalan soluk yazılar (ör. hafta günü başlıkları) zor okunabilir; koyu bir renk veya Standart arka planı deneyin.
 - Kaldırılan arka plan: eski **Deri** artık yok; onu seçmiş olanlar açılışta otomatik olarak Standart'a taşınır.
 
 Görsel arka planlarda ızgaranın altındaki **Yerleşim** seçenekleriyle görselin ekrana nasıl oturacağı belirlenir:

@@ -77,6 +77,14 @@ kbd {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
+/* Sayfaların en alttaki ana paneli (z-order'da en altta: içindeki kartların, satırların ve hücrelerin arkasındaki kutu) görünmez:
+   dolgu, kenar çizgisi, gölge ve bulanıklık yoktur; içerik doğrudan arka planın üzerinde durur. Kartlar, hücre çizgileri ve başlık paneli
+   (üstte durduğu için) aynen kalır. Kanban kolonunun üstündeki durum şeridi de (box-shadow) kalkar; durum rengi başlıktaki noktada görünür.
+   Kapsam: Kanban kolonları, Ay ızgarası, Hafta/Gün/Planlayıcı ızgarası, Gantt ve Dashboard/Gün sayfasındaki .panel kutuları. */
+.view :is(.kanban-col, .month-grid, .grid-host, .gantt, .panel).glass {
+  background: transparent; border-color: transparent; box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
 
 .boot-screen {
   display: grid; place-items: center; height: 100vh; width: 100%;
