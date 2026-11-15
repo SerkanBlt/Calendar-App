@@ -232,19 +232,15 @@ Ekran genişliği **900 px ve altındayken** (telefon, dikey tablet):
   düğmeyi parmağın altında açmaz.
 - Ay ve Hafta başlığındaki **Tüm günler / Çalışma günleri** düğmesi eylem satırının sağ ucuna dayanır (`.offdays-toggle`).
 - Gantt'ta S-M-L solda kalır; **Kritik yol** ve sağındaki düğme eylem satırının sağ ucuna dayanır (`.gantt-push`).
-- Başlıkta hamburger düğmesi **yoktur**; kenar çubuğuna **sol kenardaki çekme kulakçığı** ile gidilir (aşağıya bakın). Sayfa adı büyüktür (24 px); başlık paneli yüksekliği değişmez:
-  ad satır yüksekliği sabit (27 px) ve uzun adlar üç noktayla kısalır. Panel yüksekliği 3 genişlik × 8 görünümde ölçülerek doğrulanmıştır.
-- **Çekme kulakçığı** (`src/components/drawerTab.js`, `.drawer-tab`): ekranın sol kenarında, dar (14 px) ve parmak boyunda (52 px), dikeyde ortada duran yarı saydam bir tutamaktır; kenar boşluğuna
-  sığar, içeriği örtmez. **Dokununca** kenar çubuğunu açar; **sağa çekince** çekmece parmağı izler (arkada perde ilerlemeyle belirir), bırakınca ≥%35 açıksa tamamlanır, değilse geri kapanır.
-  Dikey ya da sola kayma çekme sayılmaz. Klavyeyle (Tab → Enter) açılır; `aria-expanded` açık/kapalı durumunu bildirir. Kapatma: ✕, perdeye dokunma, `Esc`, menüden sayfa seçme.
-  Açıkken kulakçık gizlenir. Not: Android'in "geri" hareketi ekranın en kenarından içeri kaydırmadır; işletim sistemi bunu uygulamadan önce alabilir, bu yüzden dokunma her zaman açar,
-  çekme ise işletim sisteminin izin verdiği yerde çalışır.
+- **Hamburger düğmesi başlığın sağ ucundadır** (dikey düzende başlığın yanında, ilk satırın sağında; yatay kompakt şeritte eylemlerden sonra, en sağda). Kenar çubuğunu çekmece olarak açar;
+  kapatma: ✕, perdeye dokunma, `Esc`, menüden sayfa seçme. Sayfa adı büyüktür (24 px); başlık paneli yüksekliği hamburger solda olduğu hâldeki ile birebir aynıdır
+  (5 boyut × 8 görünüm ölçülerek karşılaştırıldı): ad satır yüksekliği sabit (27 px) ve uzun adlar üç noktayla kısalır.
 - Timeline'da Yaklaşan / Tümü / Geçmiş filtresi ve arama alanı başlıktadır (eylem satırında, sola dayalı).
 
 **Yatay telefon / kısa ekran (yükseklik ≤ 500 px)**: telefon yan çevrilince genişlik 900 px'i aşsa bile ekran kısadır; sabit kenar çubuğu ve uzun başlık içeriğe yalnızca ~225 px bırakırdı.
-Bu yüzden yukarıdaki **mobil kabuk** (kenar çubuğu çekmeceye iner + sol kenar çekme kulakçığı, yüzen düğme) genişliğe **ya da** kısa yüksekliğe bağlıdır (`@media (max-width: 900px), (max-height: 500px)`).
+Bu yüzden yukarıdaki **mobil kabuk** (kenar çubuğu çekmeceye iner + sağ uçta hamburger, yüzen düğme) genişliğe **ya da** kısa yüksekliğe bağlıdır (`@media (max-width: 900px), (max-height: 500px)`).
 Genişliğe özgü içerik kuralları (Kanban sütun genişliği, form sütunları) yalnızca genişliğe bağlı kalır. Kısa ekranda ayrıca:
-- Başlık, sayfa adı + eylemler **tek satırlık kompakt bir şerit** olur (127 → **50 px**; 8 sayfada aynı yükseklik), altyazı gizlenir. Çok düğmeli sayfalarda dar ekranda (≈≤670 px;
+- Başlık, sayfa adı + eylemler + hamburger **tek satırlık kompakt bir şerit** olur (hamburger en sağda) (127 → **50 px**; 8 sayfada aynı yükseklik), altyazı gizlenir. Çok düğmeli sayfalarda dar ekranda (≈≤670 px;
   ör. Planlayıcı) eylemler gerekirse alt satıra sarar.
 - Ay ızgarası satırları 96 → 60 px'e, zaman ızgarasının gün başlığı da sıkılaşır (ekranda ~2 yerine ~4,5 hafta satırı görünür).
 - Dikey telefon, tablet ve masaüstü düzenleri değişmez (ölçülerek doğrulandı). Masaüstünde pencere 500 px'in altına kısaltılırsa da aynı kabuk devreye girer.

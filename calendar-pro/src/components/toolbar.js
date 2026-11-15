@@ -2,7 +2,7 @@
  * toolbar.js — Görünüm başlık çubuğu.
  *
  * Kabuk eylemleri `data-action` ile işaretlenir ve main.js tarafından delegasyonla işlenir:
- *  prev, next, today, new  (mobil kenar çubuğu: hamburger yok; sol kenardaki çekme kulakçığı, bkz. drawerTab.js)
+ *  menu (mobil kenar çubuğu; hamburger başlığın SAĞ ucundadır), prev, next, today, new
  * View'a özgü kontroller `extra` parametresiyle eklenir; `beforeNew` ise doğrudan "Yeni" düğmesinin soluna yerleşir.
  *
  * Mobil kabuk (≤900px genişlik VEYA ≤500px yükseklik = yatay telefon): eylem satırı tam genişlikte ve sola dayalıdır (yatayda başlıkla tek satırda kompakt şerit, altyazı gizli); Geri/Bugün/İleri bloğu (`.toolbar-nav`)
@@ -19,6 +19,7 @@ export function toolbar({ title, subtitle = '', nav = false, extra = '', beforeN
         <h1>${title}</h1>
         ${subtitle ? html`<p>${subtitle}</p>` : ''}
       </div>
+      <button type="button" class="icon-btn only-mobile" data-action="menu" aria-label="Menüyü aç" aria-controls="sidebar">${icon('menu')}</button>
       <div class="toolbar-actions">
         ${extra}
         ${nav

@@ -4,6 +4,11 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.22.1
+- **Çekme kulakçığı geri alındı**: 1.22.0'daki sol kenar kulakçığı kaldırıldı (`drawerTab.js` ve stilleri silindi). Yerine eski **hamburger düğmesi başlığın SAĞ ucuna** döndü:
+  dikey düzende başlığın yanında (ilk satırın sağı), yatay kompakt şeritte eylemlerden sonra en sağda. Kenar çubuğu çekmecesi, ✕, perde ve `Esc` aynen çalışır; masaüstünde hamburger yoktur
+- Başlık yükseklikleri, hamburger solda olduğu hâldeki değerlerle birebir aynı (5 boyut × 8 sayfa ölçülerek karşılaştırıldı)
+
 ## 1.22.0
 - **Hamburger kalktı, sol kenara çekme kulakçığı geldi**: başlıktaki hamburger düğmesi kaldırıldı. Yerine ekranın sol kenarında, dar (14 px) ve parmak boyunda (52 px), dikeyde ortada, yarı saydam bir kulakçık var;
   kenar boşluğuna sığar (içeriği örtmez). **Dokununca** kenar çubuğunu açar, **sağa çekilince** çekmece parmağı izler (arkada perde belirir); bırakınca ≥%35 açıksa tamamlanır, değilse geri kapanır.

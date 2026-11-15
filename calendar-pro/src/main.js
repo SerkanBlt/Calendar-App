@@ -37,7 +37,6 @@ import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
 import { openEventEditor } from './components/eventEditor.js';
 import { applyFabBottom, setupFab } from './components/fab.js';
-import { setupDrawerTab } from './components/drawerTab.js';
 import { isModalOpen } from './components/modal.js';
 import { toast } from './components/toast.js';
 
@@ -60,19 +59,12 @@ appEl.innerHTML = html`
   <aside class="sidebar glass" id="sidebar" aria-label="Kenar çubuğu"></aside>
   <div class="sidebar-scrim" data-scrim></div>
   <main class="main" id="main"><div class="view" id="view"></div></main>
-  <button type="button" class="fab" data-fab aria-label="Yeni etkinlik" title="Yeni etkinlik (N)">${icon('plus')}</button>
-  <button type="button" class="drawer-tab" data-drawer-tab aria-label="Menüyü aç" aria-controls="sidebar" aria-expanded="false" title="Menü (sağa çekin ya da dokunun)">${icon('chevronRight')}</button>`;
+  <button type="button" class="fab" data-fab aria-label="Yeni etkinlik" title="Yeni etkinlik (N)">${icon('plus')}</button>`;
 const sidebarEl = document.getElementById('sidebar');
 const viewEl = document.getElementById('view');
 
-const drawerTabEl = appEl.querySelector('[data-drawer-tab]');
-const setMobileSidebar = (open) => {
-  appEl.classList.toggle('sidebar-open', open);
-  drawerTabEl.setAttribute('aria-expanded', String(open));
-};
+const setMobileSidebar = (open) => appEl.classList.toggle('sidebar-open', open);
 appEl.querySelector('[data-scrim]').addEventListener('click', () => setMobileSidebar(false));
-// Başlıktaki hamburger yerine sol kenarda çekme kulakçığı: dokununca açar, sağa çekilince çekmece parmağı izler
-setupDrawerTab(drawerTabEl, { app: appEl, sidebar: sidebarEl, open: () => setMobileSidebar(true) });
 
 // ---------------------------------------------------------------------------
 // View'lara verilen bağlam (ctx) — view'lar yalnızca bu API üzerinden etkileşir
@@ -166,7 +158,8 @@ viewEl.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn || !viewEl.contains(btn)) return;
   const action = btn.dataset.action;
-  if (action === 'prev') shiftCursor(-1);
+  if (action === 'menu') setMobileSidebar(true);
+  else if (action === 'prev') shiftCursor(-1);
   else if (action === 'next') shiftCursor(1);
   else if (action === 'today') ctx.today();
   else if (action === 'new') ctx.openEditor({ startDate: store.get().cursor });
