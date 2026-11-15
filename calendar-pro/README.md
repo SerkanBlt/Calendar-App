@@ -81,12 +81,18 @@ degradesidir. Görsel arka planlarda görselin üzerine temanın zemin rengi bin
 - Ayarlar: `bgColorMode` (`single` | `dual`), `bgColor1`, `bgColor2`. Değerler `#rrggbb` olarak doğrulanır; ilk boyamada (`index.html`)
   yalnızca tek renk veya `linear-gradient(135deg, #rrggbb, #rrggbb)` biçimleri kabul edilir.
 
-### Sayfa kenarlarında şerit olmaması
+### Gölge yok
 
-Kaydırılan ana panelin (`.view`) kenarında koyu bir "panel şeridi" görünmemelidir. Önceki sürümlerde sayfa içindeki kartların/ızgaraların büyük gölgesi (`--shadow`, 30 px
-yayılım) panelin 8 px'lik iç boşluğundan taşıp panel sınırında **keskin biçimde kesiliyor**, ekranın kenarında kenarlı, yarı saydam bir şerit gibi görünüyordu. Bu yüzden sayfa
-içinde `--shadow` dar tutulur (`.view { --shadow: var(--shadow-sm) }`); mobilde **kapalı kenar çubuğunun** gölgesi de ekranın sol kenarına taşmaz (gölge yalnızca açıkken vardır).
-Her ikisi de piksel düzeyinde ölçülerek doğrulanmıştır.
+**Hiçbir panelde gölge yoktur**: `--shadow`, `--shadow-sm` ve `--shadow-lg` belirteçleri tüm temalarda `none`'dır (cam paneller, kartlar, pencereler, komut paleti, kenar çubuğu, menüler,
+bildirimler, yüzen düğme). Derinlik 1 px kenar çizgisi ve yüzey tonlarıyla verilir. Bu, kaydırılan ana panelin (`.view`) kenarında kesilen gölgelerin ekranın kenarında koyu bir "panel şeridi"
+bırakmasını da kökten çözer. Panel olmayan küçük vurgular (birincil düğme parıltısı, takvim olay çubuğunun 1 px alt çizgisi, Timeline noktasının halkası, Gantt kritik yol vurgusu) kalır.
+Kanban kolonunun üstündeki durum şeridi gölge değil iç çizgidir (`inset`), kalır.
+
+### Sayfa altı
+
+Sayfaların altında boşluk bırakılmaz: paneller (Ay/Hafta/Gün/Planlayıcı ızgarası, Gantt, Kanban bantları, Dashboard kutuları) görünür alanın altına, standart 8 px dış kenar boşluğuna kadar uzar.
+Mobilde yüzen düğme panelin **üstünde yüzer** (yeri değiştirilebilir). Kaydırmalı sayfalarda son öğeler düğmenin altında kalmasın diye boşluk **son panelin içine** verilir
+(Dashboard/Gün'ün son kutusu, alt alta Kanban'ın son bandı; yan yana Kanban'da kolon listelerinin sonu; Timeline listesinin sonu).
 - Kaldırılan arka plan: eski **Deri** artık yok; onu seçmiş olanlar açılışta otomatik olarak Standart'a taşınır.
 
 Görsel arka planlarda ızgaranın altındaki **Yerleşim** seçenekleriyle görselin ekrana nasıl oturacağı belirlenir:
@@ -148,7 +154,8 @@ Etkinlik açıklaması Markdown ile yazılır ve **canlı önizleme** ile göste
   **diğer tüm satırlar işlenmiş (önizleme) halde** kalır: başlıklar büyür, maddeler `•` olur, bağlantılar tıklanır, görev kutuları işaretlenir.
   Bir satıra dokunmak/tıklamak onu ham hale geçirir (imleç tıklanan konuma yakın düşer); editörden çıkınca hepsi işlenmiş görünür.
 - Biçimlendirme araç çubuğu (kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı; `Ctrl/⌘ + B` ve `+ I`) **aktif satıra** uygulanır.
-  Köşedeki düğme açıklamayı **tam ekranda** düzenletir. Metin ham Markdown olarak saklanır; Kanban kartı ve arama özetlerinde işaretler gizlenir.
+  Kutunun **sağ alt köşesindeki tutamak** sürüklenerek (fare/dokunma) ya da `↑` `↓` ile kutuyu **büyütüp küçültür** (en az 96 px; çift tıklama otomatik yüksekliğe döner; yükseklik
+  sabitlenince uzun metin kutu içinde kayar). Köşedeki düğme açıklamayı **tam ekranda** düzenletir. Metin ham Markdown olarak saklanır; Kanban kartı ve arama özetlerinde işaretler gizlenir.
 - Açıklama (ve tam ekran düzenleyici) **ilk açıldığında tüm satırlar önizleme halindedir**; hiçbir satır ham değildir ve klavye açılmaz. Düzenlemek için bir satıra dokunulur.
 - **Görev listesi** (`- [ ]` / `- [x]`): onay kutusu satırın **dikeyde ortasındadır** (çok satırlı görevde de); tamamlanan görevin metni **üstü çizili ve soluk** görünür
   (düzenleyicide ve işlenmiş Markdown çıktısında).
@@ -208,8 +215,8 @@ Ekran genişliği **900 px ve altındayken** (telefon, dikey tablet):
 - Başlığın eylem satırı tam genişlikte ve **sola dayalıdır**; Geri / Bugün / İleri bloğu (`.toolbar-nav`) her zaman en başta durur. Bugün düğmesi
   bugünün tarihini gösterir ("Bugün: 15.Kas").
 - Başlıktaki "Yeni" düğmesi gizlenir; yerine sağ altta yüzen, yuvarlak ve büyük (56 px) bir **yeni etkinlik düğmesi** (FAB) gösterilir (`src/main.js`, `.fab`).
-  Bildirimler düğmenin üstünde çıkar, sayfanın altına düğmeye yer bırakan boşluk eklenir. `N` kısayolu aynen çalışır.
-  Düğme **biraz saydamdır** (%82; basılıyken tam opak). **Basılı tutup** (≈0,4 sn; hafif titreşim, düğme büyür) **dikey eksende** sürükleyerek yeri değiştirilir;
+  Bildirimler düğmenin üstünde çıkar; sayfa altında düğme için ayrı bir boşluk yoktur (bkz. "Sayfa altı"). `N` kısayolu aynen çalışır.
+  Düğme **biraz saydamdır** (%82) ve gölgesizdir; **basılırken ya da taşınırken rengi/opaklığı değişmez** (basınca yalnızca küçülür, taşırken büyür; tarayıcının dokunma vurgusu kapalıdır). **Basılı tutup** (≈0,4 sn; hafif titreşim, düğme büyür) **dikey eksende** sürükleyerek yeri değiştirilir;
   yatay konum sağ kenarda sabittir. Alt kenardan en az 16 px, üstten başlığa 72 px yer bırakılır. Konum `settings.fabBottom` olarak saklanır (dışa/içe aktarmaya dahildir),
   yeniden açılışta ve ekran döndürmede korunur. Basılı tutmadan önce parmak kayarsa taşıma başlamaz; taşımadan sonra yeni etkinlik açılmaz (`src/components/fab.js`).
 - **Hayalet tıklama koruması** (`src/core/ghostClick.js`): dokunmatik ekranda bir etkinliğe dokunulunca tarayıcı, parmak kalkınca aynı noktaya sahte fare olayları gönderir.

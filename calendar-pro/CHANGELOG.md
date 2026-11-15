@@ -4,6 +4,17 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.20.0
+- **Yüzen "+" düğmesi**: dokunurken/tıklarken renk değişmez. Neden: basılınca opaklık %82'den %100'e sıçrıyor ve alttaki renkli parıltı (gölge) değişiyordu. Artık basınca yalnızca küçülür,
+  taşırken yalnızca büyür; gölge yok, tarayıcının dokunma vurgusu kapalı. (Düz gradyan noktalarında basılı/boşta renk farkı ≤ 0.9, önceden ortalama 15)
+- **Hiçbir panelde gölge yok**: `--shadow`, `--shadow-sm`, `--shadow-lg` tüm temalarda `none` (cam paneller, kartlar, pencereler, komut paleti, kenar çubuğu, menüler, bildirimler).
+  1.19.1'deki ekran kenarı şeridi geçici çözümü (`.view` içinde dar gölge, kapalı kenar çubuğunda gölge yok) gereksiz kaldığı için kaldırıldı. Kanban kolon durum şeridi (iç çizgi) kalır
+- **Sayfa altı boşlukları kapandı**: mobilde FAB için ayrılan 80 px alt boşluk kalktı; Ay/Hafta/Planlayıcı/Gantt paneli alta kadar uzar (alt boşluk 88 → 16 px; kalanı dış kenar boşluğu).
+  Kaydırmalı sayfalarda içerik FAB'ın altında kalmasın diye boşluk son panelin içine verildi
+- **Açıklama alanı yeniden büyütülebilir**: kutunun sağ alt köşesinde tutamak (fare, dokunma, `↑` `↓`); en az 96 px, çift tıklama otomatik yükseklik; sabitlenince uzun metin kutu içinde kayar. Tam ekranda yok
+- Düzeltme (iç): tutamak için yüzey bir kap içine alındığında tam ekran düzenleyicinin yüksekliği çökmüştü (54 px); kap yeniden doldurur hale getirildi
+- Test: FAB basılı/boşta piksel farkı, tüm sayfalarda kalan gölge taraması (4 tema, masaüstü + mobil), sayfa altı boşluk ölçümü, tutamak (fare/klavye/gerçek dokunma)
+
 ## 1.19.1
 - **Ekran kenarındaki panel şeridi kaldırıldı**: kaydırılan ana panelin (`.view`) kenarında, ekranın sol/sağ boşluğunda keskin kenarlı koyu bir şerit görünüyordu. Neden: sayfa içindeki
   kartların/ızgaraların büyük gölgesi (30 px) panelin 8 px'lik iç boşluğunu aşıp panel sınırında kesiliyordu; mobilde ayrıca **kapalı kenar çubuğunun** gölgesi ekranın sol kenarına taşıyordu.

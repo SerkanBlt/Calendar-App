@@ -11,6 +11,7 @@
  *   ↑ ↓ ← → satırlar arasında gezer · çok satırlı yapıştırma satırlara bölünür · görev kutusuna tıklamak [ ] / [x] değiştirir.
  * Sınırlama: doğal seçim tek satırla sınırlıdır; Ctrl/⌘+A tüm metni seçer (kopyala, kes, sil ve üzerine yazma çalışır) ama satırlar arası
  * fare/parmakla seçim yoktur.
+ * Yükseklik: kutunun sağ alt köşesindeki tutamak (.md-grip) sürüklenerek (fare/dokunma) ya da ↑ ↓ ile büyütülüp küçültülür; çift tıklama otomatik yüksekliğe döner.
  * Tam metin her değişiklikte gizli bir <textarea>'ya (`textarea`, isteğe bağlı `name`) yazılır ve oradan `input` olayı yayılır; böylece form
  * onu sıradan bir alan gibi okur.
  *
@@ -54,10 +55,14 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
         ${TOOLS.map((t) => html`<button type="button" class="icon-btn icon-btn-sm" data-md-tool="${t.kind}" title="${t.title}" aria-label="${t.title}">${icon(t.icon)}</button>`)}
       </div>
     </div>
-    <div class="md-surface" role="group" aria-label="Açıklama"></div>
+    <div class="md-box">
+      <div class="md-surface" role="group" aria-label="Açıklama"></div>
+      ${fullscreen ? '' : html`<div class="md-grip" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Açıklama alanının yüksekliğini ayarla" title="Sürükleyerek büyüt / küçült (çift tıklama: otomatik yükseklik)"></div>`}
+    </div>
     <textarea class="md-value" hidden tabindex="-1" aria-hidden="true" ${name ? html`name="${name}"` : ''} placeholder="${placeholder}"></textarea>`;
   const surface = root.querySelector('.md-surface');
   const store = root.querySelector('.md-value');
+  const grip = root.querySelector('.md-grip');
 
   /** @type {{el: HTMLElement, view: HTMLElement, edit: HTMLTextAreaElement, shown: string|null}[]} */
   let rows = [];
@@ -438,6 +443,54 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
       }, 0);
     }
   });
+
+  // ---- Yükseklik tutamağı (eski büyütülebilir metin kutusundaki köşe tutamağının karşılığı) ----
+  // Varsayılan: içeriğe göre otomatik yükseklik. Tutamakla sürüklenince yükseklik sabitlenir (içerik kutu içinde kayar). Fare, dokunma ve klavye
+  // (↑ ↓, Home/çift tıklama = otomatik) ile çalışır. Tam ekran düzenleyicide yoktur (zaten ekranı kaplar).
+  if (grip) {
+    const MIN_H = 96;
+    const STEP = 32;
+    const maxH = () => Math.max(240, Math.round(window.innerHeight * 0.85));
+    const setHeight = (h) => {
+      if (h == null) {
+        surface.style.height = '';
+        surface.classList.remove('is-sized');
+        return;
+      }
+      surface.style.height = `${Math.max(MIN_H, Math.min(maxH(), Math.round(h)))}px`;
+      surface.classList.add('is-sized');
+    };
+    let drag = null;
+    grip.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      grip.setPointerCapture(e.pointerId);
+      drag = { id: e.pointerId, y: e.clientY, h: surface.offsetHeight };
+      grip.classList.add('is-dragging');
+    });
+    grip.addEventListener('pointermove', (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      setHeight(drag.h + (e.clientY - drag.y));
+      grip.scrollIntoView?.({ block: 'nearest' }); // büyürken tutamak görünür kalsın (kaydırılan pencerede)
+    });
+    const end = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag = null;
+      grip.classList.remove('is-dragging');
+    };
+    grip.addEventListener('pointerup', end);
+    grip.addEventListener('pointercancel', end);
+    grip.addEventListener('dblclick', () => setHeight(null));
+    grip.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHeight(surface.offsetHeight + (e.key === 'ArrowDown' ? STEP : -STEP));
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        setHeight(null);
+      }
+    });
+  }
 
   // ---- Başlangıç ----
   const initial = normalizeNewlines(value);

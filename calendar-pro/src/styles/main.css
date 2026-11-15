@@ -94,9 +94,7 @@ kbd {
 }
 
 .main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-/* Kaydırılan ana panel. Çocukları (kartlar, ızgaralar) bu kutunun 8 px'lik iç boşluğundan (.view-body padding) taşan büyük bir gölge çizerse, gölge kutunun
-   sınırında keskin biçimde kesilir ve ekranın kenarında koyu bir "panel şeridi" gibi görünür. Bu yüzden sayfa içinde --shadow dar (--shadow-sm) tutulur. */
-.view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: auto; --shadow: var(--shadow-sm); }
+.view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
 .view-body { flex: 1; min-height: 0; padding: 0 var(--space-2) var(--space-2); }
 
 /* ---------- Sidebar ---------- */
@@ -187,16 +185,15 @@ kbd {
   right: calc(var(--space-4) + env(safe-area-inset-right)); bottom: calc(var(--fab-bottom, var(--space-4)) + env(safe-area-inset-bottom));
   width: 56px; height: 56px; padding: 0; border-radius: 50%; border: 0;
   background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: var(--on-accent);
-  box-shadow: 0 8px 24px var(--accent-glow), 0 2px 6px rgba(0, 0, 0, 0.2);
-  opacity: 0.82; /* biraz saydam: altındaki içerik hafifçe görünür */
+  opacity: 0.82; /* biraz saydam: altındaki içerik hafifçe görünür. Basılıyken/taşırken DEĞİŞMEZ (renk kayması olmasın) */
   touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; /* basılı tutup taşımak için */
-  transition: transform var(--dur) var(--ease), box-shadow var(--dur), opacity var(--dur);
+  -webkit-tap-highlight-color: transparent; /* dokununca tarayıcının renkli vurgusu çıkmasın */
+  transition: transform var(--dur) var(--ease);
 }
-.fab:active { opacity: 1; }
-/* Taşıma modu (basılı tutunca): büyür, tam opak olur; konum anında izler */
-.fab.is-dragging { opacity: 1; transform: scale(1.1); box-shadow: 0 14px 36px var(--accent-glow-strong), 0 4px 10px rgba(0, 0, 0, 0.3); transition: transform var(--dur) var(--ease), box-shadow var(--dur); }
 .fab .icon { width: 26px; height: 26px; stroke-width: 2.2; }
-.fab:active:not(.is-dragging) { transform: scale(0.93); } /* taşıma modunda büyümüş hâli korunur (.is-dragging) */
+.fab:active:not(.is-dragging) { transform: scale(0.93); } /* basınca yalnızca boyut değişir, renk değişmez */
+/* Taşıma modu (basılı tutunca): yalnızca büyür; renk, opaklık ve gölge aynı kalır */
+.fab.is-dragging { transform: scale(1.1); }
 .fab:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; }
 
 /* ---------- Butonlar ---------- */
@@ -736,11 +733,10 @@ kbd {
   .app { grid-template-columns: 1fr; padding: var(--space-2); gap: 0; }
   .sidebar {
     position: fixed; inset: 8px auto 8px 8px; width: min(300px, calc(100vw - 32px)); z-index: 60;
-    transform: translateX(calc(-100% - 16px)); transition: transform 240ms var(--ease), box-shadow 240ms var(--ease);
+    transform: translateX(calc(-100% - 16px)); transition: transform 240ms var(--ease);
     background: var(--surface-solid);
-    box-shadow: none; /* kapalıyken gölge ekranın sol kenarına taşıp koyu bir şerit bırakmasın */
   }
-  .sidebar-open .sidebar { transform: none; box-shadow: var(--shadow); }
+  .sidebar-open .sidebar { transform: none; }
   .sidebar-scrim { position: fixed; inset: 0; z-index: 55; background: var(--scrim); }
   .sidebar-open .sidebar-scrim { display: block; }
   .only-mobile { display: inline-grid !important; }
@@ -765,7 +761,12 @@ kbd {
   .toolbar-actions .gantt-push { margin-left: auto; } /* Gantt: Kritik yol ve sağındaki düğme sağa dayalı (S-M-L solda kalır) */
   .toolbar [data-action='new'] { display: none; }
   .fab { display: grid; }
-  .view-body { padding-bottom: 80px; } /* FAB içeriğin son satırlarını kapatmasın */
+  /* Sayfa altında boşluk yok: paneller alt kenara (8 px) kadar uzar. FAB panelin üstünde yüzer (yeri değiştirilebilir). Kaydırmalı sayfalarda son
+     öğeler FAB'ın altında kalmasın diye boşluk, son panelin İÇİNE verilir. */
+  .view-body { padding-bottom: var(--space-2); }
+  .dash-grid > .panel:last-child, .day-side > .panel:last-child, .kanban--rows .kanban-col:last-child { padding-bottom: 72px; }
+  .kanban:not(.kanban--rows) .kanban-list { padding-bottom: 64px; }
+  .timeline-stream { padding-bottom: 72px; }
   .toast-stack { right: var(--space-4); bottom: calc(var(--space-4) + 56px + var(--space-3) + env(safe-area-inset-bottom)); } /* FAB'ın üstünde */
   .field-grid { grid-template-columns: 1fr 1fr; }
   .field-grid--3 { grid-template-columns: 1fr; }
@@ -812,6 +813,19 @@ kbd {
   transition: border-color var(--dur), background var(--dur);
 }
 .md-surface:focus-within { border-color: var(--accent); background: var(--surface-3); }
+/* Yükseklik tutamağı: kutunun sağ alt köşesi (kaydırma alanının dışında, .md-box'a göre konumlanır). Dokunmatik için vuruş alanı görünür boyuttan büyüktür. */
+.md-box { position: relative; }
+.md-surface.is-sized { overflow-y: auto; }
+.md-grip {
+  position: absolute; right: 0; bottom: 0; width: 30px; height: 30px; z-index: 2; cursor: ns-resize; touch-action: none; border-radius: 0 0 var(--radius-md) 0;
+  opacity: 0.75; transition: opacity var(--dur);
+}
+.md-grip::after {
+  content: ''; position: absolute; right: 5px; bottom: 5px; width: 13px; height: 13px;
+  background: linear-gradient(135deg, transparent 0 46%, var(--text-faint) 46% 56%, transparent 56% 68%, var(--text-faint) 68% 78%, transparent 78%);
+}
+.md-grip:hover, .md-grip.is-dragging, .md-grip:focus-visible { opacity: 1; }
+.md-grip:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .md-row { position: relative; }
 .md-view[hidden], .md-edit[hidden] { display: none !important; } /* satır türü kuralları (display: flex/block) hidden'ı ezmesin */
 .md-view { min-height: 1.5em; cursor: text; }
@@ -849,6 +863,7 @@ kbd {
 /* Ctrl/⌘+A ile tümü seçildiğinde */
 .md-surface.is-all-selected .md-row { background: color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 3px; }
 .md-editor--full { flex: 1; min-height: 0; }
+.md-editor--full .md-box { flex: 1; min-height: 0; display: flex; flex-direction: column; } /* yüzey .md-box içinde: tam ekranda kalan yüksekliği doldurur */
 .md-editor--full .md-surface { flex: 1; min-height: 0; overflow: auto; padding: 14px 18px 14px 22px; font-size: 16px; }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
