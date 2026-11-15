@@ -3,7 +3,7 @@
  */
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { applyFormat, lineContentStart, listContinuation, renderLineRows, renderMarkdown, stripMarkdown } from '../src/core/markdown.js';
+import { applyFormat, lineContentStart, listContinuation, renderMarkdown, stripMarkdown } from '../src/core/markdown.js';
 
 const md = (s) => String(renderMarkdown(s));
 
@@ -227,66 +227,6 @@ describe('applyFormat', () => {
   test('boş satırlar atlanır', () => {
     assert.equal(applyFormat('a\n\nb', 0, 4, 'ul').value, '- a\n\n- b');
   });
-});
-
-describe('renderLineRows (canlı önizleme editörü)', () => {
-  const kinds = (lines) => renderLineRows(lines).map((r) => (r.edge ? `${r.kind}:${r.edge}` : r.kind)).join(',');
-  const LINE_TAG = /<\/?(?:strong|em|del|code|span)(?: class="[a-z-]+")?>|<a href="[^"<>]*" target="_blank" rel="noopener noreferrer">|<\/a>|<input type="checkbox" class="md-check" tabindex="-1"(?: checked)?>/g;
-
-  test('satır türleri', () => {
-    assert.equal(kinds(['# Başlık', '', 'düz', '- madde', '1. bir', '> alıntı', '---']), 'h1,blank,p,li,li,quote,hr');
-    assert.equal(kinds(['###### altı']), 'h6');
-  });
-
-  test('kod çiti bağlamı: açılış, kod satırları, kapanış; sonrası normal', () => {
-    assert.equal(kinds(['```js', '# bu başlık değil', '- bu liste değil', '```', '# gerçek başlık']), 'fence:open,code,code,fence:close,h1');
-  });
-
-  test('kapanmamış çit sona kadar kod sayılır', () => {
-    assert.equal(kinds(['```', 'a', 'b']), 'fence:open,code,code');
-  });
-
-  test('kod satırı içeriği kaçırılır ve biçim işaretleri işlenmez', () => {
-    const [, code] = renderLineRows(['```', '**x** <b>']);
-    assert.equal(code.html, '<code>**x** &lt;b&gt;</code>');
-  });
-
-  test('liste: işaret, girinti derinliği, numara ve görev kutusu', () => {
-    const rows = renderLineRows(['- a', '  - iç', '    - daha iç', '2. iki', '- [ ] yap', '- [x] bitti']);
-    assert.deepEqual(rows.map((r) => r.depth), [0, 1, 2, 0, 0, 0]);
-    assert.match(rows[0].html, /^<span class="md-marker">•<\/span><span class="md-li-body">a<\/span>$/);
-    assert.match(rows[3].html, /^<span class="md-marker">2\.<\/span>/);
-    assert.match(rows[4].html, /^<input type="checkbox" class="md-check" tabindex="-1"><span class="md-li-body">yap<\/span>$/);
-    assert.match(rows[5].html, /<input type="checkbox" class="md-check" tabindex="-1" checked>/);
-    assert.deepEqual(rows.map((r) => [Boolean(r.task), Boolean(r.done)]), [[false, false], [false, false], [false, false], [false, false], [true, false], [true, true]]);
-  });
-
-  test('alıntı derinliği ve satır içi biçimler', () => {
-    const rows = renderLineRows(['> bir', '>> iki **kalın**']);
-    assert.deepEqual(rows.map((r) => r.depth), [0, 1]);
-    assert.equal(rows[1].html, 'iki <strong>kalın</strong>');
-  });
-
-  test('boş satır ve geçersiz girdiler', () => {
-    assert.deepEqual(renderLineRows([]), []);
-    assert.equal(renderLineRows([null, undefined, '   '])[0].kind, 'blank');
-    assert.ok(!renderLineRows(['a\u0000b'])[0].html.includes('\u0000'));
-  });
-
-  const vectors = [
-    '<script>alert(1)</script>', '<img src=x onerror=alert(1)>', '"><script>alert(1)</script>', '**<b onclick=alert(1)>x</b>**',
-    '# <iframe src=javascript:alert(1)>', '> <style>x</style>', '- <img src=x onerror=alert(1)>', '- [ ] <svg/onload=alert(1)>',
-    '[x](javascript:alert(1))', '[<img src=x onerror=alert(1)>](https://a.com)', '`<script>`',
-  ];
-  for (const v of vectors) {
-    test(`satır satır render de güvenli: ${v.slice(0, 36)}`, () => {
-      for (const row of renderLineRows([v, '```', v, '```'])) {
-        const rest = row.html.replace(LINE_TAG, '');
-        assert.ok(!/[<>]/.test(rest), `kaçırılmamış açı parantezi: ${row.html}`);
-        assert.ok(!/<script|<img|<svg|<iframe|<style|href="javascript/i.test(row.html), row.html);
-      }
-    });
-  }
 });
 
 describe('lineContentStart / listContinuation', () => {

@@ -808,14 +808,13 @@ kbd {
 .md-tools .icon-btn { width: 30px; height: 30px; }
 .md-tools .icon-btn .icon { width: 16px; height: 16px; }
 .md-surface {
-  position: relative; min-height: 96px; padding: 10px 12px 10px 16px; border-radius: var(--radius-md); cursor: text;
+  position: relative; min-height: 96px; padding: 10px 12px 10px 7px; border-radius: var(--radius-md); cursor: text;
   background: var(--surface-2); border: 1px solid var(--border); line-height: 1.5; overflow-wrap: anywhere;
   transition: border-color var(--dur), background var(--dur);
 }
 .md-surface:focus-within { border-color: var(--accent); background: var(--surface-3); }
 /* Yükseklik tutamağı: kutunun sağ alt köşesi (kaydırma alanının dışında, .md-box'a göre konumlanır). Dokunmatik için vuruş alanı görünür boyuttan büyüktür. */
 .md-box { position: relative; }
-.md-surface.is-sized { overflow-y: auto; }
 .md-grip {
   position: absolute; right: 0; bottom: 0; width: 30px; height: 30px; z-index: 2; cursor: ns-resize; touch-action: none; border-radius: 0 0 var(--radius-md) 0;
   opacity: 0.75; transition: opacity var(--dur);
@@ -826,45 +825,48 @@ kbd {
 }
 .md-grip:hover, .md-grip.is-dragging, .md-grip:focus-visible { opacity: 1; }
 .md-grip:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.md-row { position: relative; }
-.md-view[hidden], .md-edit[hidden] { display: none !important; } /* satır türü kuralları (display: flex/block) hidden'ı ezmesin */
-.md-view { min-height: 1.5em; cursor: text; }
-/* Açıklama alanı .field içinde durur: `.field textarea` (min-height, dolgu, kenarlık, odak zemini) bu satır kutularını etkilemesin diye özgüllük yüksek tutulur */
-.md-editor .md-surface textarea.md-edit,
-.md-editor .md-surface textarea.md-edit:focus {
-  display: block; width: 100%; min-height: 1.5em; margin: 0; padding: 0; border: 0; border-radius: 0; outline: none; resize: none; overflow: hidden;
-  background: transparent; color: inherit; font: inherit; line-height: inherit;
-}
-/* Aktif satır: ham markup görünür; solda vurgu çubuğu */
-.md-row.is-active::before { content: ''; position: absolute; left: -9px; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--accent); }
-.md-placeholder { color: var(--text-faint); }
-/* Satır türleri (işlenmiş görünüm) */
-.md-row[data-kind='h1'] .md-view, .md-row[data-kind='h2'] .md-view, .md-row[data-kind='h3'] .md-view,
-.md-row[data-kind='h4'] .md-view, .md-row[data-kind='h5'] .md-view, .md-row[data-kind='h6'] .md-view { font-weight: 700; line-height: 1.3; padding: 2px 0; }
-.md-row[data-kind='h1'] .md-view { font-size: 1.4em; }
-.md-row[data-kind='h2'] .md-view { font-size: 1.25em; }
-.md-row[data-kind='h3'] .md-view { font-size: 1.1em; }
-.md-row[data-kind='li'] .md-view { display: flex; align-items: flex-start; gap: 0.55em; padding-left: calc(var(--depth, 0) * 1.4em); }
-.md-marker { flex: none; min-width: 1em; text-align: right; color: var(--text-muted); }
-.md-li-body { flex: 1; min-width: 0; }
-.md-check { flex: none; width: 1.05em; height: 1.05em; margin: 0.28em 0 0; accent-color: var(--accent); cursor: pointer; }
-/* ToDo satırları: kutu metne göre dikeyde ortalı; tamamlanan ToDo'nun üstü çizili ve soluk */
-.md-row[data-task='true'] .md-view { align-items: center; }
-.md-row[data-task='true'] .md-check { margin: 0; }
-.md-row[data-done='true'] .md-li-body { text-decoration: line-through; color: var(--text-muted); }
-.md-row[data-kind='quote'] .md-view { padding-left: calc(10px + var(--depth, 0) * 14px); border-left: 3px solid var(--accent); color: var(--text-muted); }
-.md-row[data-kind='hr'] .md-view { min-height: 0; height: 0; margin: 0.7em 0; border-top: 1px solid var(--border-strong); }
-.md-row[data-kind='code'] .md-view, .md-row[data-kind='fence'] .md-view { padding: 0 10px; background: var(--surface-3); font-family: var(--font-mono); font-size: 0.92em; }
-.md-row[data-kind='code'] .md-view code { padding: 0; background: none; font-size: inherit; white-space: pre-wrap; }
-.md-row[data-kind='fence'] .md-view { min-height: 8px; height: 8px; }
-.md-row[data-kind='fence'][data-edge='open'] .md-view { border-radius: 8px 8px 0 0; margin-top: 2px; }
-.md-row[data-kind='fence'][data-edge='close'] .md-view { border-radius: 0 0 8px 8px; margin-bottom: 2px; }
-.md-editor .md-surface .md-row[data-kind='code'] textarea.md-edit, .md-editor .md-surface .md-row[data-kind='fence'] textarea.md-edit { padding: 0 10px; background: var(--surface-3); font-family: var(--font-mono); font-size: 0.92em; }
-/* Ctrl/⌘+A ile tümü seçildiğinde */
-.md-surface.is-all-selected .md-row { background: color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 3px; }
+/* ---- CodeMirror 6 (canlı önizleme: bkz. components/markdownLive.js). Temel temayı uygulamanın görünümüne uydurur. ---- */
+.md-surface .cm-editor { background: transparent; color: inherit; font: inherit; min-height: 74px; outline: none; }
+.md-surface .cm-editor.cm-focused { outline: none; }
+.md-surface .cm-scroller { font: inherit; line-height: inherit; overflow: auto; }
+.md-surface .cm-content { padding: 0 0 0 9px; caret-color: var(--accent); } /* sol 9 px: aktif satır çubuğu kaydırma alanında kırpılmasın */
+.md-surface .cm-line { padding: 0; }
+.md-surface .cm-placeholder { color: var(--text-faint); }
+.md-surface .cm-content ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.md-surface.is-sized { overflow: hidden; }
+.md-surface.is-sized .cm-editor { height: 100%; }
+/* Aktif satır (imleç/seçim): ham Markdown görünür; solda vurgu çubuğu */
+.md-surface .cm-line.cm-md-active { position: relative; }
+.md-surface .cm-line.cm-md-active::before { content: ''; position: absolute; left: -6px; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--accent); }
+/* Başlıklar */
+.md-surface .cm-md-h { font-weight: 700; line-height: 1.3; padding: 2px 0; }
+.md-surface .cm-md-h1 { font-size: 1.4em; } .md-surface .cm-md-h2 { font-size: 1.25em; } .md-surface .cm-md-h3 { font-size: 1.1em; }
+/* Listeler: asılı girinti (sarılan satır metnin altından devam eder) */
+.md-surface .cm-md-li { padding-left: calc(var(--depth, 0) * 1.4em + 1.1em); text-indent: -1.1em; }
+.md-surface .cm-md-bullet { color: var(--text-muted); }
+/* Görev satırı: kutu satırın (çok satırlıysa tamamının) dikeyde ortasında; tamamlanan görevin üstü çizili ve soluk */
+.md-surface .cm-md-li.cm-md-task { position: relative; padding-left: calc(var(--depth, 0) * 1.4em + 1.7em); text-indent: 0; }
+.md-surface .cm-md-check { position: absolute; left: calc(var(--depth, 0) * 1.4em); top: 50%; transform: translateY(-50%); width: 1.05em; height: 1.05em; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.md-surface .cm-md-done { text-decoration: line-through; color: var(--text-muted); }
+/* Alıntı, çizgi, kod */
+.md-surface .cm-md-quote { padding-left: calc(10px + (var(--qd, 1) - 1) * 14px); border-left: 3px solid var(--accent); color: var(--text-muted); }
+.md-surface .cm-md-hrline { line-height: 1.2; }
+.md-surface .cm-md-hr { display: inline-block; width: 100%; height: 0; vertical-align: middle; border-top: 1px solid var(--border-strong); }
+.md-surface .cm-md-code, .md-surface .cm-md-fence { padding: 0 10px; background: var(--surface-3); font-family: var(--font-mono); font-size: 0.92em; }
+.md-surface .cm-md-fence--idle { height: 8px; line-height: 8px; overflow: hidden; }
+.md-surface .cm-md-fence--open { border-radius: 8px 8px 0 0; margin-top: 2px; }
+.md-surface .cm-md-fence--close { border-radius: 0 0 8px 8px; margin-bottom: 2px; }
+/* Satır içi biçimler (işaretler satır aktif değilken gizlenir) */
+.md-surface .cm-md-strong { font-weight: 700; }
+.md-surface .cm-md-em { font-style: italic; }
+.md-surface .cm-md-del { text-decoration: line-through; opacity: 0.75; }
+.md-surface .cm-md-icode { font-family: var(--font-mono); font-size: 0.92em; padding: 1px 5px; border-radius: 5px; background: var(--surface-3); }
+.md-surface .cm-md-link { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; }
+.md-surface .cm-md-link--idle { cursor: pointer; }
 .md-editor--full { flex: 1; min-height: 0; }
 .md-editor--full .md-box { flex: 1; min-height: 0; display: flex; flex-direction: column; } /* yüzey .md-box içinde: tam ekranda kalan yüksekliği doldurur */
-.md-editor--full .md-surface { flex: 1; min-height: 0; overflow: auto; padding: 14px 18px 14px 22px; font-size: 16px; }
+.md-editor--full .md-surface { flex: 1; min-height: 0; overflow: hidden; padding: 14px 18px 14px 13px; font-size: 16px; }
+.md-editor--full .cm-editor { height: 100%; }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
 .md p, .md ul, .md ol, .md blockquote, .md pre { margin: 0 0 0.6em; }

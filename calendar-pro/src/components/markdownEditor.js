@@ -1,26 +1,23 @@
 /**
- * markdownEditor.js — Canlı önizlemeli Markdown editörü ("live preview": Obsidian tarzı).
+ * markdownEditor.js — Canlı önizlemeli Markdown editörü (Obsidian tarzı), CodeMirror 6 üzerinde.
  *
- * Yaz/Önizle sekmesi yoktur: imlecin bulunduğu (aktif) satır ham Markdown olarak (işaretleriyle) görünür ve düzenlenir,
- * diğer tüm satırlar işlenmiş (önizleme) halde kalır. Bir satıra dokununca/tıklayınca o satır ham hale geçer.
+ * Tek parça bir metin düzenleyicidir (tek `contenteditable`): satırlar arası seçim ve seçim tutamakları, imleç/klavye, IME, kopyala-yapıştır ve
+ * geri al/yinele tarayıcının ve CodeMirror'ın yerel haliyle çalışır. Canlı önizleme yalnızca görünümdür (bkz. markdownLive.js): imlecin/seçimin değdiği
+ * satırlar ham Markdown (işaretleriyle), diğer satırlar işlenmiş görünür. Düzenleyici odaksızken (ör. ilk açılış) hiçbir satır ham değildir.
  *
- * Nasıl çalışır: metin satırlara bölünür; her satır bir "satır kutusu"dur (işlenmiş görünüm + gizli bir <textarea>). Aktif satırın
- * textarea'sı görünür, diğerlerinin işlenmiş görünümü (core/markdown.js → renderLineRows) gösterilir. Satırlar arası geçiş, bölme ve birleştirme
- * bu bileşende yapılır:
- *   Enter satırı böler (liste/alıntı işareti sürer, boş öğede liste biter) · satır başında Backspace / satır sonunda Delete birleştirir ·
- *   ↑ ↓ ← → satırlar arasında gezer · çok satırlı yapıştırma satırlara bölünür · görev kutusuna tıklamak [ ] / [x] değiştirir.
- * Sınırlama: doğal seçim tek satırla sınırlıdır; Ctrl/⌘+A tüm metni seçer (kopyala, kes, sil ve üzerine yazma çalışır) ama satırlar arası
- * fare/parmakla seçim yoktur.
- * Yükseklik: kutunun sağ alt köşesindeki tutamak (.md-grip) sürüklenerek (fare/dokunma) ya da ↑ ↓ ile büyütülüp küçültülür; çift tıklama otomatik yüksekliğe döner.
- * Tam metin her değişiklikte gizli bir <textarea>'ya (`textarea`, isteğe bağlı `name`) yazılır ve oradan `input` olayı yayılır; böylece form
- * onu sıradan bir alan gibi okur.
- *
- * Araç çubuğu: kalın, italik, üstü çizili, kod, bağlantı, başlık, madde/numaralı/görev listesi, alıntı (Ctrl/⌘+B ve +I). Aktif satıra uygulanır.
- * Markdown dönüşümleri ve güvenlik (XSS) garantisi core/markdown.js'tedir.
+ * Enter: liste/alıntı işareti yeni satıra sürer (numara artar), boş öğede Enter listeyi bitirir. Araç çubuğu: kalın, italik, üstü çizili, kod, bağlantı, başlık,
+ * madde/numaralı/görev listesi, alıntı (Ctrl/⌘+B ve +I); seçime/satırlara uygulanır (core/markdown.js → applyFormat).
+ * Yükseklik: sağ alt köşedeki tutamak (.md-grip) sürüklenerek (fare/dokunma) ya da ↑ ↓ ile ayarlanır; çift tıklama otomatik yüksekliğe döner.
+ * Tam metin her değişiklikte gizli bir <textarea>'ya (`textarea`, isteğe bağlı `name`) yazılır ve oradan `input` olayı yayılır; böylece form onu sıradan
+ * bir alan gibi okur. Metin HTML olarak yorumlanmaz; XSS yüzeyi yoktur.
  */
+import { EditorState, Transaction } from '@codemirror/state';
+import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/view';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { html } from '../core/dom.js';
-import { applyFormat, lineContentStart, listContinuation, renderLineRows } from '../core/markdown.js';
+import { applyFormat, lineContentStart, listContinuation } from '../core/markdown.js';
 import { icon } from './icons.js';
+import { liveExtension, markdownLanguage } from './markdownLive.js';
 
 const TOOLS = [
   { kind: 'bold', icon: 'bold', title: 'Kalın (Ctrl+B)' },
@@ -35,16 +32,14 @@ const TOOLS = [
   { kind: 'quote', icon: 'quote', title: 'Alıntı' },
 ];
 
-const TASK_BOX = /^(\s*(?:[-*+]|\d{1,9}[.)])\s+\[)([ xX])(\]\s)/;
+// Esc (modal kapanabilsin) ve Ctrl/⌘+Enter (form kaydedilsin) uygulamanındır; CodeMirror'ın varsayılanları bunları yutmasın
+const BASE_KEYS = defaultKeymap.filter((k) => k.key !== 'Escape' && k.key !== 'Mod-Enter');
+
 const normalizeNewlines = (t) => String(t ?? '').replace(/\r\n?/g, '\n');
-const autosize = (ta) => {
-  ta.style.height = 'auto';
-  ta.style.height = `${ta.scrollHeight}px`;
-};
 
 /**
  * @param {{name?: string, value?: string, placeholder?: string, fullscreen?: boolean}} [options]
- * @returns {{el: HTMLElement, textarea: HTMLTextAreaElement, getValue: () => string, setValue: (v: string) => void, focus: () => void}}
+ * @returns {{el: HTMLElement, textarea: HTMLTextAreaElement, view: EditorView, getValue: () => string, setValue: (v: string) => void, focus: () => void, destroy: () => void}}
  */
 export function createMarkdownEditor({ name = '', value = '', placeholder = '', fullscreen = false } = {}) {
   const root = document.createElement('div');
@@ -64,233 +59,86 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
   const store = root.querySelector('.md-value');
   const grip = root.querySelector('.md-grip');
 
-  /** @type {{el: HTMLElement, view: HTMLElement, edit: HTMLTextAreaElement, shown: string|null}[]} */
-  let rows = [];
-  let active = -1;
-  let allSelected = false;
+  const initial = normalizeNewlines(value);
+  store.value = initial;
+  root.classList.toggle('is-empty', !initial);
 
-  const rowOfEdit = (t) => rows.findIndex((r) => r.edit === t);
-  const rowOfView = (v) => rows.findIndex((r) => r.view === v);
-  const texts = () => rows.map((r) => r.edit.value);
-
-  function makeRow(text) {
-    const el = document.createElement('div');
-    el.className = 'md-row';
-    const view = document.createElement('div');
-    view.className = 'md-view md';
-    const edit = document.createElement('textarea');
-    edit.className = 'md-edit';
-    edit.rows = 1;
-    edit.hidden = true;
-    edit.value = text;
-    edit.autocomplete = 'off';
-    edit.setAttribute('aria-label', 'Açıklama satırı');
-    el.append(view, edit);
-    return { el, view, edit, shown: null };
-  }
-
-  function setRows(list) {
-    rows = list.map(makeRow);
-    surface.replaceChildren(...rows.map((r) => r.el));
-    rows[0].view.tabIndex = 0; // klavyeyle (Tab) editöre girilebilsin
-    active = -1;
-  }
-
-  /** İşlenmiş görünümleri günceller (aktif satır hariç: onun ham metni textarea'dadır). */
-  function refresh() {
-    const list = renderLineRows(texts());
-    const empty = rows.length === 1 && !rows[0].edit.value;
-    rows.forEach((r, i) => {
-      const item = list[i];
-      r.el.dataset.kind = item.kind;
-      r.el.dataset.edge = item.edge ?? '';
-      r.el.dataset.task = item.task ? 'true' : '';
-      r.el.dataset.done = item.done ? 'true' : '';
-      r.el.style.setProperty('--depth', String(item.depth));
-      const markup = empty ? String(html`<span class="md-placeholder">${placeholder}</span>`) : item.html;
-      if (i !== active && r.shown !== markup) {
-        r.view.innerHTML = markup;
-        r.shown = markup;
-      }
-      r.edit.placeholder = empty ? placeholder : '';
-    });
-    root.classList.toggle('is-empty', empty);
-  }
-
-  /** Tam metni gizli alana yazar (form buradan okur) ve görünümleri günceller. */
-  function commit() {
-    const v = texts().join('\n');
-    if (store.value !== v) {
-      store.value = v;
+  /** Belge değiştikçe tam metni gizli alana yazar (form buradan okur) ve `input` olayını yayar. */
+  const sync = EditorView.updateListener.of((update) => {
+    if (!update.docChanged) return;
+    const text = update.state.doc.toString();
+    root.classList.toggle('is-empty', !text);
+    if (store.value !== text) {
+      store.value = text;
       store.dispatchEvent(new Event('input', { bubbles: true }));
     }
-    refresh();
-  }
+  });
 
-  function hideEditor(r) {
-    r.edit.hidden = true;
-    r.view.hidden = false;
-    r.el.classList.remove('is-active');
-  }
-
-  /** i. satırı aktif yapar (ham markup görünür, odak oraya gelir). caret: 'start' | 'end' | konum. */
-  function activate(i, caret = 'end') {
-    if (!rows.length) return;
-    const index = Math.max(0, Math.min(i, rows.length - 1));
-    const prev = active;
-    const row = rows[index];
-    row.edit.hidden = false;
-    row.el.classList.add('is-active');
-    active = index;
-    autosize(row.edit);
-    // Sıra önemli: önce yeni kutu odaklanır, sonra işlenmiş görünüm gizlenir. Odaklı bir öğe (Tab ile gelinen görünüm) önce
-    // gizlenirse tarayıcı odağı bırakıp focusout tetikler ve editör kapanır; eski satır da yeni odak kurulmadan gizlenmez (mobilde klavye kesilmez).
-    row.edit.focus({ preventScroll: true });
-    row.view.hidden = true;
-    const len = row.edit.value.length;
-    const pos = caret === 'end' ? len : caret === 'start' ? 0 : Math.max(0, Math.min(caret, len));
-    row.edit.setSelectionRange(pos, pos);
-    if (prev >= 0 && prev !== index && rows[prev]) hideEditor(rows[prev]);
-    refresh();
-    row.el.scrollIntoView?.({ block: 'nearest' });
-  }
-
-  function deactivateAll() {
-    rows.forEach(hideEditor);
-    active = -1;
-    refresh();
-  }
-
-  function insertRowAfter(i, text) {
-    const row = makeRow(text);
-    rows[i].el.after(row.el);
-    rows.splice(i + 1, 0, row);
-    return row;
-  }
-
-  function removeRow(i) {
-    rows[i].el.remove();
-    rows.splice(i, 1);
-    if (active > i) active -= 1;
-  }
-
-  /** Enter: satırı imleçten böler; liste/alıntı işareti sürer, boş öğede liste biter. */
-  function splitAt(i) {
-    const ta = rows[i].edit;
-    const v = ta.value;
-    const s = ta.selectionStart;
-    const e = ta.selectionEnd;
-    const cont = listContinuation(v);
-    if (cont.clear && s === v.length && e === v.length) {
-      ta.value = ''; // boş liste öğesinde Enter: işaret silinir, liste biter
-      autosize(ta);
-      ta.setSelectionRange(0, 0);
-      commit();
-      return;
+  /** Enter: liste/alıntı işareti sürer, boş öğede liste biter. Seçim varken varsayılan davranış (seçimi siler, satır sonu ekler). */
+  function enter(v) {
+    const { state } = v;
+    const sel = state.selection.main;
+    if (!sel.empty) return false;
+    const line = state.doc.lineAt(sel.head);
+    const col = sel.head - line.from;
+    const cont = listContinuation(line.text);
+    if (cont.clear && col === line.text.length) {
+      v.dispatch({ changes: { from: line.from, to: line.to, insert: '' }, selection: { anchor: line.from }, userEvent: 'delete' }); // boş öğe: işaret silinir, liste biter
+      return true;
     }
-    const prefix = s >= lineContentStart(v) ? cont.prefix : '';
-    const after = v.slice(e);
-    ta.value = v.slice(0, s);
-    insertRowAfter(i, prefix + after);
-    activate(i + 1, prefix.length);
-    commit();
+    const prefix = col >= lineContentStart(line.text) ? cont.prefix : '';
+    v.dispatch({ changes: { from: sel.head, insert: `\n${prefix}` }, selection: { anchor: sel.head + 1 + prefix.length }, scrollIntoView: true, userEvent: 'input' });
+    return true;
   }
 
-  /** Satır başında Backspace: satırı öncekiyle birleştirir. */
-  function mergeUp(i) {
-    const prev = rows[i - 1];
-    const joinAt = prev.edit.value.length;
-    prev.edit.value += rows[i].edit.value;
-    activate(i - 1, joinAt);
-    removeRow(i);
-    commit();
-  }
-
-  /** Satır sonunda Delete: sonraki satırı bu satıra katar. */
-  function mergeDown(i) {
-    const ta = rows[i].edit;
-    const at = ta.value.length;
-    ta.value += rows[i + 1].edit.value;
-    removeRow(i + 1);
-    autosize(ta);
-    ta.setSelectionRange(at, at);
-    commit();
-  }
-
-  /** i. satırın yerine (satır sonları içerebilen) metni koyar; imleç `caretIndex` konumuna gelir. */
-  function replaceRowWithText(i, full, caretIndex) {
-    const parts = full.split('\n');
-    const upTo = full.slice(0, caretIndex).split('\n');
-    rows[i].edit.value = parts[0];
-    let anchor = i;
-    parts.slice(1).forEach((p) => {
-      insertRowAfter(anchor, p);
-      anchor += 1;
+  /** Metni `next` ile değiştirir; yalnızca farklı kısmı yazar (geri al ve imleç korunur). */
+  function replaceDoc(next, anchor, head) {
+    const prev = view.state.doc.toString();
+    const max = Math.min(prev.length, next.length);
+    let a = 0;
+    while (a < max && prev[a] === next[a]) a += 1;
+    let b = 0;
+    while (b < max - a && prev[prev.length - 1 - b] === next[next.length - 1 - b]) b += 1;
+    view.dispatch({
+      changes: { from: a, to: prev.length - b, insert: next.slice(a, next.length - b) },
+      selection: { anchor, head },
+      scrollIntoView: true,
+      userEvent: 'input',
     });
-    activate(i + upTo.length - 1, upTo[upTo.length - 1].length);
-    commit();
-  }
-
-  // ---- Ctrl/⌘+A: tüm metni seç (satırlar ayrı alanlar olduğu için sahte seçim durumu) ----
-  function setAllSelected(on) {
-    allSelected = on;
-    surface.classList.toggle('is-all-selected', on);
-  }
-  function replaceAll(text) {
-    setAllSelected(false);
-    setRows(normalizeNewlines(text).split('\n'));
-    activate(rows.length - 1, 'end');
-    commit();
   }
 
   function format(kind) {
-    if (allSelected) setAllSelected(false);
-    if (active < 0) activate(rows.length - 1, 'end');
-    const ta = rows[active].edit;
-    const r = applyFormat(ta.value, ta.selectionStart, ta.selectionEnd, kind);
-    ta.value = r.value;
-    autosize(ta);
-    ta.focus({ preventScroll: true });
-    ta.setSelectionRange(r.start, r.end);
-    commit();
+    if (!view.hasFocus) view.dispatch({ selection: { anchor: view.state.doc.length } }); // odak yokken biçim, metnin sonuna uygulanır
+    const sel = view.state.selection.main;
+    const r = applyFormat(view.state.doc.toString(), sel.from, sel.to, kind);
+    replaceDoc(r.value, r.start, r.end);
+    view.focus();
   }
 
-  function toggleTask(i) {
-    const ta = rows[i].edit;
-    if (!TASK_BOX.test(ta.value)) return;
-    ta.value = ta.value.replace(TASK_BOX, (_, a, mark, c) => `${a}${mark === ' ' ? 'x' : ' '}${c}`);
-    commit();
-  }
+  const view = new EditorView({
+    parent: surface,
+    state: EditorState.create({
+      doc: initial,
+      extensions: [
+        history(),
+        keymap.of([
+          { key: 'Enter', run: enter },
+          { key: 'Mod-b', run: () => (format('bold'), true), preventDefault: true },
+          { key: 'Mod-i', run: () => (format('italic'), true), preventDefault: true },
+          ...historyKeymap,
+          ...BASE_KEYS,
+        ]),
+        EditorView.lineWrapping,
+        markdownLanguage,
+        liveExtension(),
+        cmPlaceholder(placeholder),
+        EditorView.contentAttributes.of({ 'aria-label': 'Açıklama', spellcheck: 'true', autocapitalize: 'sentences' }),
+        sync,
+      ],
+    }),
+  });
 
-  /** Tıklanan noktanın işlenmiş satırdaki yerini ham metindeki konuma yaklaşık olarak çevirir. */
-  function caretFromClick(i, view, e) {
-    const raw = rows[i].edit.value;
-    const start = lineContentStart(raw);
-    const body = view.querySelector('.md-li-body') || view;
-    let node = null;
-    let offset = 0;
-    if (document.caretPositionFromPoint) {
-      const p = document.caretPositionFromPoint(e.clientX, e.clientY);
-      node = p?.offsetNode ?? null;
-      offset = p?.offset ?? 0;
-    } else if (document.caretRangeFromPoint) {
-      const r = document.caretRangeFromPoint(e.clientX, e.clientY);
-      node = r?.startContainer ?? null;
-      offset = r?.startOffset ?? 0;
-    }
-    if (!node || !body.contains(node)) return 'end';
-    const range = document.createRange();
-    range.selectNodeContents(body);
-    range.setEnd(node, offset);
-    const total = body.textContent.length;
-    return total ? start + Math.round((raw.length - start) * (range.toString().length / total)) : start;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Olaylar (satır kutuları dinamik olduğu için üst öğede, delegasyonla)
-  // ---------------------------------------------------------------------------
-
-  // Araç düğmelerine basmak metin alanından odağı/seçimi almasın
+  // Araç düğmelerine basmak düzenleyiciden odağı/seçimi almasın
   root.addEventListener('mousedown', (e) => {
     if (e.target.closest('[data-md-tool]')) e.preventDefault();
   });
@@ -298,150 +146,12 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
     const tool = e.target.closest('[data-md-tool]');
     if (tool) format(tool.dataset.mdTool);
   });
-
+  // Kutunun içeriğin dışındaki boş alanı (altı, kenar boşlukları): odaklan, imleç metnin sonuna
   surface.addEventListener('mousedown', (e) => {
-    if (e.target.closest('a')) return; // bağlantılar açılabilsin
-    if (e.target.closest('.md-view') || e.target === surface) e.preventDefault(); // odak click'te verilir
-  });
-  surface.addEventListener('click', (e) => {
-    if (e.target.closest('a')) return;
-    const check = e.target.closest('.md-check');
-    if (check) {
-      e.preventDefault();
-      toggleTask(rowOfView(check.closest('.md-view')));
-      return;
-    }
-    if (allSelected) setAllSelected(false);
-    const view = e.target.closest('.md-view');
-    if (view) activate(rowOfView(view), caretFromClick(rowOfView(view), view, e));
-    else if (e.target === surface) activate(rows.length - 1, 'end');
-  });
-
-  surface.addEventListener('focusin', (e) => {
-    const v = rowOfView(e.target);
-    if (v >= 0) activate(v, 'end'); // Tab ile ilk satıra gelindi
-  });
-  surface.addEventListener('focusout', (e) => {
-    if (!surface.contains(e.relatedTarget)) {
-      setAllSelected(false);
-      deactivateAll(); // odak editörden çıktı: tüm satırlar işlenmiş görünüme döner
-    }
-  });
-
-  surface.addEventListener('beforeinput', (e) => {
-    const i = rowOfEdit(e.target);
-    if (i < 0) return;
-    if (allSelected) {
-      e.preventDefault();
-      replaceAll(e.inputType.startsWith('insert') && e.inputType !== 'insertLineBreak' && e.inputType !== 'insertParagraph' ? e.data ?? '' : '');
-      return;
-    }
-    if (e.isComposing) return;
-    const ta = e.target;
-    const caretOnly = ta.selectionStart === ta.selectionEnd;
-    if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
-      e.preventDefault();
-      splitAt(i);
-    } else if (e.inputType === 'deleteContentBackward' && caretOnly && ta.selectionStart === 0 && i > 0) {
-      e.preventDefault();
-      mergeUp(i);
-    } else if (e.inputType === 'deleteContentForward' && caretOnly && ta.selectionStart === ta.value.length && i < rows.length - 1) {
-      e.preventDefault();
-      mergeDown(i);
-    }
-  });
-
-  surface.addEventListener('input', (e) => {
-    const i = rowOfEdit(e.target);
-    if (i < 0) return;
-    const ta = e.target;
-    if (ta.value.includes('\n') || ta.value.includes('\r')) {
-      replaceRowWithText(i, normalizeNewlines(ta.value), ta.selectionStart); // ör. satır sonlu metin doğrudan atandı
-      return;
-    }
-    autosize(ta);
-    commit();
-  });
-
-  surface.addEventListener('paste', (e) => {
-    const i = rowOfEdit(e.target);
-    if (i < 0) return;
-    const text = normalizeNewlines(e.clipboardData?.getData('text/plain'));
-    if (allSelected) {
-      e.preventDefault();
-      replaceAll(text);
-    } else if (text.includes('\n')) {
-      e.preventDefault();
-      const ta = e.target;
-      const before = ta.value.slice(0, ta.selectionStart);
-      replaceRowWithText(i, before + text + ta.value.slice(ta.selectionEnd), (before + text).length);
-    }
-  });
-  surface.addEventListener('copy', (e) => {
-    if (!allSelected) return;
-    e.clipboardData.setData('text/plain', store.value);
+    if (view.contentDOM.contains(e.target)) return;
     e.preventDefault();
-  });
-  surface.addEventListener('cut', (e) => {
-    if (!allSelected) return;
-    e.clipboardData.setData('text/plain', store.value);
-    e.preventDefault();
-    replaceAll('');
-  });
-
-  surface.addEventListener('keydown', (e) => {
-    const i = rowOfEdit(e.target);
-    if (i < 0) return;
-    const ta = e.target;
-    const mod = e.ctrlKey || e.metaKey;
-    const key = e.key.toLowerCase();
-
-    if (mod && key === 'a' && rows.length > 1) {
-      e.preventDefault();
-      setAllSelected(true);
-      return;
-    }
-    if (allSelected) {
-      if (mod && ['c', 'x', 'v'].includes(key)) return; // kopyala / kes / yapıştır kendi olaylarında
-      if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter') {
-        e.preventDefault();
-        replaceAll('');
-      } else if (e.key.length === 1 && !mod && !e.altKey) {
-        e.preventDefault();
-        replaceAll(e.key);
-      } else if (!['Shift', 'Control', 'Meta', 'Alt'].includes(e.key)) setAllSelected(false);
-      return;
-    }
-    if (mod && !e.shiftKey && !e.altKey && (key === 'b' || key === 'i')) {
-      e.preventDefault();
-      format(key === 'b' ? 'bold' : 'italic');
-      return;
-    }
-    if (mod || e.shiftKey || e.altKey) return; // seçim genişletme vb. yerel kalsın
-
-    const start = ta.selectionStart;
-    const collapsed = start === ta.selectionEnd;
-    const singleLine = ta.scrollHeight <= (parseFloat(getComputedStyle(ta).lineHeight) || 21) * 1.5;
-    if (e.key === 'ArrowLeft' && collapsed && start === 0 && i > 0) {
-      e.preventDefault();
-      activate(i - 1, 'end');
-    } else if (e.key === 'ArrowRight' && collapsed && start === ta.value.length && i < rows.length - 1) {
-      e.preventDefault();
-      activate(i + 1, 'start');
-    } else if (e.key === 'ArrowUp' && i > 0 && singleLine) {
-      e.preventDefault();
-      activate(i - 1, Math.min(start, rows[i - 1].edit.value.length));
-    } else if (e.key === 'ArrowDown' && i < rows.length - 1 && singleLine) {
-      e.preventDefault();
-      activate(i + 1, Math.min(start, rows[i + 1].edit.value.length));
-    } else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !singleLine) {
-      // Birden çok görsel satıra sarılmış satır: önce yerel gezinme; imleç yerinde kaldıysa (kenardayız) komşu satıra geç
-      setTimeout(() => {
-        if (active !== i || ta.selectionStart !== start || ta.selectionEnd !== start) return;
-        if (e.key === 'ArrowUp' && i > 0) activate(i - 1, Math.min(start, rows[i - 1].edit.value.length));
-        else if (e.key === 'ArrowDown' && i < rows.length - 1) activate(i + 1, Math.min(start, rows[i + 1].edit.value.length));
-      }, 0);
-    }
+    view.focus();
+    view.dispatch({ selection: { anchor: view.state.doc.length }, scrollIntoView: true });
   });
 
   // ---- Yükseklik tutamağı (eski büyütülebilir metin kutusundaki köşe tutamağının karşılığı) ----
@@ -492,24 +202,24 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
     });
   }
 
-  // ---- Başlangıç ----
-  const initial = normalizeNewlines(value);
-  setRows(initial.split('\n'));
-  store.value = initial;
-  refresh();
-
   return {
     el: root,
     textarea: store,
-    getValue: () => store.value,
+    view,
+    getValue: () => view.state.doc.toString(),
     setValue(v) {
       const text = normalizeNewlines(v);
-      setAllSelected(false);
-      setRows(text.split('\n'));
-      store.value = text;
-      store.dispatchEvent(new Event('input', { bubbles: true }));
-      refresh();
+      if (view.state.doc.toString() === text) return;
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: text },
+        selection: { anchor: Math.min(view.state.selection.main.head, text.length) },
+        annotations: Transaction.addToHistory.of(false), // dışarıdan (ör. tam ekran düzenleyiciden) gelen eşitleme geri al yığınını doldurmasın
+      });
     },
-    focus: () => activate(rows.length - 1, 'end'),
+    focus() {
+      view.focus();
+      view.dispatch({ selection: { anchor: view.state.doc.length }, scrollIntoView: true });
+    },
+    destroy: () => view.destroy(),
   };
 }

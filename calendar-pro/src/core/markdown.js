@@ -12,7 +12,7 @@
  *   rel="noopener noreferrer" target="_blank" ile açılır. Çıktı `raw()` ile işaretlenir (bkz. core/dom.js).
  *
  * Ayrıca: stripMarkdown (kart/arama özetleri için düz metin), applyFormat (editör araç çubuğu; saf metin dönüşümü) ve
- * canlı önizleme editörünün satır satır yardımcıları: renderLineRows, lineContentStart, listContinuation.
+ * editörün satır yardımcıları: lineContentStart, listContinuation (canlı önizleme CodeMirror üzerindedir: components/markdownEditor.js, markdownLive.js).
  */
 import { escapeHtml, raw } from './dom.js';
 
@@ -186,73 +186,6 @@ export function renderMarkdown(source) {
 // Canlı önizleme editörü: satır satır render
 // ---------------------------------------------------------------------------
 
-const QUOTE_LINE = /^ {0,3}(>+)[ \t]?(.*)$/;
-
-/**
- * Satırları bağlamlarıyla (kod çiti, liste, alıntı…) tek tek sınıflandırıp güvenli HTML'e çevirir. Canlı önizleme editörü,
- * imlecin bulunmadığı satırları bununla gösterir. Satır içi biçimler renderMarkdown ile aynı yoldan (`inline`) geçer;
- * yani aynı güvenlik garantisi geçerlidir (önce HTML kaçırma, yalnızca izinli etiketler/bağlantılar).
- * @param {string[]} lines kaynak satırları (satır sonu içermez)
- * @returns {{kind: string, depth: number, html: string, edge?: 'open'|'close', task?: boolean, done?: boolean}[]} her satır için bir kayıt
- *   kind: p | blank | h1…h6 | li | quote | code | fence | hr; depth: liste girintisi / alıntı derinliği;
- *   edge: kod çitinin açılış/kapanış satırı; task/done: görev kutusu olan ve tamamlanmış liste satırları
- */
-export function renderLineRows(lines) {
-  const rows = [];
-  let fence = null;
-  for (const raw of lines) {
-    const line = String(raw ?? '').replace(/\u0000/g, '');
-    if (fence) {
-      if (new RegExp(`^ {0,3}${fence.char}{${fence.len},}\\s*$`).test(line)) {
-        rows.push({ kind: 'fence', depth: 0, html: '', edge: 'close' });
-        fence = null;
-      } else rows.push({ kind: 'code', depth: 0, html: `<code>${escapeHtml(line) || '&nbsp;'}</code>` });
-      continue;
-    }
-    const open = FENCE.exec(line);
-    if (open) {
-      fence = { char: open[1][0], len: open[1].length };
-      rows.push({ kind: 'fence', depth: 0, html: '', edge: 'open' });
-      continue;
-    }
-    if (!line.trim()) {
-      rows.push({ kind: 'blank', depth: 0, html: '' });
-      continue;
-    }
-    const heading = HEADING.exec(line);
-    if (heading) {
-      rows.push({ kind: `h${heading[1].length}`, depth: 0, html: inline(heading[2]) });
-      continue;
-    }
-    if (HR.test(line)) {
-      rows.push({ kind: 'hr', depth: 0, html: '' });
-      continue;
-    }
-    const quote = QUOTE_LINE.exec(line);
-    if (quote) {
-      rows.push({ kind: 'quote', depth: Math.min(quote[1].length - 1, 4), html: inline(quote[2]) || '&nbsp;' });
-      continue;
-    }
-    const item = LIST_ITEM.exec(line);
-    if (item) {
-      const ordered = /\d/.test(item[2]);
-      const task = /^\[([ xX])\]\s+([\s\S]*)$/.exec(item[3]);
-      const lead = task
-        ? `<input type="checkbox" class="md-check" tabindex="-1"${task[1] === ' ' ? '' : ' checked'}>`
-        : `<span class="md-marker">${escapeHtml(ordered ? item[2] : '•')}</span>`;
-      rows.push({
-        kind: 'li',
-        depth: Math.min(Math.floor(indentOf(item[1]) / 2), 6),
-        task: Boolean(task),
-        done: Boolean(task) && task[1] !== ' ',
-        html: `${lead}<span class="md-li-body">${inline(task ? task[2] : item[3]) || '&nbsp;'}</span>`,
-      });
-      continue;
-    }
-    rows.push({ kind: 'p', depth: 0, html: inline(line) });
-  }
-  return rows;
-}
 
 /** Satırda biçim işaretlerinin (başlık #'leri, alıntı >, liste işareti, görev kutusu) bittiği, içeriğin başladığı konum. */
 export function lineContentStart(line) {

@@ -4,6 +4,21 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.21.0
+- **Açıklamada satırlar arası seçim**: seçim tutamağı artık alt satırlara kaydırılabilir. Açıklama editörü, her satırı ayrı bir metin kutusu yapan yapıdan **tek parça bir metin düzenleyicisine
+  (CodeMirror 6)** taşındı. Sonuç: fareyle/parmakla/`Shift`+oklarla **satırlar arası seçim**, yerel seçim tutamakları, `Ctrl+A`, mobil klavye (IME), kopyala-yapıştır ve **geri al / yinele satırlar arası da** çalışır
+  (önceki yapıda geri al satır başınaydı). Çok satırlı seçime araç çubuğu da uygulanır (birden çok satırı tek seferde listeye çevirme)
+- **Canlı önizleme korundu**: imlecin/seçimin değdiği satırlar ham, diğerleri işlenmiş (başlık, `•`, görev kutusu, kalın/italik/çizili/kod, bağlantı, alıntı, çizgi, kod bloğu); odaksızken (ilk açılış, tam ekran)
+  hiçbir satır ham değil. Önizleme yalnızca görünümdür, metin hep ham Markdown. Dokunmatik cihazlarda seçim sürerken satırların durumu dondurulur (tutamak sürüklenirken DOM değişmesin)
+- Görev kutusu: tıklayınca `[ ]` ↔ `[x]`, satırın (çok satırlıysa tamamının) dikeyde ortasında, tamamlanan görev üstü çizili. Enter liste/alıntı devamı ve boş öğede liste bitirme aynen çalışır
+- `Esc` (pencereyi kapat) ve `Ctrl/⌘+Enter` (formu kaydet) editör tarafından yutulmaz; yükseklik tutamağı ve tam ekran editör korundu
+- **Bağımlılık ve boyut**: CodeMirror 6 (`state`, `view`, `commands`, `language`) ve `@lezer/markdown` eklendi (artık "çalışma zamanı bağımlılığı yok" değil). JS paketi ≈57 → ≈157 KB gzip.
+  Yalnızca Markdown ayrıştırıcısı alınarak (HTML/CSS/JS dil paketleri olmadan) ≈174 KB yerine ≈100 KB'a indirildi
+- Güvenlik: metin HTML olarak yorumlanmaz (gerçek tarayıcıda `<script>`, `<img onerror>`, `<b onmouseover>` yazılarak sınandı); bağlantılar yalnızca `http(s)`/`mailto` açılır (`javascript:` açılmaz)
+- Kaldırıldı: satır-textarea mimarisi (`renderLineRows` ve testleri, `.md-row/.md-view/.md-edit` stilleri)
+- Test: canlı önizleme planı için 22 birim testi (`planLive`, `safeHref`; XSS ve patolojik girdiler dahil) ve gerçek tarayıcı E2E (satırlar arası fare/klavye seçimi, geri al/yinele, görev kutusu, bağlantılar, Ctrl+Enter, Esc, tam ekran, dokunma)
+- Sınırlama: Android'in kendi damla seçim tutamakları tarayıcı arayüzüdür ve otomasyonla sürülemez; tutamak sürüklenirken görünüm dondurma önlemi emülasyonda doğrulandı, gerçek telefonda denenmedi
+
 ## 1.20.0
 - **Yüzen "+" düğmesi**: dokunurken/tıklarken renk değişmez. Neden: basılınca opaklık %82'den %100'e sıçrıyor ve alttaki renkli parıltı (gölge) değişiyordu. Artık basınca yalnızca küçülür,
   taşırken yalnızca büyür; gölge yok, tarayıcının dokunma vurgusu kapalı. (Düz gradyan noktalarında basılı/boşta renk farkı ≤ 0.9, önceden ortalama 15)

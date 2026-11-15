@@ -207,6 +207,7 @@ export function openEventEditor(input = {}) {
     size: 'lg',
     className: 'modal--page',
     initialFocus: isEdit ? 'dialog' : 'first',
+    onClose: () => description.destroy(), // CodeMirror belge düzeyinde dinleyici bırakır: pencere kapanınca temizlenir
   });
   const f = form.elements;
 
@@ -244,8 +245,8 @@ export function openEventEditor(input = {}) {
     const doneBar = document.createElement('div');
     doneBar.className = 'modal-actions';
     doneBar.innerHTML = html`<button type="button" class="btn btn-primary" data-done>${icon('collapse')} Bitti</button>`;
-    // Tam ekran da önizlemede açılır (hiçbir satır ham değil); düzenlemek için bir satıra dokunulur
-    const fullModal = openModal({ title: 'Açıklama', body: full.el, footer: doneBar, size: 'lg', className: 'modal--fullscreen', initialFocus: 'dialog' });
+    // Tam ekran da önizlemede açılır (odak yok: hiçbir satır ham değil); düzenlemek için bir satıra dokunulur
+    const fullModal = openModal({ title: 'Açıklama', body: full.el, footer: doneBar, size: 'lg', className: 'modal--fullscreen', initialFocus: 'dialog', onClose: () => full.destroy() });
     doneBar.querySelector('[data-done]').addEventListener('click', () => fullModal.close());
   });
 

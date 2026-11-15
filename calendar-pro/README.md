@@ -1,7 +1,7 @@
 # Calendar Pro
 
 Modüler, offline çalışan takvim ve üretkenlik SPA'sı — Vite + Vanilla JS (ES Modules) + IndexedDB + PWA.
-Çalışma zamanı bağımlılığı yoktur; tek geliştirme bağımlılığı Vite'tır.
+Çalışma zamanı bağımlılıkları yalnızca açıklama editörü içindir: CodeMirror 6 (`@codemirror/state|view|commands|language`) ve Lezer Markdown ayrıştırıcısı (`@lezer/markdown`); geliştirme bağımlılığı Vite'tır. JS paketi ≈157 KB gzip (CodeMirror ≈100 KB).
 
 ## Başlangıç
 
@@ -148,31 +148,34 @@ Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinl
 
 ## Açıklamada Markdown
 
-Etkinlik açıklaması Markdown ile yazılır ve **canlı önizleme** ile gösterilir (Obsidian tarzı; Yaz/Önizle sekmesi yoktur):
+Etkinlik açıklaması Markdown ile yazılır ve **canlı önizleme** ile gösterilir (Obsidian tarzı). Editör **tek parça bir metin düzenleyicidir** (CodeMirror 6): **satırlar arası seçim ve
+seçim tutamakları**, imleç/klavye, mobil klavye (IME), kopyala-yapıştır ve **geri al / yinele satırlar arası da** yerel olarak çalışır.
 
-- **İmlecin bulunduğu (aktif) satır ham Markdown olarak** (işaretleriyle: `**kalın**`, `## başlık`, `- madde`) görünür ve düzenlenir;
-  **diğer tüm satırlar işlenmiş (önizleme) halde** kalır: başlıklar büyür, maddeler `•` olur, bağlantılar tıklanır, görev kutuları işaretlenir.
-  Bir satıra dokunmak/tıklamak onu ham hale geçirir (imleç tıklanan konuma yakın düşer); editörden çıkınca hepsi işlenmiş görünür.
-- Biçimlendirme araç çubuğu (kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı; `Ctrl/⌘ + B` ve `+ I`) **aktif satıra** uygulanır.
-  Kutunun **sağ alt köşesindeki tutamak** sürüklenerek (fare/dokunma) ya da `↑` `↓` ile kutuyu **büyütüp küçültür** (en az 96 px; çift tıklama otomatik yüksekliğe döner; yükseklik
-  sabitlenince uzun metin kutu içinde kayar). Köşedeki düğme açıklamayı **tam ekranda** düzenletir. Metin ham Markdown olarak saklanır; Kanban kartı ve arama özetlerinde işaretler gizlenir.
-- Açıklama (ve tam ekran düzenleyici) **ilk açıldığında tüm satırlar önizleme halindedir**; hiçbir satır ham değildir ve klavye açılmaz. Düzenlemek için bir satıra dokunulur.
-- **Görev listesi** (`- [ ]` / `- [x]`): onay kutusu satırın **dikeyde ortasındadır** (çok satırlı görevde de); tamamlanan görevin metni **üstü çizili ve soluk** görünür
-  (düzenleyicide ve işlenmiş Markdown çıktısında).
+- **Canlı önizleme yalnızca görünümdür**; metin her zaman ham Markdown olarak saklanır. İmlecin/seçimin değdiği satırlar **ham** (işaretleriyle: `**kalın**`, `## başlık`, `- madde`), **diğer
+  satırlar işlenmiş** görünür: başlıklar büyür, maddeler `•` olur, bağlantılar tıklanır, görev kutuları işaretlenir. Bir satıra dokunmak/tıklamak onu ham hale geçirir; editörden çıkınca hepsi
+  işlenmiş görünür. Fareyle/klavyeyle seçilen tüm satırlar ham açılır.
+- **Dokunmatik cihazlarda** (`pointer: coarse`) seçim sürerken (tutamaklar sürüklenirken) satırların ham/işlenmiş durumu **dondurulur**; seçim boşalınca, metin değişince ya da odak değişince yenilenir.
+  Amaç: tutamak sürüklenirken görünümü değiştirmenin Android'de tutamağı bırakmasına yol açmasını önlemek. (Gerçek telefon tutamakları otomasyonla sürülemez; bu önlem emülasyonda doğrulanmıştır.)
+- Biçimlendirme araç çubuğu (kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı; `Ctrl/⌘ + B` ve `+ I`) **seçime ve seçili tüm satırlara** uygulanır
+  (birden çok satırı tek seferde listeye çevirmek dahil).
+- Kutunun **sağ alt köşesindeki tutamak** sürüklenerek (fare/dokunma) ya da `↑` `↓` ile kutuyu **büyütüp küçültür** (en az 96 px; çift tıklama otomatik yüksekliğe döner; yükseklik
+  sabitlenince uzun metin kutu içinde kayar). Köşedeki düğme açıklamayı **tam ekranda** düzenletir. Kanban kartı ve arama özetlerinde işaretler gizlenir.
+- Açıklama (ve tam ekran düzenleyici) **ilk açıldığında hiçbir satır ham değildir** ve klavye açılmaz (editör odakta değilken tüm satırlar işlenmiş görünür). Düzenlemek için dokunulur.
+- **Görev listesi** (`- [ ]` / `- [x]`): onay kutusu satırın **dikeyde ortasındadır** (çok satırlı görevde de); tamamlanan görevin metni **üstü çizili ve soluk** görünür.
 
 | Tuş / eylem | Davranış |
 |-------------|----------|
-| `Enter` | Satırı böler. Liste (`-`, `1.`, `- [ ]`) ve alıntı (`>`) işareti yeni satıra sürer (numara artar); **boş öğede** `Enter` listeyi bitirir |
-| `Backspace` (satır başında) / `Delete` (satır sonunda) | Satırı öncekiyle / sonrakiyle birleştirir |
-| `↑` `↓` `←` `→` | Satırlar arasında gezinir (uzun, sarılan satırlarda önce satır içinde ilerler) |
+| `Enter` | Liste (`-`, `1.`, `- [ ]`) ve alıntı (`>`) işareti yeni satıra sürer (numara artar); **boş öğede** `Enter` listeyi bitirir |
+| Fare/parmak sürükleme, `Shift + ↑ ↓ ← →` | Yerel seçim; **alt satırlara** genişler |
+| `Ctrl/⌘ + A` | Tüm metni seçer |
+| `Ctrl/⌘ + Z`, `Ctrl + Y` / `Ctrl + Shift + Z` | Geri al / yinele (satırlar arası da) |
 | Görev kutusuna tıklama | `[ ]` ↔ `[x]` değiştirir; satırı ham hale getirmez |
-| `Ctrl/⌘ + A` | Tüm metni seçer (kopyala, kes, sil ve üzerine yazma çalışır) |
-| Çok satırlı yapıştırma | Satırlara bölünür |
-| `Tab` | Editöre (ilk satıra) girer; çıkmak için normal sekme sırası |
+| İşlenmiş bağlantıya tıklama | Yeni sekmede açar (yalnızca `http(s)`/`mailto`); düzenlemek için satırın başka bir yerine tıklanır |
+| `Esc` / `Ctrl/⌘ + Enter` | Pencereyi kapatır / formu kaydeder (editör bu tuşları yutmaz) |
+| `Tab` | Normal sekme sırası (girinti eklemez) |
 
-**Sınırlama:** her satır ayrı bir alan olduğu için fare/parmakla **satırlar arası seçim yapılamaz** (tek satır içinde seçim normaldir; `Ctrl/⌘ + A` tüm metni seçer).
-Çok satırlı biçimlendirme (birden çok satırı birden listeye çevirme) yoktur; araç çubuğu aktif satıra uygulanır. Uygulama: `src/components/markdownEditor.js`
-(arayüz ve satır işlemleri) ve `src/core/markdown.js` (`renderLineRows`, `listContinuation`, `applyFormat`; saf ve testli).
+Uygulama: `src/components/markdownEditor.js` (arayüz, Enter, araç çubuğu, yükseklik tutamağı), `src/components/markdownLive.js` (canlı önizleme: hangi aralığın gizleneceğini söyleyen saf
+`planLive` + güvenli parçacıklar) ve `src/core/markdown.js` (`listContinuation`, `lineContentStart`, `applyFormat`, `stripMarkdown`; saf ve testli).
 
 | Yazım | Sonuç |
 |-------|-------|
@@ -183,8 +186,10 @@ Etkinlik açıklaması Markdown ile yazılır ve **canlı önizleme** ile göste
 | `- [ ] yapılacak`, `- [x] bitti` | Görev listesi (önizlemede işaret kutusu) |
 | `> alıntı`, `---`, ` ``` ` kod bloğu | Alıntı, çizgi, kod bloğu |
 
-**Güvenlik:** metin önce tümüyle HTML'e kaçırılır, sonra yalnızca `src/core/markdown.js`'in ürettiği etiketler eklenir; ham HTML (`<script>`, `<img onerror>` …)
-çalışmaz, metin olarak görünür. Bağlantılar yalnızca `http(s)` ve `mailto` olabilir (`javascript:`, `data:` reddedilir). `tests/markdown.test.js` bu vektörleri sınar.
+**Güvenlik:** metin hiçbir zaman HTML olarak yorumlanmaz. Editör yalnızca düz metin düğümleri ve sabit parçacıklar (madde işareti, görev kutusu, çizgi) çizer; ham HTML (`<script>`,
+`<img onerror>` …) yazıldığı gibi **metin olarak** görünür (gerçek tarayıcıda sınanır). Bağlantı adresi `data-href` özniteliğinde taşınır ve yalnızca `http(s)` ile `mailto` açılır
+(`safeHref`; `javascript:`, `data:` reddedilir). `tests/markdown-live.test.js` bu vektörleri sınar. `core/markdown.js` içindeki `renderMarkdown` (kaçır-önce, izinli etiket) güvenli bir
+HTML çıktısı üretir ve testlidir, ancak şu an arayüzde kullanılmaz (canlı önizleme CodeMirror üzerindedir).
 Satır sonları korunur (not tutma alışkanlığı için tek satır sonu da yeni satırdır). Başka uygulamalara aktarılan ICS dosyalarında açıklama ham Markdown olarak görünür.
 
 ## Etkinlik rengi
@@ -317,11 +322,11 @@ src/
                dom (güvenli şablon), utils, seed
   services/    recurrenceService, notificationService, exportService, icsService, resetService, updateService, criticalPathService
   components/  sidebar, commandPalette, modal, toast, eventCard, eventEditor, timeGrid,
-               dragDrop, toolbar, icons, markdownEditor, colorPicker, fab
+               dragDrop, toolbar, icons, markdownEditor, markdownLive, colorPicker, fab
   views/       dashboard, month, week, day, scheduler, timeline, gantt, kanban
   styles/      theme, main, dashboard, calendar, scheduler, gantt, kanban
 public/        manifest.json, service-worker.js, icons/
-tests/         ICS, Markdown (XSS dahil), renk/palet, arayüz mantığı ve sürüm tutarlılığı testleri (node --test)
+tests/         ICS, Markdown (XSS dahil), canlı önizleme planı, renk/palet, arayüz mantığı ve sürüm tutarlılığı testleri (node --test)
 ```
 
 - **Tek yönlü veri akışı:** View → `ctx` / `actions` → `eventRepo` → IndexedDB + `store` → yeniden çizim.
