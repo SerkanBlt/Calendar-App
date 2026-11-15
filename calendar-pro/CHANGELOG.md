@@ -4,6 +4,14 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.21.1
+- **Yatay telefon düzeni düzeltildi**: telefon yan çevrilince genişlik 900 px'i aşıyor (~950×375) ve **masaüstü düzeni** devreye giriyordu: sabit kenar çubuğu (272 px, öğeleri kesiliyor) ve 127 px'lik başlık,
+  içeriğe yalnızca ~225 px yükseklik bırakıyordu. Mobil kabuk (kenar çubuğu çekmece + hamburger + yüzen düğme) artık genişliğe **veya** kısa yüksekliğe (≤500 px) bağlı
+- Kısa ekranda **kompakt başlık**: hamburger + sayfa adı + eylemler tek satırda, 127/119 → **50 px** (8 sayfada aynı; altyazı gizli). Dar ekranda (≈≤670 px) çok düğmeli sayfalar gerekirse alt satıra sarar
+- Kısa ekranda Ay satırları 96 → 60 px, gün başlığı sıkılaştı (görünür hafta satırı ~2 → ~4,5)
+- Dikey telefon, tablet ve masaüstü düzenleri değişmedi (ölçülerek doğrulandı); yatayda çekmece, ileri/geri, yüzen düğme (alta 16 px) ve etkinlik penceresi test edildi
+- Not: yatay modda etkinlik penceresinin üst/alt çubukları hâlâ ~110 px yer kaplıyor; istenirse onlar da sıkılaştırılabilir
+
 ## 1.21.0
 - **Açıklamada satırlar arası seçim**: seçim tutamağı artık alt satırlara kaydırılabilir. Açıklama editörü, her satırı ayrı bir metin kutusu yapan yapıdan **tek parça bir metin düzenleyicisine
   (CodeMirror 6)** taşındı. Sonuç: fareyle/parmakla/`Shift`+oklarla **satırlar arası seçim**, yerel seçim tutamakları, `Ctrl+A`, mobil klavye (IME), kopyala-yapıştır ve **geri al / yinele satırlar arası da** çalışır

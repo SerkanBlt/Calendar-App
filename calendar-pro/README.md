@@ -235,6 +235,14 @@ Ekran genişliği **900 px ve altındayken** (telefon, dikey tablet):
 - Hamburger (44 px, 28 px ikon) ve sayfa adı (24 px) büyüktür; başlık paneli yüksekliği değişmez: ad satır yüksekliği sabit (27 px) ve uzun
   adlar üç noktayla kısalır. Panel yüksekliği 3 genişlik × 8 görünümde ölçülerek doğrulanmıştır.
 - Timeline'da Yaklaşan / Tümü / Geçmiş filtresi ve arama alanı başlıktadır (eylem satırında, sola dayalı).
+
+**Yatay telefon / kısa ekran (yükseklik ≤ 500 px)**: telefon yan çevrilince genişlik 900 px'i aşsa bile ekran kısadır; sabit kenar çubuğu ve uzun başlık içeriğe yalnızca ~225 px bırakırdı.
+Bu yüzden yukarıdaki **mobil kabuk** (kenar çubuğu çekmeceye iner + hamburger, yüzen düğme) genişliğe **ya da** kısa yüksekliğe bağlıdır (`@media (max-width: 900px), (max-height: 500px)`).
+Genişliğe özgü içerik kuralları (Kanban sütun genişliği, form sütunları) yalnızca genişliğe bağlı kalır. Kısa ekranda ayrıca:
+- Başlık, hamburger + sayfa adı + eylemler **tek satırlık kompakt bir şerit** olur (127 → **50 px**; 8 sayfada aynı yükseklik), altyazı gizlenir. Çok düğmeli sayfalarda dar ekranda (≈≤670 px;
+  ör. Planlayıcı) eylemler gerekirse alt satıra sarar.
+- Ay ızgarası satırları 96 → 60 px'e, zaman ızgarasının gün başlığı da sıkılaşır (ekranda ~2 yerine ~4,5 hafta satırı görünür).
+- Dikey telefon, tablet ve masaüstü düzenleri değişmez (ölçülerek doğrulandı). Masaüstünde pencere 500 px'in altına kısaltılırsa da aynı kabuk devreye girer.
 - Masaüstünde (>900 px) başlık eskisi gibidir: eylemler sağda, "Yeni" başlıktadır.
 
 ## Takvim dosyası (ICS)

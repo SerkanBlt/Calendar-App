@@ -729,7 +729,9 @@ kbd {
   .sidebar-collapsed .sidebar-dock .nav-item { flex: 0 0 auto; }
 }
 
-@media (max-width: 900px) {
+/* Mobil kabuk (kenar çubuğu çekmece, hamburger, yüzen düğme, başlık paneli): dar ekran (≤900px genişlik) VEYA kısa ekran (≤500px yükseklik = telefon yatay).
+   Yatayda genişlik 900 px'i aşsa bile ekran kısadır; sabit kenar çubuğu ve uzun başlık içeriğe yer bırakmaz. */
+@media (max-width: 900px), (max-height: 500px) {
   .app { grid-template-columns: 1fr; padding: var(--space-2); gap: 0; }
   .sidebar {
     position: fixed; inset: 8px auto 8px 8px; width: min(300px, calc(100vw - 32px)); z-index: 60;
@@ -768,6 +770,8 @@ kbd {
   .kanban:not(.kanban--rows) .kanban-list { padding-bottom: 64px; }
   .timeline-stream { padding-bottom: 72px; }
   .toast-stack { right: var(--space-4); bottom: calc(var(--space-4) + 56px + var(--space-3) + env(safe-area-inset-bottom)); } /* FAB'ın üstünde */
+}
+@media (max-width: 900px) {
   .field-grid { grid-template-columns: 1fr 1fr; }
   .field-grid--3 { grid-template-columns: 1fr; }
 }
@@ -780,6 +784,22 @@ kbd {
   .modal { border-radius: var(--radius) var(--radius) 0 0; max-height: 92dvh; }
   .toast-stack { left: var(--space-3); right: var(--space-3); align-items: stretch; } /* alt boşluk: FAB'ın üstü (≤900px kuralı) */
   .modal-actions .hint { display: none; }
+}
+
+/* Yatay telefon (kısa ekran): başlık, hamburger + sayfa adı + eylemler tek satırda kompakt bir şerit olur; altyazı gizlenir. Böylece içeriğe ~%35 daha çok
+   yükseklik kalır. Sığmayan sayfalarda (ör. Planlayıcı: çok düğme) eylemler gerekirse alt satıra sarar. */
+@media (max-height: 500px) {
+  .toolbar { flex-wrap: wrap; gap: var(--space-2); padding: 6px 10px; margin-bottom: 6px; }
+  .toolbar-title { flex: 1 1 120px; min-width: 0; }
+  .toolbar-title h1 { font-size: 20px; line-height: 24px; }
+  .toolbar-title p { display: none; }
+  .toolbar .icon-btn.only-mobile { width: 36px; height: 36px; }
+  .toolbar .icon-btn.only-mobile .icon { width: 22px; height: 22px; }
+  .toolbar-actions { flex: 0 1 auto; width: auto; margin-left: auto; justify-content: flex-end; }
+  .toolbar-nav { order: 0; }
+  .toolbar .btn-group { padding: 1px; } /* düğme grupları (Geri/Bugün/İleri, zoom) 36 px: başlık satırı sayfalar arası eşit yükseklikte (50 px) kalsın */
+  .toolbar .btn-group .icon-btn { width: 32px; height: 32px; }
+  .dash-grid > .panel:last-child, .day-side > .panel:last-child, .kanban--rows .kanban-col:last-child { padding-bottom: 64px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,7 +5,7 @@
  *  menu (mobil kenar çubuğu), prev, next, today, new
  * View'a özgü kontroller `extra` parametresiyle eklenir; `beforeNew` ise doğrudan "Yeni" düğmesinin soluna yerleşir.
  *
- * Mobil/tablette (≤900px) eylem satırı tam genişlikte ve sola dayalıdır; Geri/Bugün/İleri bloğu (`.toolbar-nav`)
+ * Mobil kabuk (≤900px genişlik VEYA ≤500px yükseklik = yatay telefon): eylem satırı tam genişlikte ve sola dayalıdır (yatayda başlıkla tek satırda kompakt şerit, altyazı gizli); Geri/Bugün/İleri bloğu (`.toolbar-nav`)
  * her zaman en başta durur ve "Yeni" düğmesi gizlenir — onun yerine sağ alttaki yuvarlak düğme (FAB, bkz. main.js) kullanılır.
  */
 import { html } from '../core/dom.js';

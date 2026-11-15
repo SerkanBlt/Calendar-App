@@ -163,6 +163,13 @@
   .day-layout { grid-template-columns: 1fr; grid-template-rows: minmax(480px, 1fr) auto; }
   .day-side { overflow: visible; }
 }
+/* Yatay telefon (kısa ekran): ay satırları ve gün başlığı sıkılaşır; aksi halde ekranda yalnızca ~2 hafta satırı görünür */
+@media (max-height: 500px) {
+  .month-grid { grid-template-rows: auto repeat(6, minmax(60px, 1fr)); min-height: calc(36px + 6 * 60px); }
+  .month-dow { padding: 6px 8px; }
+  .month-cell { padding: 3px 4px; gap: 2px; }
+  .tg-dayhead { padding: 4px 4px; }
+}
 @media (max-width: 760px) {
   .month-grid { grid-template-rows: auto repeat(6, minmax(72px, 1fr)); min-height: calc(36px + 6 * 72px); }
   .month-cell { padding: 3px; }
