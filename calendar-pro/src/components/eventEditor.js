@@ -10,7 +10,8 @@
  *  - aksi halde input ön doldurma alanları kabul edilir: { startDate, endDate, startTime, endTime, status }
  *  - Etkinlik tam sayfa açılır; başlıkta etkinliğin adı görünür (uzunsa üç nokta) ve dokunulunca metin kutusuna dönüşür.
  *  - "Tüm gün" açılınca bitiş tarihi başlangıçla aynı olur.
- *  - Açıklama Markdown ile yazılır (araç çubuğu + önizleme, bkz. markdownEditor.js); köşesindeki düğme tam ekran düzenleme açar.
+ *  - Açıklama Markdown ile yazılır; canlı önizleme: aktif satır ham markup, diğer satırlar işlenmiş (bkz. markdownEditor.js).
+ *    Köşesindeki düğme tam ekran düzenleme açar.
  *  - Renk: modern palet (12 ton × 3 yoğunluk) + özel renk (renk seçici veya hex kodu); bkz. colorPicker.js.
  */
 import { html } from '../core/dom.js';
@@ -107,7 +108,7 @@ export function openEventEditor(input = {}) {
 
     <div class="field">
       <div class="field-head">
-        <label for="event-description">Açıklama <span class="muted">· Markdown</span></label>
+        <label data-description-label>Açıklama <span class="muted">· Markdown</span></label>
         <button type="button" class="icon-btn icon-btn-sm" data-expand-description aria-label="Açıklamayı tam ekranda düzenle" title="Tam ekran">${icon('expand')}</button>
       </div>
       <div data-description-host></div>
@@ -171,15 +172,15 @@ export function openEventEditor(input = {}) {
     <button type="submit" class="btn btn-primary" form="event-form">${isEdit ? 'Kaydet' : 'Oluştur'}</button>`;
   form.id = 'event-form';
 
-  // Açıklama: Markdown destekli editör (araç çubuğu + önizleme). textarea `description` adıyla formun parçasıdır.
+  // Açıklama: canlı önizlemeli Markdown editörü (aktif satır ham markup, diğerleri işlenmiş; bkz. markdownEditor.js).
+  // Tam metin `description` adlı gizli bir textarea'da tutulur ve formun parçasıdır.
   const description = createMarkdownEditor({
-    id: 'event-description',
     name: 'description',
     value: ev.description,
     placeholder: 'Notlar, bağlantılar… Markdown ile biçimlendirebilirsiniz',
-    rows: 4,
   });
   form.querySelector('[data-description-host]').replaceWith(description.el);
+  form.querySelector('[data-description-label]').addEventListener('click', () => description.focus());
 
   // Başlık alanı modal başlığındadır: etkinliğin adı görünür (uzunsa üç nokta), dokununca metin kutusuna dönüşür.
   // Form dışında durduğu için `form` özniteliğiyle forma bağlanır (form.elements.title, Enter ile kaydetme çalışır).
@@ -237,17 +238,14 @@ export function openEventEditor(input = {}) {
   // --- Açıklama: tam ekran düzenleme ---
   // Ayrı bir modal olarak açılır (üstteki modal Esc ile kapanır, editör açık kalır); yazılanlar anında forma yansır.
   form.querySelector('[data-expand-description]').addEventListener('click', () => {
-    const full = createMarkdownEditor({ value: f.description.value, placeholder: f.description.placeholder, fullscreen: true });
-    full.textarea.addEventListener('input', () => {
-      f.description.value = full.textarea.value;
-    });
+    const full = createMarkdownEditor({ value: description.getValue(), placeholder: f.description.placeholder, fullscreen: true });
+    full.textarea.addEventListener('input', () => description.setValue(full.getValue()));
     const doneBar = document.createElement('div');
     doneBar.className = 'modal-actions';
     doneBar.innerHTML = html`<button type="button" class="btn btn-primary" data-done>${icon('collapse')} Bitti</button>`;
-    const fullModal = openModal({ title: 'Açıklama', body: full.el, footer: doneBar, size: 'lg', className: 'modal--fullscreen', onClose: () => description.refreshPreview() });
+    const fullModal = openModal({ title: 'Açıklama', body: full.el, footer: doneBar, size: 'lg', className: 'modal--fullscreen' });
     doneBar.querySelector('[data-done]').addEventListener('click', () => fullModal.close());
-    full.textarea.focus();
-    full.textarea.setSelectionRange(full.textarea.value.length, full.textarea.value.length);
+    full.focus();
   });
 
   // --- Tekrarlayan örnek: kapsam seçimi ---

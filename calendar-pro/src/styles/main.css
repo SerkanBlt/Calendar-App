@@ -413,13 +413,24 @@ kbd {
 .field-group { border: 0; padding: 0; margin: 0; min-width: 0; }
 .field-group legend { font-size: 12px; font-weight: 600; color: var(--text-muted); padding: 0; margin-bottom: 8px; }
 
-/* Renk seçici (bkz. components/colorPicker.js): 12 sütun × 3 yoğunluk satırı; telefonda 6 sütun */
+/* Renk seçici (bkz. components/colorPicker.js): kapalıyken tek satır yuvarlak hızlı renkler + aç/kapa düğmesi; açılınca palet ve özel renk */
 .color-picker { display: flex; flex-direction: column; gap: var(--space-3); }
+.cp-quick { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; } /* tek satır: dar ekranda yuvarlaklar küçülür, alt satıra geçmez */
+.cp-quick .cp-chip { flex: 0 1 32px; min-width: 20px; }
+.cp-more {
+  display: grid; place-items: center; flex: none; width: 30px; height: 30px; margin-left: 2px; padding: 0; border-radius: 50%;
+  border: 1px dashed var(--border-strong); background: transparent; color: var(--text-muted); transition: color var(--dur), border-color var(--dur);
+}
+.cp-more:hover { color: var(--text); border-color: var(--accent); }
+.cp-more .icon { width: 16px; height: 16px; transition: transform var(--dur) var(--ease); }
+.cp-more[aria-expanded='true'] .icon { transform: rotate(180deg); }
+.cp-panel { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); background: var(--surface-2); border: 1px solid var(--border); }
+.cp-panel[hidden], .cp-chip[hidden] { display: none !important; } /* display kuralları hidden'ı ezmesin */
 .cp-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 8px; }
 .cp-chip { position: relative; display: block; cursor: pointer; }
 .cp-chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .cp-chip span {
-  position: relative; display: block; aspect-ratio: 1; border-radius: 9px; background: var(--c);
+  position: relative; display: block; aspect-ratio: 1; border-radius: 50%; background: var(--c);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); transition: transform var(--dur) var(--ease), box-shadow var(--dur);
 }
 .cp-chip:hover span { transform: scale(1.1); }
@@ -506,9 +517,6 @@ kbd {
   border-radius: 0; border: 0; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom);
 }
 .modal--fullscreen .modal-body { flex: 1; display: flex; min-height: 0; }
-.md-editor--full { flex: 1; min-height: 0; }
-.md-editor--full .md-input { flex: 1; min-height: 0; resize: none; font-size: 16px; line-height: 1.55; padding: 14px 16px; }
-.md-editor--full .md-preview { flex: 1; min-height: 0; overflow: auto; font-size: 16px; padding: 14px 16px; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5) var(--space-2); }
 .modal-title { font-size: 17px; font-weight: 700; min-width: 0; }
 
@@ -781,20 +789,52 @@ kbd {
 .color-field code { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
 .bg-color-preview { height: 56px; border-radius: var(--radius-md); border: 1px solid var(--border-strong); }
 
-/* ---------- Markdown editörü ve işlenmiş Markdown (bkz. components/markdownEditor.js, core/markdown.js) ---------- */
+/* ---------- Markdown editörü (canlı önizleme) ve işlenmiş Markdown (bkz. components/markdownEditor.js, core/markdown.js) ---------- */
 .md-editor { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .md-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
-.md-tabs { flex: none; }
 .md-tools { display: flex; flex-wrap: wrap; gap: 2px; }
 .md-tools .icon-btn { width: 30px; height: 30px; }
 .md-tools .icon-btn .icon { width: 16px; height: 16px; }
-.md-input {
-  width: 100%; min-height: 96px; resize: vertical; padding: 9px 12px; border-radius: var(--radius-md);
-  background: var(--surface-2); border: 1px solid var(--border); transition: border-color var(--dur), background var(--dur);
+.md-surface {
+  position: relative; min-height: 96px; padding: 10px 12px 10px 16px; border-radius: var(--radius-md); cursor: text;
+  background: var(--surface-2); border: 1px solid var(--border); line-height: 1.5; overflow-wrap: anywhere;
+  transition: border-color var(--dur), background var(--dur);
 }
-.md-input:focus { outline: none; border-color: var(--accent); background: var(--surface-3); }
-.md-preview { min-height: 96px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-2); border: 1px solid var(--border); overflow-wrap: anywhere; }
-.md-empty { color: var(--text-faint); }
+.md-surface:focus-within { border-color: var(--accent); background: var(--surface-3); }
+.md-row { position: relative; }
+.md-view[hidden], .md-edit[hidden] { display: none !important; } /* satır türü kuralları (display: flex/block) hidden'ı ezmesin */
+.md-view { min-height: 1.5em; cursor: text; }
+/* Açıklama alanı .field içinde durur: `.field textarea` (min-height, dolgu, kenarlık, odak zemini) bu satır kutularını etkilemesin diye özgüllük yüksek tutulur */
+.md-editor .md-surface textarea.md-edit,
+.md-editor .md-surface textarea.md-edit:focus {
+  display: block; width: 100%; min-height: 1.5em; margin: 0; padding: 0; border: 0; border-radius: 0; outline: none; resize: none; overflow: hidden;
+  background: transparent; color: inherit; font: inherit; line-height: inherit;
+}
+/* Aktif satır: ham markup görünür; solda vurgu çubuğu */
+.md-row.is-active::before { content: ''; position: absolute; left: -9px; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--accent); }
+.md-placeholder { color: var(--text-faint); }
+/* Satır türleri (işlenmiş görünüm) */
+.md-row[data-kind='h1'] .md-view, .md-row[data-kind='h2'] .md-view, .md-row[data-kind='h3'] .md-view,
+.md-row[data-kind='h4'] .md-view, .md-row[data-kind='h5'] .md-view, .md-row[data-kind='h6'] .md-view { font-weight: 700; line-height: 1.3; padding: 2px 0; }
+.md-row[data-kind='h1'] .md-view { font-size: 1.4em; }
+.md-row[data-kind='h2'] .md-view { font-size: 1.25em; }
+.md-row[data-kind='h3'] .md-view { font-size: 1.1em; }
+.md-row[data-kind='li'] .md-view { display: flex; align-items: flex-start; gap: 0.55em; padding-left: calc(var(--depth, 0) * 1.4em); }
+.md-marker { flex: none; min-width: 1em; text-align: right; color: var(--text-muted); }
+.md-li-body { flex: 1; min-width: 0; }
+.md-check { flex: none; width: 1.05em; height: 1.05em; margin: 0.28em 0 0; accent-color: var(--accent); cursor: pointer; }
+.md-row[data-kind='quote'] .md-view { padding-left: calc(10px + var(--depth, 0) * 14px); border-left: 3px solid var(--accent); color: var(--text-muted); }
+.md-row[data-kind='hr'] .md-view { min-height: 0; height: 0; margin: 0.7em 0; border-top: 1px solid var(--border-strong); }
+.md-row[data-kind='code'] .md-view, .md-row[data-kind='fence'] .md-view { padding: 0 10px; background: var(--surface-3); font-family: var(--font-mono); font-size: 0.92em; }
+.md-row[data-kind='code'] .md-view code { padding: 0; background: none; font-size: inherit; white-space: pre-wrap; }
+.md-row[data-kind='fence'] .md-view { min-height: 8px; height: 8px; }
+.md-row[data-kind='fence'][data-edge='open'] .md-view { border-radius: 8px 8px 0 0; margin-top: 2px; }
+.md-row[data-kind='fence'][data-edge='close'] .md-view { border-radius: 0 0 8px 8px; margin-bottom: 2px; }
+.md-editor .md-surface .md-row[data-kind='code'] textarea.md-edit, .md-editor .md-surface .md-row[data-kind='fence'] textarea.md-edit { padding: 0 10px; background: var(--surface-3); font-family: var(--font-mono); font-size: 0.92em; }
+/* Ctrl/⌘+A ile tümü seçildiğinde */
+.md-surface.is-all-selected .md-row { background: color-mix(in srgb, var(--accent) 28%, transparent); border-radius: 3px; }
+.md-editor--full { flex: 1; min-height: 0; }
+.md-editor--full .md-surface { flex: 1; min-height: 0; overflow: auto; padding: 14px 18px 14px 22px; font-size: 16px; }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
 .md p, .md ul, .md ol, .md blockquote, .md pre { margin: 0 0 0.6em; }

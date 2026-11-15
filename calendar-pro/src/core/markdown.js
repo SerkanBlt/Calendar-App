@@ -11,7 +11,8 @@
  *   ham HTML hiçbir zaman çalışmaz. Bağlantılar yalnızca http(s) ve mailto olabilir (javascript: / data: reddedilir) ve
  *   rel="noopener noreferrer" target="_blank" ile açılır. Çıktı `raw()` ile işaretlenir (bkz. core/dom.js).
  *
- * Ayrıca: stripMarkdown (kart/arama özetleri için düz metin) ve applyFormat (editör araç çubuğu; saf metin dönüşümü).
+ * Ayrıca: stripMarkdown (kart/arama özetleri için düz metin), applyFormat (editör araç çubuğu; saf metin dönüşümü) ve
+ * canlı önizleme editörünün satır satır yardımcıları: renderLineRows, lineContentStart, listContinuation.
  */
 import { escapeHtml, raw } from './dom.js';
 
@@ -176,6 +177,97 @@ function blocks(lines) {
 export function renderMarkdown(source) {
   const text = String(source ?? '').replace(/\r\n?/g, '\n').replace(/\u0000/g, '');
   return raw(blocks(text.split('\n')));
+}
+
+// ---------------------------------------------------------------------------
+// Canlı önizleme editörü: satır satır render
+// ---------------------------------------------------------------------------
+
+const QUOTE_LINE = /^ {0,3}(>+)[ \t]?(.*)$/;
+
+/**
+ * Satırları bağlamlarıyla (kod çiti, liste, alıntı…) tek tek sınıflandırıp güvenli HTML'e çevirir. Canlı önizleme editörü,
+ * imlecin bulunmadığı satırları bununla gösterir. Satır içi biçimler renderMarkdown ile aynı yoldan (`inline`) geçer;
+ * yani aynı güvenlik garantisi geçerlidir (önce HTML kaçırma, yalnızca izinli etiketler/bağlantılar).
+ * @param {string[]} lines kaynak satırları (satır sonu içermez)
+ * @returns {{kind: string, depth: number, html: string, edge?: 'open'|'close'}[]} her satır için bir kayıt
+ *   kind: p | blank | h1…h6 | li | quote | code | fence | hr; depth: liste girintisi / alıntı derinliği;
+ *   edge: kod çitinin açılış/kapanış satırı
+ */
+export function renderLineRows(lines) {
+  const rows = [];
+  let fence = null;
+  for (const raw of lines) {
+    const line = String(raw ?? '').replace(/\u0000/g, '');
+    if (fence) {
+      if (new RegExp(`^ {0,3}${fence.char}{${fence.len},}\\s*$`).test(line)) {
+        rows.push({ kind: 'fence', depth: 0, html: '', edge: 'close' });
+        fence = null;
+      } else rows.push({ kind: 'code', depth: 0, html: `<code>${escapeHtml(line) || '&nbsp;'}</code>` });
+      continue;
+    }
+    const open = FENCE.exec(line);
+    if (open) {
+      fence = { char: open[1][0], len: open[1].length };
+      rows.push({ kind: 'fence', depth: 0, html: '', edge: 'open' });
+      continue;
+    }
+    if (!line.trim()) {
+      rows.push({ kind: 'blank', depth: 0, html: '' });
+      continue;
+    }
+    const heading = HEADING.exec(line);
+    if (heading) {
+      rows.push({ kind: `h${heading[1].length}`, depth: 0, html: inline(heading[2]) });
+      continue;
+    }
+    if (HR.test(line)) {
+      rows.push({ kind: 'hr', depth: 0, html: '' });
+      continue;
+    }
+    const quote = QUOTE_LINE.exec(line);
+    if (quote) {
+      rows.push({ kind: 'quote', depth: Math.min(quote[1].length - 1, 4), html: inline(quote[2]) || '&nbsp;' });
+      continue;
+    }
+    const item = LIST_ITEM.exec(line);
+    if (item) {
+      const ordered = /\d/.test(item[2]);
+      const task = /^\[([ xX])\]\s+([\s\S]*)$/.exec(item[3]);
+      const lead = task
+        ? `<input type="checkbox" class="md-check" tabindex="-1"${task[1] === ' ' ? '' : ' checked'}>`
+        : `<span class="md-marker">${escapeHtml(ordered ? item[2] : '•')}</span>`;
+      rows.push({ kind: 'li', depth: Math.min(Math.floor(indentOf(item[1]) / 2), 6), html: `${lead}<span class="md-li-body">${inline(task ? task[2] : item[3]) || '&nbsp;'}</span>` });
+      continue;
+    }
+    rows.push({ kind: 'p', depth: 0, html: inline(line) });
+  }
+  return rows;
+}
+
+/** Satırda biçim işaretlerinin (başlık #'leri, alıntı >, liste işareti, görev kutusu) bittiği, içeriğin başladığı konum. */
+export function lineContentStart(line) {
+  const m = /^( {0,3}#{1,6}\s+| {0,3}>+[ \t]?|\s*(?:[-*+]|\d{1,9}[.)])\s+(?:\[[ xX]\]\s+)?)/.exec(String(line ?? ''));
+  return m ? m[0].length : 0;
+}
+
+/**
+ * Enter'a basılınca yeni satırın başına gelecek liste/alıntı işareti.
+ * Öğe boşsa (`clear`) işaret silinir ve liste biter; yeni satır açılmaz.
+ * @returns {{prefix: string, clear: boolean}}
+ */
+export function listContinuation(line) {
+  const text = String(line ?? '');
+  const item = /^(\s*)([-*+]|\d{1,9}[.)])\s+(\[[ xX]\]\s+)?(.*)$/.exec(text);
+  if (item) {
+    const [, indent, marker, task, rest] = item;
+    if (!rest.trim()) return { prefix: '', clear: true };
+    const next = /^\d/.test(marker) ? `${parseInt(marker, 10) + 1}${marker.slice(-1)}` : marker;
+    return { prefix: `${indent}${next} ${task ? '[ ] ' : ''}`, clear: false };
+  }
+  const quote = /^( {0,3}>+[ \t]?)(.*)$/.exec(text);
+  if (quote) return quote[2].trim() ? { prefix: quote[1], clear: false } : { prefix: '', clear: true };
+  return { prefix: '', clear: false };
 }
 
 // ---------------------------------------------------------------------------

@@ -4,6 +4,18 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.17.0
+- **Açıklamada canlı önizleme**: Yaz / Önizle düğmeleri kaldırıldı. İmlecin bulunduğu (aktif) satır **ham Markdown** olarak (işaretleriyle) görünür ve düzenlenir,
+  **diğer tüm satırlar önizleme halinde** kalır (Obsidian tarzı). Bir satıra dokununca o satır ham hale geçer; editörden çıkınca hepsi işlenmiş görünür
+- Satır işlemleri: **Enter** böler (liste/alıntı işareti sürer, numara artar, boş öğede liste biter), satır başında **Backspace** / satır sonunda **Delete** birleştirir,
+  **ok tuşları** satırlar arası gezer, görev kutusuna tıklamak `[ ]`/`[x]` değiştirir, çok satırlı yapıştırma satırlara bölünür, **Ctrl/⌘+A** tüm metni seçer.
+  Araç çubuğu aktif satıra uygulanır; tam ekran düzenleyici de aynı şekilde çalışır
+- Sınırlama: satırlar ayrı alanlar olduğu için fare/parmakla satırlar arası seçim yoktur (Ctrl/⌘+A tüm metni seçer)
+- **Renk alanı** önceki gibi **yuvarlak ve tek satır**: klasik 8 renk ve sonunda aç/kapa düğmesi. Seçili renk bu 8'den değilse satıra ek yuvarlak olarak eklenir (360 px'te de tek satır).
+  Açılınca 36 yuvarlaklık palet (Açık/Canlı/Koyu) ve **özel renk** (sistem seçicisi + hex) çıkar
+- Düzeltme (iç): satır türüne göre `display` kuralları `hidden` özniteliğini eziyordu; artık gizli öğeler gerçekten gizli
+- Test: satır satır render (XSS vektörleri dahil), `listContinuation`, `lineContentStart`
+
 ## 1.16.0
 - **Etkinlik tam sayfa** açılır: ekranı kaplar, içerik en çok 760 px'lik ortalanmış sütundadır, alt çubuk sabittir
 - **Etkinlik başlığı**: "Etkinliği düzenle" yerine etkinliğin kendi adı görünür; dokununca metin kutusuna dönüşür, uzunsa üç nokta ile kısalır

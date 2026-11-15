@@ -135,9 +135,27 @@ Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinl
 
 ## Açıklamada Markdown
 
-Etkinlik açıklaması Markdown ile yazılır. Açıklamanın üstündeki **Yaz / Önizle** sekmeleri ve biçimlendirme araç çubuğu
-(kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı; `Ctrl/⌘ + B` ve `+ I`) kullanılır;
-köşedeki düğme açıklamayı **tam ekranda** düzenletir. Metin ham Markdown olarak saklanır; Kanban kartı ve arama özetlerinde işaretler gizlenir.
+Etkinlik açıklaması Markdown ile yazılır ve **canlı önizleme** ile gösterilir (Obsidian tarzı; Yaz/Önizle sekmesi yoktur):
+
+- **İmlecin bulunduğu (aktif) satır ham Markdown olarak** (işaretleriyle: `**kalın**`, `## başlık`, `- madde`) görünür ve düzenlenir;
+  **diğer tüm satırlar işlenmiş (önizleme) halde** kalır: başlıklar büyür, maddeler `•` olur, bağlantılar tıklanır, görev kutuları işaretlenir.
+  Bir satıra dokunmak/tıklamak onu ham hale geçirir (imleç tıklanan konuma yakın düşer); editörden çıkınca hepsi işlenmiş görünür.
+- Biçimlendirme araç çubuğu (kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı; `Ctrl/⌘ + B` ve `+ I`) **aktif satıra** uygulanır.
+  Köşedeki düğme açıklamayı **tam ekranda** düzenletir. Metin ham Markdown olarak saklanır; Kanban kartı ve arama özetlerinde işaretler gizlenir.
+
+| Tuş / eylem | Davranış |
+|-------------|----------|
+| `Enter` | Satırı böler. Liste (`-`, `1.`, `- [ ]`) ve alıntı (`>`) işareti yeni satıra sürer (numara artar); **boş öğede** `Enter` listeyi bitirir |
+| `Backspace` (satır başında) / `Delete` (satır sonunda) | Satırı öncekiyle / sonrakiyle birleştirir |
+| `↑` `↓` `←` `→` | Satırlar arasında gezinir (uzun, sarılan satırlarda önce satır içinde ilerler) |
+| Görev kutusuna tıklama | `[ ]` ↔ `[x]` değiştirir; satırı ham hale getirmez |
+| `Ctrl/⌘ + A` | Tüm metni seçer (kopyala, kes, sil ve üzerine yazma çalışır) |
+| Çok satırlı yapıştırma | Satırlara bölünür |
+| `Tab` | Editöre (ilk satıra) girer; çıkmak için normal sekme sırası |
+
+**Sınırlama:** her satır ayrı bir alan olduğu için fare/parmakla **satırlar arası seçim yapılamaz** (tek satır içinde seçim normaldir; `Ctrl/⌘ + A` tüm metni seçer).
+Çok satırlı biçimlendirme (birden çok satırı birden listeye çevirme) yoktur; araç çubuğu aktif satıra uygulanır. Uygulama: `src/components/markdownEditor.js`
+(arayüz ve satır işlemleri) ve `src/core/markdown.js` (`renderLineRows`, `listContinuation`, `applyFormat`; saf ve testli).
 
 | Yazım | Sonuç |
 |-------|-------|
@@ -154,9 +172,14 @@ Satır sonları korunur (not tutma alışkanlığı için tek satır sonu da yen
 
 ## Etkinlik rengi
 
-Renk seçici (`src/components/colorPicker.js`) **12 ton × 3 yoğunluk** (Açık / Canlı / Koyu) bir palet sunar; "Canlı" satırı uygulamanın klasik etkinlik renklerini içerir.
-Palet elle yazılmaz, taban renklerden üretilir (`src/core/colors.js` → `PALETTE_HUES`, `PALETTE_TONES`). Paletin altında **özel renk**: yuvarlak düğme sistemin renk seçicisini açar,
-yanındaki alana hex kod yazılabilir (`#abc`, `aabbcc` …); seçili rengin adı ("Mavi · Canlı" / "Özel renk") yazılır. Telefonda palet 6 sütundur.
+Renk alanı (`src/components/colorPicker.js`) **daraltılabilirdir**:
+
+- **Kapalıyken tek satır, yuvarlak**: uygulamanın klasik 8 etkinlik rengi ve sonunda aç/kapa düğmesi (▾). Seçili renk bu 8'den biri değilse (paletten veya özel seçilmişse)
+  satıra **ek bir yuvarlak** olarak eklenir; böylece seçim kapalıyken de görünür. Satır dar ekranda da (360 px) alt satıra geçmez, yuvarlaklar küçülür.
+- **Açılınca**: **12 ton × 3 yoğunluk** (Açık / Canlı / Koyu) yuvarlaklık palet ve **özel renk**: renk seçici (sistem paleti) ve hex alanı (`#abc`, `aabbcc` …);
+  seçili rengin adı ("Mavi · Canlı" / "Özel renk") yazılır. Telefonda palet 6 sütundur.
+- Palet elle yazılmaz, taban renklerden üretilir (`src/core/colors.js` → `PALETTE_HUES`, `PALETTE_TONES`); "Canlı" satırı klasik renkleri içerir.
+  Renkler radyo düğmeleridir: ok tuşlarıyla gezilir, seçili renk halka ve onay işaretiyle gösterilir.
 
 ## Etkinlik sayfası
 
