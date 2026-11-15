@@ -10,8 +10,10 @@
  *  - navigate istekleri: network-first, çevrimdışıyken önbellekteki index.html.
  *  - diğer GET istekleri (aynı origin): stale-while-revalidate.
  *  - notificationclick: açık pencereye odaklan veya uygulamayı aç.
+ *  - message (GET_VERSION): sürümü bildirir; sayfa bununla "yeni sürüm var" kararını verir.
+ * VERSION, package.json sürümüyle aynı olmalıdır (tests/version.test.js denetler).
  */
-const VERSION = 'v1.12.0'; // uygulama sürümüyle birlikte artırılır; eski önbellekler temizlenir
+const VERSION = 'v1.13.0'; // uygulama sürümüyle birlikte artırılır; eski önbellekler temizlenir
 const CACHE_NAME = `calendar-pro-${VERSION}`;
 const SCOPE = self.registration.scope; // ör. https://kullanici.github.io/Calendar-App/
 const at = (path) => new URL(path, SCOPE).href;
@@ -90,6 +92,11 @@ self.addEventListener('fetch', (event) => {
       return cached || network;
     })(),
   );
+});
+
+/** Sayfa, denetimi devralan worker'ın sürümünü sorar (bkz. src/services/updateService.js → "Yenile" bildirimi). */
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'GET_VERSION') event.ports[0]?.postMessage({ version: VERSION });
 });
 
 self.addEventListener('notificationclick', (event) => {

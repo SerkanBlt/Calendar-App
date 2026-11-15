@@ -31,6 +31,7 @@ import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
 import { exportCalendar, exportData, importCalendar, importData, moveOccurrence, resetData, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed, toggleShowOffDays } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
+import { registerServiceWorker } from './services/updateService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
 import { openEventEditor } from './components/eventEditor.js';
@@ -244,10 +245,15 @@ document.addEventListener('keydown', (e) => {
 // ---------------------------------------------------------------------------
 // Service worker (yalnızca production build'de; geliştirmede HMR ile çakışmaması için)
 // ---------------------------------------------------------------------------
-function registerServiceWorker() {
-  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register(`${import.meta.env.BASE_URL}service-worker.js`).catch((err) => {
-    console.warn('Service worker kaydedilemedi:', err);
+/** Yeni sürüm yüklendiğinde kalıcı bir "Yenile" bildirimi gösterir (otomatik yenileme yapılmaz: açık formlar kaybolmasın). */
+function startServiceWorker() {
+  registerServiceWorker({
+    onUpdate: ({ version }) =>
+      toast(`Yeni sürüm hazır${version ? ` (v${version})` : ''}`, {
+        duration: 0,
+        dismissible: true,
+        action: { label: 'Yenile', onClick: () => location.reload() },
+      }),
   });
 }
 
@@ -288,7 +294,7 @@ async function boot() {
   router.start();
   store.set({ ready: true });
   notificationService.start();
-  registerServiceWorker();
+  startServiceWorker();
 }
 
 boot();

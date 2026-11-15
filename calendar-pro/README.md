@@ -168,6 +168,13 @@ Sürüm numarası `package.json` → `version` alanından gelir ve derleme sıra
 Her yayında `CHANGELOG.md` güncellenir ve `public/service-worker.js` içindeki `VERSION` da aynı numaraya getirilir
 (eski önbellekler temizlenir).
 
+**Yeni sürüm bildirimi:** yeni bir sürüm yüklendiğinde uygulama "Yeni sürüm hazır" mesajını ve **Yenile** düğmesini gösterir
+(`src/services/updateService.js`). Service worker `skipWaiting` + `clients.claim` ile hemen devreye girer; açık sayfa eski kodla
+çalıştığı için, denetimi devralan worker'a sürümü sorulur ve sayfanın sürümünden farklıysa mesaj çıkar. Sayfa zaten en yeni
+sürümle açıldıysa ve ilk kurulumda mesaj gösterilmez. Sayfa görünür olunca ve saatte bir `registration.update()` ile denetlenir.
+Bu karşılaştırma `public/service-worker.js` → `VERSION` ile `package.json` sürümünün **aynı** olmasına dayanır (`npm test` denetler).
+Sayfa kendiliğinden yenilenmez; Yenile'ye basılana kadar açık formlar korunur.
+
 Sol üstteki **logoya** tıklamak (veya `[` tuşu) kenar çubuğunu ikon moduna daraltır: yalnızca ikonlar kalır,
 mini takvim gizlenir ve takvime daha fazla alan açılır. İkonların üzerine gelince adları görünür. Tercih kaydedilir.
 Telefonda menü her zaman tam genişlikte açılır.
@@ -192,13 +199,13 @@ Telefonda menü her zaman tam genişlikte açılır.
 src/
   core/        state (store + bus), router (hash), db (IndexedDB), eventRepo, eventModel,
                settingsRepo, actions, theme, dateUtils, overlap, dom (güvenli şablon), utils, seed
-  services/    recurrenceService, notificationService, exportService, icsService, resetService, criticalPathService
+  services/    recurrenceService, notificationService, exportService, icsService, resetService, updateService, criticalPathService
   components/  sidebar, commandPalette, modal, toast, eventCard, eventEditor, timeGrid,
                dragDrop, toolbar, icons
   views/       dashboard, month, week, day, scheduler, timeline, gantt, kanban
   styles/      theme, main, dashboard, calendar, scheduler, gantt, kanban
 public/        manifest.json, service-worker.js, icons/
-tests/         icsService testleri (node --test)
+tests/         icsService ve sürüm tutarlılığı testleri (node --test)
 ```
 
 - **Tek yönlü veri akışı:** View → `ctx` / `actions` → `eventRepo` → IndexedDB + `store` → yeniden çizim.

@@ -4,6 +4,14 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.13.0
+- **Yeni sürüm bildirimi**: yeni bir sürüm yüklendiğinde "Yeni sürüm hazır (vX)" mesajı ve **Yenile** düğmesi çıkar; × ile kapatılabilir.
+  Sayfa kendiliğinden yenilenmez (açık formlar kaybolmasın). Sayfa zaten en yeni sürümle açıldıysa ve ilk kurulumda mesaj gösterilmez
+- Arka plandan dönen veya uzun süre açık kalan uygulama (ör. telefonda PWA) güncellemeyi kaçırmasın diye sayfa görünür olunca ve saatte bir sürüm denetlenir
+- Not: bu bildirim 1.13.0 ve sonrası için çalışır; eski sürümü açık tutan cihazlar bu güncellemeye bir kez elle geçer (uygulamayı kapatıp açın)
+- Bildirimler kalıcı (`duration: 0`) ve kapatılabilir (`dismissible`) olabilir
+- Test: service worker VERSION'ının package.json sürümüyle aynı olduğunu denetleyen test (`npm test`)
+
 ## 1.12.0
 - **Tüm verileri sıfırlama** — Ayarlar → Veri → "Tüm verileri sıfırla" ve `Ctrl + K` → "Reset All Data…"
 - Onay penceresi sorar: **Yedek al ve sıfırla** (varsayılan; önce JSON yedeği indirir, yedek alınamazsa hiçbir şey silinmez),

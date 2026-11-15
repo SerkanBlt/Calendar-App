@@ -484,6 +484,8 @@ kbd {
 .toast--warning .toast-dot { background: var(--warning); }
 .toast-msg { flex: 1; }
 .toast-action { border: 0; background: var(--accent-soft); color: var(--accent-text); font-weight: 600; padding: 4px 10px; border-radius: 8px; }
+.toast-close { border: 0; background: transparent; color: var(--text-muted); font-size: 20px; line-height: 1; width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; }
+.toast-close:hover { background: var(--surface-hover); color: var(--text); }
 
 /* ---------- Komut paleti ---------- */
 .palette-backdrop {

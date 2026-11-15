@@ -16,10 +16,11 @@ function ensureStack() {
 
 /**
  * @param {string} message
- * @param {{type?: 'info'|'success'|'error'|'warning', duration?: number, action?: {label: string, onClick: Function}}} options
+ * @param {{type?: 'info'|'success'|'error'|'warning', duration?: number, action?: {label: string, onClick: Function}, dismissible?: boolean}} options
+ *   duration: ms cinsinden; 0 → kendiliğinden kapanmaz (kullanıcı kapatır). dismissible: sağda × kapatma düğmesi gösterir.
  * @returns {Function} kapatma fonksiyonu
  */
-export function toast(message, { type = 'info', duration = 3200, action } = {}) {
+export function toast(message, { type = 'info', duration = 3200, action, dismissible = false } = {}) {
   const el = document.createElement('div');
   el.className = `toast toast--${type}`;
 
@@ -49,8 +50,18 @@ export function toast(message, { type = 'info', duration = 3200, action } = {}) 
     el.appendChild(btn);
   }
 
+  if (dismissible) {
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'toast-close';
+    close.setAttribute('aria-label', 'Kapat');
+    close.textContent = '×';
+    close.addEventListener('click', dismiss);
+    el.appendChild(close);
+  }
+
   ensureStack().appendChild(el);
   requestAnimationFrame(() => el.classList.add('is-visible'));
-  timer = setTimeout(dismiss, duration);
+  if (duration > 0) timer = setTimeout(dismiss, duration);
   return dismiss;
 }
