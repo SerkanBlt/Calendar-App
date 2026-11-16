@@ -4,6 +4,12 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.25.1
+- **Masaüstü başlığı düzeltildi**: sayfa başlığının arkasında, içerik panelinden her iki yanda 8 px taşan, yalnız alt köşeleri yuvarlak, kenarsız koyu bir bant duruyordu (1.24.0'da kaydırma başlığın altına
+  taşınınca gereksiz kalan, eskiden kaydırılan içeriği örten yarı saydam bandın artığı). Artık başlık, mobildeki gibi **dört köşesi yuvarlak, ince kenarlı bir panel**dir ve içerik paneliyle **aynı genişlik ve
+  hizadadır** (başlığın üstü kenar çubuğuyla aynı hizada, altında 8 px boşluk). Koyu/açık tema ve fotoğraf arka planında okunur kalır. Mobil/kısa ekran başlıkları ve yükseklikleri birebir aynı
+- Kontrol: 8 sayfa × 4 masaüstü genişliği (başlık yüksekliği, panelle hizalama, taşma), mobil başlık yükseklikleri, kenar ölçümü, kaydırma/Kanban/yan panel regresyonları
+
 ## 1.25.0
 - **Başlangıç–bitiş saat bağı**: etkinlik formunda başlangıç ile bitiş arasında bir **zincir düğmesi** var (geniş ekranda tek satırda iki grubun arasında; dar ekranda iki saat kutusunun sağında "]" ayracının ortasında).
   Bağ **açıkken** başlangıç saati/tarihi değişince bitiş, aradaki **süre korunacak** biçimde birlikte kayar (09:00–10:00 iken başlangıç 14:00 olursa bitiş 15:00; gece yarısını aşarsa bitiş tarihi ertesi güne geçer,

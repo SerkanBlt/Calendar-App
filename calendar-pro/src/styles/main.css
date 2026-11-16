@@ -169,12 +169,17 @@ kbd {
 .sidebar-scrim { display: none; }
 
 /* ---------- Toolbar ---------- */
+/* Başlık her ekranda dört köşesi yuvarlak, çerçeveli bir panel; içerik paneliyle (view-body: 8 px yan boşluk) aynı genişliktedir. Her arka planda (açık/koyu tema,
+   fotoğraf) okunur kalır. Eskiden masaüstünde kaydırılan içeriği örten, yarı saydam, kenarsız bir bant vardı; kaydırma başlığın altına taşınınca (1.24.0)
+   bant gereksizleşti ve panelden taşan, yalnız alt köşeleri yuvarlak bir koyu dikdörtgen olarak kalmıştı. */
 .toolbar {
   display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
-  padding: var(--space-3) var(--space-3) var(--space-4);
-  flex: none; /* kaydırılmaz; içerik altında kendi kaydırıcısında akar */
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  border-radius: 0 0 var(--radius) var(--radius);
+  margin: 0 var(--space-2) var(--space-2);
+  padding: var(--space-3);
+  flex: none; /* kaydırılmaz; içerik kendi kaydırıcısında akar */
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
 }
 .toolbar-title { flex: 1; min-width: 160px; }
 .toolbar-title h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; text-transform: capitalize; }
@@ -772,14 +777,7 @@ kbd {
   .sidebar-scrim { position: fixed; inset: 0; z-index: 55; background: var(--scrim); }
   .sidebar-open .sidebar-scrim { display: block; }
   .only-mobile { display: inline-grid !important; }
-  /* Mobil: başlık, dört köşesi yuvarlak çerçeveli bir panel; içerikle (view-body) aynı genişlikte. Hamburger sağ uçtadır (başlıktan sonra gelir). */
-  .toolbar {
-    margin: 0 var(--space-2) var(--space-2);
-    padding: var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
-  }
+  /* Mobil: başlık paneli (taban kural) aynen geçerli; hamburger sağ uçtadır (başlıktan sonra gelir). */
   /* Hamburger ve sayfa adı büyük; panel yüksekliği değişmesin diye satır yüksekliği sabit (27px) ve uzun ad üç noktayla kısalır.
      Başlık bloğu (27px ad + altyazı) 44px'lik hamburgerden yüksek kaldığı için satır yüksekliğini o belirler. */
   .toolbar-title h1 { font-size: 24px; line-height: 27px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -92,7 +92,8 @@ Kanban kolonunun üstündeki durum şeridi gölge değil iç çizgidir (`inset`)
 
 Sayfaların altında boşluk bırakılmaz: paneller (Ay/Hafta/Gün/Planlayıcı ızgarası, Gantt, Kanban bantları, Dashboard kutuları) görünür alanın altına, standart 8 px dış kenar boşluğuna kadar uzar.
 **Başlık sabittir ve içerikten ayrıdır**: kaydırma `.view-body` içinde olur, sayfa başlığı (`.toolbar`) içeriğin üstünde hareketsiz durur; kaydırılan içerik başlığın arkasından/altından **akmaz**, başlığın hemen
-altındaki kenardan kesilir. (Önceden `.view` kaydırılır, başlık yapışkan durur ve içerik şeffaf başlığın arkasından görünürdü.) Aynı görünüm yeniden çizildiğinde (ör. bir etkinlik değişince) kaydırma konumu
+altındaki kenardan kesilir. (Önceden `.view` kaydırılır, başlık yapışkan durur ve içerik şeffaf başlığın arkasından görünürdü.) **Başlık her ekranda aynı panel**dir: dört köşesi yuvarlak, ince kenarlı,
+içerik paneliyle (8 px yan boşluk) **aynı genişlikte ve hizada**; açık/koyu temada ve fotoğraf arka planlarında okunur kalır. Aynı görünüm yeniden çizildiğinde (ör. bir etkinlik değişince) kaydırma konumu
 korunur; başka bir görünüme geçince sayfa en üstten başlar. Timeline'ın 920 px'lik ortalı sütunu, kaydırıcının tam genişlikte kalması için dolguyla ortalanır (kaydırma çubuğu sayfa kenarında, tekerlek kenar boşluğunda da çalışır).
 Mobilde yüzen düğme panelin **üstünde yüzer** (yeri değiştirilebilir). Kaydırmalı sayfalarda son öğeler düğmenin altında kalmasın diye boşluk **son panelin içine** verilir
 (Dashboard/Gün'ün son kutusu, alt alta Kanban'ın son bandı; yan yana Kanban'da kolon listelerinin sonu; Timeline listesinin sonu).
