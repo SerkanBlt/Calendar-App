@@ -12,6 +12,10 @@
  * gruplanır (başlık satırında özet çubuğu ve ilerleme; tıklayınca grup daralır/genişler), tek proje ya da "Projesiz" seçilince yalnızca
  * o görevler gösterilir. Kritik yol proje başına hesaplanır (bkz. services/ganttProjects.js).
  *
+ * Proje değiştirme: "Tüm projeler"de bir görev satırı (soldaki liste) başka bir projenin başlığına ya da görev satırına sürüklenip bırakılarak o projeye taşınır
+ * (fare: hemen; dokunmatik: basılı tut); sağ tık menüsünde de Proje bölümü vardır (mevcut projeler, Projesiz, Yeni proje…; bkz. components/contextMenu.js).
+ * Taşıma yalnızca `event.project` alanını değiştirir ve "Geri al" ile geri alınır (core/actions.js → moveToProject).
+ *
  * Tekrarlayan etkinlikler ve projesiz, bağımlılığı olmayan tek günlük saatli toplantılar Gantt'a dahil edilmez.
  */
 import { html } from '../core/dom.js';
@@ -20,7 +24,9 @@ import { compareByStart, isTimed } from '../core/eventModel.js';
 import { clamp } from '../core/utils.js';
 import { computeCriticalPath, wouldCreateCycle } from '../services/criticalPathService.js';
 import { holidayInfoFor } from '../core/holidays.js';
-import { buildRows, combineCriticalPaths, NO_PROJECT, projectLabel, projectOptions, resolveProject } from '../services/ganttProjects.js';
+import { buildRows, combineCriticalPaths, NO_PROJECT, projectKeyOf, projectLabel, projectOptions, resolveProject } from '../services/ganttProjects.js';
+import { moveToProject } from '../core/actions.js';
+import { enableDragDrop } from '../components/dragDrop.js';
 import { toolbar } from '../components/toolbar.js';
 import { icon } from '../components/icons.js';
 import { confirmDialog } from '../components/modal.js';
@@ -162,7 +168,7 @@ export default {
                         <span class="gantt-group-count">${r.tasks.length}</span>
                         <span class="gantt-task-pct">${r.progress}%</span>
                       </button>`
-                    : html`<button type="button" class="gantt-side-row ${cpSet.has(r.task.id) ? 'is-cp' : ''} ${grouped ? 'is-indented' : ''}" data-task="${r.task.id}" style="--ev-color:${r.task.color}">
+                    : html`<button type="button" class="gantt-side-row ${cpSet.has(r.task.id) ? 'is-cp' : ''} ${grouped ? 'is-indented' : ''}" data-task="${r.task.id}" ${grouped ? html`data-proj="${projectKeyOf(r.task)}" title="${r.task.title} — başka projeye taşımak için proje başlığına sürükleyin"` : ''} style="--ev-color:${r.task.color}">
                         <span class="dot"></span>
                         <span class="gantt-task-name">${r.task.title}${r.task.critical ? html` <span class="crit-flag" title="Kritik görev">${icon('flag')}</span>` : ''}</span>
                         <span class="gantt-task-pct">${r.task.progress}%</span>
@@ -250,7 +256,8 @@ export default {
       ctx.setSetting('ganttProject', e.target.value);
     });
 
-    el.querySelector('.gantt-side').addEventListener('click', (e) => {
+    const side = el.querySelector('.gantt-side');
+    side.addEventListener('click', (e) => {
       const group = e.target.closest('[data-group]');
       if (group) {
         // Proje grubunu daralt / genişlet (kalıcı)
@@ -260,8 +267,21 @@ export default {
         return;
       }
       const row = e.target.closest('[data-task]');
-      if (row) ctx.openEditor(byId.get(row.dataset.task));
+      if (row && !grouped) ctx.openEditor(byId.get(row.dataset.task)); // gruplu görünümde dokunma/tıklamayı sürükle-bırak işler
     });
+    // Görevi başka projeye taşıma: görev satırını başka projenin başlığına ya da satırına bırak (yalnızca "Tüm projeler"de başka proje görünür)
+    const cleanupDnd = grouped
+      ? enableDragDrop(side, {
+          itemSelector: '.gantt-side-row[data-task]',
+          zoneSelector: '.gantt-side-row',
+          onClick: (item) => ctx.openEditor(byId.get(item.dataset.task)),
+          onDrop: (item, zone) => {
+            const task = byId.get(item.dataset.task);
+            const key = zone.dataset.group ?? zone.dataset.proj;
+            if (task && key !== undefined) moveToProject(task, key);
+          },
+        })
+      : null;
 
     // --- Bağımlılık kaldırma ---
     el.querySelector('.gantt-links').addEventListener('click', async (e) => {
@@ -403,6 +423,6 @@ export default {
       if (bar && e.key === 'Enter') ctx.openEditor(byId.get(bar.dataset.task));
     });
 
-    return undefined;
+    return cleanupDnd ?? undefined;
   },
 };

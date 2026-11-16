@@ -13,6 +13,7 @@ import { resetAllData } from '../services/resetService.js';
 import { userBackgroundRepo } from './userBackgroundRepo.js';
 import { COLOR_BG, USER_PREFIX } from './backgrounds.js';
 import { normalizeHexColor, STATUS_LABELS, statusPatch } from './eventModel.js';
+import { crossProjectLinks, projectValue } from '../services/ganttProjects.js';
 
 /** Onay alıp siler; "Geri al" ile etkinlik geri yüklenir (ekler hariç). */
 export async function deleteEventWithUndo(id, { skipConfirm = false } = {}) {
@@ -77,6 +78,33 @@ export async function changeEventStatus(target, status, { series = false } = {})
     toast(`"${master.title}" → ${STATUS_LABELS[status]}`, { type: 'success', duration: 3000 });
   } catch (err) {
     toast(err.message, { type: 'error' });
+  }
+}
+
+/**
+ * Gantt görevini başka projeye taşır (görev satırını proje başlığına sürükleme / sağ tık → Proje). `project`: proje adı ya da NO_PROJECT ('' = projesiz).
+ * Yalnızca `event.project` değişir; "Geri al" önceki projeyi geri yükler. Taşıma sonrası başka projedeki görevlerle bağımlılık kalırsa toast'ta belirtilir
+ * (projeler arası bağımlılıklar çizilir ama kritik yolu belirlemez). Zaten o projedeyse bir şey yapmaz.
+ * @returns {Promise<boolean>} taşındı mı
+ */
+export async function moveToProject(target, project) {
+  const master = eventRepo.getById(target.masterId || target.id);
+  if (!master) return false;
+  const next = projectValue(project);
+  const previous = master.project || '';
+  if (next === previous) return false;
+  try {
+    await eventRepo.update(master.id, { project: next });
+    const links = crossProjectLinks(store.get().events, master.id, next);
+    toast(`"${master.title}" ${next ? `→ "${next}" projesine taşındı` : '→ Projesiz'}${links ? ` · ${links} bağımlılık başka projedeki görevlerle` : ''}`, {
+      type: 'success',
+      duration: 6000,
+      action: { label: 'Geri al', onClick: () => eventRepo.update(master.id, { project: previous }).catch((err) => toast(err.message, { type: 'error' })) },
+    });
+    return true;
+  } catch (err) {
+    toast(err.message, { type: 'error' });
+    return false;
   }
 }
 

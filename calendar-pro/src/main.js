@@ -230,7 +230,7 @@ const palette = createCommandPalette({
   getCommands: () => [
     { id: 'new', title: 'Yeni Event', keywords: 'yeni etkinlik oluştur ekle new', icon: 'plus', hint: 'N', run: () => ctx.openEditor({ startDate: store.get().cursor }) },
     { id: 'today', title: 'Bugüne Git', keywords: 'today bugün', icon: 'target', hint: 'T', run: ctx.today },
-    ...NAV_ITEMS.map((item, i) => ({ id: `go-${item.id}`, title: `${item.label} Aç`, keywords: `görünüm view ${item.id}`, icon: item.icon, hint: String(i + 1), run: () => ctx.go(item.id) })),
+    ...NAV_ITEMS.map((item) => ({ id: `go-${item.id}`, title: `${item.label} Aç`, keywords: `görünüm view ${item.id}`, icon: item.icon, hint: String(item.key), run: () => ctx.go(item.id) })),
     { id: 'export', title: 'Export Data (JSON)', keywords: 'dışa aktar yedek indir export', icon: 'download', group: 'data', run: exportData },
     { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', group: 'data', run: importData },
     { id: 'export-ics', title: 'Export Calendar (ICS)', keywords: 'dışa aktar takvim ics outlook gmail google indir export', icon: 'download', group: 'data', run: exportCalendar },

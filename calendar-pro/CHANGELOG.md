@@ -4,6 +4,16 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.30.0
+- **Menüde Yıl, Ay'ın üstünde**: görünüm sırası Dashboard, Yıl, Ay, Hafta, Gün, Scheduler, Timeline, Gantt, Kanban. Klavye kısayolları **değişmedi** (`2` Ay, `9` Yıl …); menü rozetleri ve ipuçları gerçek kısayolu gösterir
+  (artık menü sırasından değil `core/router.js` → `ROUTES`'tan türetilir); komut paletindeki ipuçları da aynı
+- **Gantt'ta görevi başka projeye taşıma**: "Tüm projeler"de görev satırını başka projenin başlığına ya da satırına sürükle-bırak (fare; dokunmatikte basılı tutarak) ya da görev çubuğu/satırında **sağ tık → Proje**
+  (mevcut projeler, Projesiz, **Yeni proje…** ad penceresi); taşıma "Geri al" ile geri alınır; başka projedeki görevlerle bağımlılık kalırsa toast belirtir. Yeni `promptDialog` (tek satırlık metin sorusu),
+  `moveToProject` eylemi, saf `projectValue` / `crossProjectLinks` yardımcıları
+- **Menüdeki mini takvimde ISO hafta numaraları**: satır başında numara (sütun başlığı **H**), ISO 8601; numaraya tıklamak o haftayı Hafta görünümünde açar
+- Test: 6 yeni birim test (proje taşıma yardımcıları, gruplama, bağımlılık sayımı, proje başına kritik yol); gerçek tarayıcıda (masaüstü + mobil) menü sırası/kısayollar, mini takvim hafta numaraları (yıl sınırı, Pazar başlangıcı),
+  sürükle-bırak (başlığa/satıra, kendi projesine, geri al, bağımlılık uyarısı, dokunmatik basılı tutma), sağ tık menüsü (fare/klavye, Yeni proje…, tek proje görünümü, düz liste, 80 karakter sınırı)
+
 ## 1.29.0
 - **Zamanı geçince otomatik kapat**: etkinlik formunda yeni anahtar; açıksa bitiş zamanı geçince etkinlik **Tamamlandı** (%100) olur (açılışta, her 30 sn'de ve sekme görününce denetlenir; kapananlar tek bildirimle
   duyurulur). Tekrarlayan serilerde pasif (durum seri düzeyindedir). Yeni alan `autoClose` (eski kayıtlar: kapalı)

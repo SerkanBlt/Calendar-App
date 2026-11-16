@@ -7,7 +7,9 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { normalizeEvent } from '../src/core/eventModel.js';
 import { computeCriticalPath } from '../src/services/criticalPathService.js';
-import { buildRows, combineCriticalPaths, NO_PROJECT, projectLabel, projectOptions, resolveProject, weightedProgress } from '../src/services/ganttProjects.js';
+import {
+  buildRows, combineCriticalPaths, crossProjectLinks, MAX_PROJECT_LENGTH, NO_PROJECT, projectKeyOf, projectLabel, projectOptions, projectValue, resolveProject, weightedProgress,
+} from '../src/services/ganttProjects.js';
 
 const t = (id, project, start, end, extra = {}) => normalizeEvent({ id, title: id, project, startDate: start, endDate: end, ...extra });
 
@@ -126,5 +128,63 @@ describe('combineCriticalPaths', () => {
     const c2 = t('c2', 'Döngü', '2026-11-04', '2026-11-05', { dependencies: ['c1'] });
     const cpm = combineCriticalPaths(buildRows([A1, c1, c2]).groups, computeCriticalPath);
     assert.equal(cpm.hasCycle, true);
+  });
+});
+
+describe('görevi başka projeye taşıma (projectValue, projectKeyOf, crossProjectLinks)', () => {
+  test('projectValue: NO_PROJECT/boş → projesiz; ad kırpılır ve 80 karaktere indirilir', () => {
+    assert.equal(projectValue(NO_PROJECT), '');
+    assert.equal(projectValue(''), '');
+    assert.equal(projectValue(undefined), '');
+    assert.equal(projectValue('  Pazarlama  '), 'Pazarlama');
+    assert.equal(projectValue('Web sitesi'), 'Web sitesi');
+    assert.equal(projectValue('U'.repeat(120)).length, MAX_PROJECT_LENGTH);
+    assert.equal(MAX_PROJECT_LENGTH, 80);
+    // model ile tutarlı: taşıma sonrası kayıtlı değer normalizeEvent'ten değişmeden çıkar
+    assert.equal(normalizeEvent({ title: 'x', startDate: '2026-11-02', endDate: '2026-11-02', project: projectValue('  Pazarlama ') }).project, 'Pazarlama');
+  });
+
+  test('projectKeyOf: proje adı ya da NO_PROJECT (satırların bırakma hedefi anahtarı)', () => {
+    assert.equal(projectKeyOf(A1), 'Web sitesi');
+    assert.equal(projectKeyOf(X1), NO_PROJECT);
+  });
+
+  test('taşıma sonrası satırlar yeniden gruplanır; boşalan grup kalkar', () => {
+    const moved = ALL.map((e) => (e.id === 'b1' ? { ...e, project: projectValue('Web sitesi') } : e));
+    const keys = (all) => buildRows(all).rows.filter((r) => r.kind === 'group').map((r) => r.key);
+    assert.deepEqual(keys(ALL), ['Çalışma planı', 'Web sitesi', NO_PROJECT]);
+    assert.deepEqual(keys(moved), ['Çalışma planı', 'Web sitesi', NO_PROJECT]); // b2 hâlâ Çalışma planı'nda
+    const movedAll = moved.map((e) => (e.id === 'b2' ? { ...e, project: '' } : e));
+    assert.deepEqual(keys(movedAll), ['Web sitesi', NO_PROJECT]); // Çalışma planı'nın görevi kalmadı
+    assert.equal(buildRows(movedAll).groups.find((g) => g.key === 'Web sitesi').tasks.length, 4); // a1, a2, a3, b1
+  });
+
+  test('crossProjectLinks: öncül ve ardıllardan başka projede kalanlar sayılır', () => {
+    // a2 (Web): öncülü a1 (Web), ardılı a3 (Web) → Web'de kalırsa 0; Çalışma planı'na taşınırsa 2 (a1 ve a3 başka projede)
+    assert.equal(crossProjectLinks(ALL, 'a2', 'Web sitesi'), 0);
+    assert.equal(crossProjectLinks(ALL, 'a2', 'Çalışma planı'), 2);
+    assert.equal(crossProjectLinks(ALL, 'a2', NO_PROJECT), 2); // projesize taşınırsa da ikisi başka projede
+    // b2 (Çalışma planı): öncülleri b1 (aynı proje) ve a1 (Web) → şu an 1 projeler arası bağ; Web'e taşınırsa b1 başka projede kalır → 1
+    assert.equal(crossProjectLinks(ALL, 'b2', 'Çalışma planı'), 1);
+    assert.equal(crossProjectLinks(ALL, 'b2', 'Web sitesi'), 1);
+    // a1: ardılları a2 (Web) ve b2 (Çalışma planı) → kendi projesinde kalırsa yalnız b2 başka projede; Çalışma planı'na giderse yalnız a2 başka projede
+    assert.equal(crossProjectLinks(ALL, 'a1', 'Web sitesi'), 1);
+    assert.equal(crossProjectLinks(ALL, 'a1', 'Çalışma planı'), 1);
+    assert.equal(crossProjectLinks(ALL, 'a1', 'Başka'), 2); // üçüncü bir projeye giderse ikisi de başka projede
+  });
+
+  test('crossProjectLinks: bağımlılığı olmayan görev ve bilinmeyen kimlik için 0', () => {
+    assert.equal(crossProjectLinks(ALL, 'x1', 'Web sitesi'), 0);
+    assert.equal(crossProjectLinks(ALL, 'yok', 'Web sitesi'), 0);
+    assert.equal(crossProjectLinks([], 'a1', 'Web sitesi'), 0);
+  });
+
+  test('taşımadan sonra projeler arası bağımlılık kritik yolu belirlemez (proje başına CPM)', () => {
+    // a2'yi Çalışma planı'na taşı: a1→a2 ve a2→a3 artık projeler arası; her proje kendi içinde hesaplanır
+    const moved = ALL.map((e) => (e.id === 'a2' ? { ...e, project: 'Çalışma planı' } : e));
+    const { groups } = buildRows(moved);
+    const cp = combineCriticalPaths(groups, computeCriticalPath);
+    assert.equal(cp.hasCycle, false);
+    assert.ok(cp.slack.has('a2') && cp.slack.has('a1'));
   });
 });

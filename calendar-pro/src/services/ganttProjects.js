@@ -7,6 +7,8 @@
  *  - "Tüm projeler"de her proje bir başlık satırı (özet çubuğu: ilk başlangıç → son bitiş, ağırlıklı ilerleme) ve altında görevleri olan,
  *    daraltılıp genişletilebilen bir gruptur. Projesiz görevler en sonda "Projesiz" grubunda toplanır.
  *  - Kritik yol (CPM) her proje için ayrı hesaplanır: farklı projeler arasındaki bağımlılıklar çizilir ama kritik yolu belirlemez.
+ *  - Görev başka projeye taşınabilir (görev satırını proje başlığına/satırına sürükle ya da sağ tık → Proje): taşıma yalnızca `event.project` alanını değiştirir
+ *    (bkz. `projectValue`, `crossProjectLinks`; eylem core/actions.js → moveToProject).
  */
 import { diffDays } from '../core/dateUtils.js';
 
@@ -16,6 +18,28 @@ export const NO_PROJECT_LABEL = 'Projesiz';
 export const ALL_PROJECTS_LABEL = 'Tüm projeler';
 
 const byName = (a, b) => a.localeCompare(b, 'tr');
+
+export const MAX_PROJECT_LENGTH = 80; // eventModel.normalizeEvent ile aynı
+
+/** Taşıma hedefini (proje anahtarı ya da yazılan ad) olay alanına çevirir: NO_PROJECT / boş → '' (projesiz); ad kırpılır ve 80 karaktere indirilir. */
+export const projectValue = (key) => (key === NO_PROJECT ? '' : String(key ?? '').trim().slice(0, MAX_PROJECT_LENGTH));
+
+/** Bir görevin proje anahtarı: proje adı ya da NO_PROJECT. */
+export const projectKeyOf = (task) => task.project || NO_PROJECT;
+
+/**
+ * `id` görevi `project` projesine (alan değeri; '' = projesiz) taşınırsa, o görevin başka projedeki görevlerle kalan bağımlılık bağlantısı sayısı
+ * (öncülleri ve ardılları). Farklı projeler arası bağımlılıklar çizilir ama kritik yolu belirlemez; taşıma sonrası kullanıcıya bildirilir.
+ */
+export function crossProjectLinks(tasks, id, project) {
+  const task = tasks.find((t) => t.id === id);
+  if (!task) return 0;
+  const next = projectValue(project);
+  const other = (t) => (t.project || '') !== next;
+  const preds = task.dependencies.map((d) => tasks.find((t) => t.id === d)).filter((p) => p && other(p));
+  const succs = tasks.filter((t) => t.id !== id && t.dependencies.includes(id) && other(t));
+  return preds.length + succs.length;
+}
 
 /** Görevlerdeki proje adları (tekil, Türkçe sıralı). */
 export const projectNames = (tasks) => [...new Set(tasks.map((t) => t.project).filter(Boolean))].sort(byName);

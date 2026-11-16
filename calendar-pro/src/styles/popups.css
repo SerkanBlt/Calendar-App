@@ -21,7 +21,7 @@
 }
 .cs-opt[aria-disabled='true'] { opacity: 0.45; cursor: not-allowed; }
 
-.ctx-menu { min-width: 190px; max-width: 280px; }
+.ctx-menu { min-width: 190px; max-width: 280px; max-height: min(80vh, 560px); overflow-y: auto; overscroll-behavior: contain; } /* çok projeli Gantt menüsü kayar */
 .ctx-head { display: flex; flex-direction: column; gap: 1px; padding: 6px 10px 8px; border-bottom: 1px solid var(--border); margin-bottom: 3px; }
 .ctx-title { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .ctx-sub { font-size: 11px; color: var(--text-muted); }

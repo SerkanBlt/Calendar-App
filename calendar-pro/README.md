@@ -84,6 +84,11 @@ Aynı adı taşıyan görevler aynı projedir. Hiç proje yoksa Gantt eskisi gib
 - **Kritik yol proje başına** hesaplanır ("Kritik yol: N görev · süre"); farklı projeler arasındaki bağımlılıklar çizilir ve ihlal uyarısı verir ama kritik yolu belirlemez. Yeni bağımlılıkta döngü denetimi tüm görevler üzerinden yapılır.
 - Bir projeye atanmış görev, tek günlük saatli bir toplantı olsa bile Gantt'ta görünür (tekrarlayan etkinlikler hâlâ Gantt'a girmez). Görevin projesi formdan değiştirilince Gantt'ta yeni grubun altına geçer.
 - Bağımlılık listesinde görevlerin yanında projeleri soluk metinle yazar; arama, Kanban/Timeline filtresi ve `Ctrl + K` paleti proje adında da eşleşir. Mantık: `src/services/ganttProjects.js` (saf, `tests/gantt-projects.test.js`).
+- **Görevi başka projeye taşıma:** "Tüm projeler" görünümünde soldaki listeden bir **görev satırını** başka bir projenin **başlığına ya da görev satırına sürükleyip bırakın** (fare: hemen sürüklenir; dokunmatik: satırı **basılı tutup** sürükleyin;
+  hedef çerçevelenir). Ya da görev çubuğuna / satırına **sağ tıklayın → Proje** bölümü: mevcut projeler, **Projesiz** (geçerli olan işaretli) ve **Yeni proje…** (ad sorar; en çok 80 karakter; ilk proje de böyle atanabilir).
+  Taşıma yalnızca görevin `project` alanını değiştirir; toast'ta **Geri al** vardır. Görevin başka projedeki görevlerle bağımlılığı kalıyorsa toast bunu belirtir ("N bağımlılık başka projedeki görevlerle": bu bağlantılar çizilmeye devam eder
+  ama kritik yolu belirlemez). Kendi projesine bırakmak bir şey yapmaz; tek proje / Projesiz görünümünde ve proje yokken sürükleme hedefi olmadığından sağ tık menüsü kullanılır (taşınan görev o görünümden çıkar; seçili proje kalmazsa "Tüm projeler"e dönülür).
+  Formdaki **Gantt projesi** alanı da aynı işi görür. Kod: `core/actions.js` → `moveToProject`, saf yardımcılar `services/ganttProjects.js` → `projectValue`, `crossProjectLinks`.
 
 ## Çalışma günleri
 
@@ -174,7 +179,9 @@ açılan çekmece**. (DOM'da da `main`'den sonra gelir; Tab sırası görsel sı
 telefonda çekmece de aynı boşlukla açılır.
 
 Üstte **Hızlı komut** (komut paleti, `Ctrl + K`) ve **Ara** (etkinlik arama paneli, `/`), ardından görünümler ve mini
-takvim yer alır. Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesinin sağında
+takvim yer alır. Görünümler yukarıdan aşağıya **Dashboard, Yıl, Ay, Hafta, Gün, Scheduler, Timeline, Gantt, Kanban** sırasındadır (**Yıl, Ay'ın hemen üstünde**); klavye kısayolları menü sırasından bağımsızdır ve değişmez
+(`1` Dashboard · `2` Ay … `8` Kanban · `9` Yıl); menüdeki rozet ve ipucu gerçek kısayolu gösterir (ör. Yıl → 9). Mini takvimin solunda **ISO 8601 hafta numaraları** vardır (sütun başlığı **H**; satırın 4. günü
+hangi ISO haftasındaysa o numara — "Haftanın başladığı gün" ayarından bağımsız ISO'dur); numaraya tıklamak o haftayı **Hafta** görünümünde açar (mobil çekmecede de çalışır). Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesinin sağında
 uygulamanın sürüm numarası görünür.
 
 **Hızlı komut** düğmesi yalnızca palet **açıkken** vurgulu görünür (kapalıyken diğer öğeler gibi normaldir).
@@ -406,7 +413,7 @@ Telefonda menü her zaman tam genişlikte, sağdan açılır.
 | `N` | Yeni etkinlik |
 | `T` | Bugüne git |
 | `←` / `→` | Önceki / sonraki dönem |
-| `1`–`9` | Görünüm değiştir (1 Dashboard · 2 Ay · 3 Hafta · 4 Gün · 5 Scheduler · 6 Timeline · 7 Gantt · 8 Kanban · 9 Yıl) |
+| `1`–`9` | Görünüm değiştir (1 Dashboard · 2 Ay · 3 Hafta · 4 Gün · 5 Scheduler · 6 Timeline · 7 Gantt · 8 Kanban · 9 Yıl); kısayollar menüdeki görünüm sırasından bağımsızdır |
 | `[` | Kenar çubuğunu daralt / genişlet (logoya tıklamakla aynı) |
 | `Ctrl + Enter` | Formu kaydet |
 | `Esc` | Modal / palet kapat |
@@ -465,7 +472,7 @@ Mantık: `src/core/eventModel.js` → `dueForAutoClose` (saf, test edilir), zama
 **Sağ tık menüsü (durum değiştirme):** farenin sağ tuşuyla bir etkinliğe tıklanınca — Ay/Hafta/Gün/Scheduler çip ve blokları, Timeline/Dashboard satırları, Kanban/Dashboard kartları, Gantt çubukları ve görev satırları —
 etkinliği açmadan **Durum** (Yapılacak · Devam Ediyor · Tamamlandı; geçerli olan işaretli), **Aç** ve **Sil** içeren küçük bir menü açılır. Durum değişince ilerleme tutarlı kalır (Tamamlandı → %100; tamamlanmış etkinlik
 yeniden açılırsa Devam Ediyor → %50, Yapılacak → %0). Tekrarlayan serinin bir **örneğinde** "Yalnızca bu etkinlik / Tüm seri" sorulur. Menü klavyeyle de kullanılır (↑ ↓ Home End, Enter/Boşluk, Esc, Tab).
-Dokunmatik ekranda devreye girmez (basılı tutma sürüklemeye ayrılmıştır); metin kutularında tarayıcının kendi menüsü korunur. Kod: `src/components/contextMenu.js`, `core/actions.js` → `changeEventStatus`.
+**Gantt'ta** menüye ayrıca **Proje** bölümü eklenir (görevi başka projeye / Projesiz'e taşır; bkz. "Proje bazlı Gantt"). Dokunmatik ekranda devreye girmez (basılı tutma sürüklemeye ayrılmıştır); metin kutularında tarayıcının kendi menüsü korunur. Kod: `src/components/contextMenu.js`, `core/actions.js` → `changeEventStatus`.
 
 **Temalı açılır listeler:** tüm açılır kutuların (`select`) listesi, tarayıcının yerel listesi yerine uygulama temasının renkleriyle çizilir (açık/koyu/özel temalar; seçili seçenekte onay işareti). Açma/kapama
 fare ve klavyeyle yapılır (Boşluk/Enter/F4/Alt+↓ açar; ↑ ↓ Home End PageUp PageDown gezinir; harf yazmak seçeneğe gider; Esc yalnızca listeyi kapatır). **Telefon/tablet gibi dokunmatik (kaba işaretçili)

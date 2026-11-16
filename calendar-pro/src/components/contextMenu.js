@@ -3,6 +3,7 @@
  *
  * Fareyle (ince işaretçi) bir etkinliğe sağ tıklanınca — Ay/Hafta/Gün/Scheduler çipleri ve blokları, Timeline ve Dashboard satırları, Kanban/Dashboard kartları,
  * Gantt çubukları ve görev satırları — küçük bir menü açılır: Durum (Yapılacak · Devam Ediyor · Tamamlandı; geçerli olan işaretli), Aç, Sil.
+ *  - Gantt'ta ayrıca Proje bölümü vardır: görevi başka bir projeye (ya da Projesiz'e) taşır; "Yeni proje…" yeni bir proje adı sorar (bkz. core/actions.js → moveToProject).
  *  - Durum değişince ilerleme tutarlı kalır: Tamamlandı → %100; tamamlanmış bir etkinlik yeniden açılırsa %100 kalmaz (Devam Ediyor → %50, Yapılacak → %0).
  *  - Tekrarlayan serinin bir ÖRNEĞİNDE "Yalnızca bu etkinlik / Tüm seri" sorulur; Kanban/Gantt gibi seri kaydını gösteren yerlerde seri düzeyinde değişir.
  *  - Dokunmatik cihazlarda devreye girmez (basılı tutma sürüklemeye ayrılmıştır).
@@ -12,7 +13,10 @@ import { html } from '../core/dom.js';
 import { eventRepo } from '../core/eventRepo.js';
 import { STATUS_LABELS, STATUSES } from '../core/eventModel.js';
 import { expandEvents } from '../services/recurrenceService.js';
-import { changeEventStatus, deleteEventWithUndo, deleteOccurrence } from '../core/actions.js';
+import { changeEventStatus, deleteEventWithUndo, deleteOccurrence, moveToProject } from '../core/actions.js';
+import { store } from '../core/state.js';
+import { NO_PROJECT, NO_PROJECT_LABEL, projectNames } from '../services/ganttProjects.js';
+import { promptDialog } from './modal.js';
 import { openEventEditor } from './eventEditor.js';
 import { icon } from './icons.js';
 
@@ -142,11 +146,29 @@ function onContextMenu(e) {
   e.preventDefault();
   const { master, occ } = found;
   const current = master.status;
+  // Gantt: görevi başka projeye taşıma (tekrarlayan seriler Gantt'ta yoktur)
+  const inGantt = Boolean(e.target.closest('.gantt')) && !master.recurrence;
+  const projectItems = inGantt
+    ? [
+        { type: 'separator' },
+        { type: 'label', label: 'Proje' },
+        { label: NO_PROJECT_LABEL, checked: !master.project, onSelect: () => moveToProject(master, NO_PROJECT) },
+        ...projectNames(store.get().events.filter((ev) => !ev.recurrence)).map((name) => ({ label: name, checked: name === master.project, onSelect: () => moveToProject(master, name) })),
+        {
+          label: 'Yeni proje…',
+          icon: 'plus',
+          onSelect: async () => {
+            const name = await promptDialog({ title: 'Yeni proje', label: `"${master.title}" görevinin yeni projesi`, placeholder: 'Proje adı', confirmText: 'Taşı', suggestions: projectNames(store.get().events) });
+            if (name) moveToProject(master, name);
+          },
+        },
+      ]
+    : [];
   openContextMenu({
     x: e.clientX,
     y: e.clientY,
     title: master.title,
-    subtitle: occ?.isRecurring ? 'Tekrarlayan etkinlik' : '',
+    subtitle: occ?.isRecurring ? 'Tekrarlayan etkinlik' : inGantt ? (master.project ? `Proje: ${master.project}` : 'Projesiz') : '',
     items: [
       { type: 'label', label: 'Durum' },
       ...STATUSES.map((status) => ({
@@ -155,6 +177,7 @@ function onContextMenu(e) {
         dot: { todo: 'var(--text-muted)', doing: 'var(--info)', done: 'var(--success)' }[status],
         onSelect: () => changeEventStatus(occ || master, status, { series: !occ }),
       })),
+      ...projectItems,
       { type: 'separator' },
       { label: 'Aç', icon: 'expand', onSelect: () => openEventEditor(occ || master) },
       { label: 'Sil', icon: 'trash', danger: true, onSelect: () => (occ ? deleteOccurrence(occ) : deleteEventWithUndo(master.id)) },

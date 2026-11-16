@@ -151,6 +151,40 @@ export function choiceDialog({ title, message = '', choices }) {
   });
 }
 
+/**
+ * Tek satırlık metin sorusu. Onaylanırsa kırpılmış metni, vazgeçilirse (ya da boş bırakılırsa) null döner.
+ * @param {{title: string, label?: string, placeholder?: string, value?: string, confirmText?: string, maxLength?: number, suggestions?: string[]}} options
+ */
+export function promptDialog({ title, label = '', placeholder = '', value = '', confirmText = 'Tamam', maxLength = 80, suggestions = [] }) {
+  return new Promise((resolve) => {
+    let result = null;
+    const form = document.createElement('form');
+    form.noValidate = true;
+    form.className = 'prompt-form';
+    form.id = 'prompt-form';
+    form.innerHTML = html`<label class="field"><span>${label}</span><input name="value" maxlength="${maxLength}" placeholder="${placeholder}" autocomplete="off" ${suggestions.length ? 'list="prompt-suggestions"' : ''} /></label>
+      ${suggestions.length ? html`<datalist id="prompt-suggestions">${suggestions.map((s) => html`<option value="${s}"></option>`)}</datalist>` : ''}`;
+    form.elements.value.value = value;
+    const footer = document.createElement('div');
+    footer.className = 'modal-actions';
+    footer.innerHTML = html`
+      <button type="button" class="btn btn-ghost" data-cancel>Vazgeç</button>
+      <button type="submit" class="btn btn-primary" form="prompt-form">${confirmText}</button>`;
+    const modal = openModal({ title, body: form, footer, size: 'sm', onClose: () => resolve(result), initialFocus: 'first' });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = form.elements.value.value.trim();
+      if (!text) {
+        form.elements.value.focus();
+        return;
+      }
+      result = text.slice(0, maxLength);
+      modal.close();
+    });
+    footer.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
+  });
+}
+
 /** Onay diyaloğu. Kullanıcı onaylarsa true döner. */
 export function confirmDialog({ title = 'Emin misiniz?', message = '', confirmText = 'Onayla', cancelText = 'Vazgeç', danger = false } = {}) {
   return new Promise((resolve) => {

@@ -7,15 +7,21 @@
  */
 import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
-import { addMonths, formatDate, startOfMonth, startOfWeek, toISODate, todayISO, rangeDays, weekdayNames } from '../core/dateUtils.js';
+import { addMonths, formatDate, isoWeek, startOfMonth, startOfWeek, toISODate, todayISO, rangeDays, weekdayNames } from '../core/dateUtils.js';
+import { ROUTES } from '../core/router.js';
 import { toggleSidebarCollapsed } from '../core/actions.js';
 import { holidayInfoFor } from '../core/holidays.js';
 import { icon } from './icons.js';
 import { openSettings } from './settingsPanel.js';
 import { APP_VERSION } from '../core/version.js';
 
+/**
+ * Menüdeki görünüm sırası (yukarıdan aşağıya): Yıl, Ay'ın hemen üstündedir. Klavye kısayolları menü sırasından BAĞIMSIZDIR ve değişmez:
+ * `1`–`9` → ROUTES sırası (core/router.js: Dashboard 1, Ay 2, Hafta 3, Gün 4, Scheduler 5, Timeline 6, Gantt 7, Kanban 8, Yıl 9); rozetler gerçek kısayolu gösterir.
+ */
 export const NAV_ITEMS = Object.freeze([
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { id: 'year', label: 'Yıl', icon: 'year' },
   { id: 'month', label: 'Ay', icon: 'month' },
   { id: 'week', label: 'Hafta', icon: 'week' },
   { id: 'day', label: 'Gün', icon: 'day' },
@@ -23,8 +29,7 @@ export const NAV_ITEMS = Object.freeze([
   { id: 'timeline', label: 'Timeline', icon: 'timeline' },
   { id: 'gantt', label: 'Gantt', icon: 'gantt' },
   { id: 'kanban', label: 'Kanban', icon: 'kanban' },
-  { id: 'year', label: 'Yıl', icon: 'year' }, // en sonda: mevcut 1–8 kısayolları değişmesin
-]);
+].map((item) => ({ ...item, key: ROUTES.indexOf(item.id) + 1 })));
 
 const DATE_VIEWS = new Set(['month', 'week', 'day', 'scheduler', 'year']);
 
@@ -55,23 +60,28 @@ export function mountSidebar(el, ctx) {
           </div>
         </div>
         <div class="mini-cal-grid">
+          <span class="mini-dow mini-wk-head" title="ISO 8601 hafta numarası">H</span>
           ${weekdayNames(settings.weekStartsOn, 'narrow').map((d) => html`<span class="mini-dow">${d}</span>`)}
-          ${days.map((d) => {
+          ${days.map((d, i) => {
             const outside = Number(d.slice(5, 7)) !== miniMonth.getMonth() + 1;
             const cls = ['mini-day', outside && 'is-outside', d === today && 'is-today', d === cursor && 'is-selected', busy.has(d) && 'has-events', holiday.has(d) && 'is-holiday'].filter(Boolean).join(' ');
             const hol = holiday.get(d);
-            return html`<button type="button" class="${cls}" data-date="${d}" aria-label="${formatDate(d)}${hol ? `, tatil (${hol.groupName}): ${hol.name}` : ''}" ${hol ? html`title="Tatil (${hol.groupName}): ${hol.name}" style="--hol:${hol.color}"` : ''}>${Number(d.slice(8))}</button>`;
+            const day = html`<button type="button" class="${cls}" data-date="${d}" aria-label="${formatDate(d)}${hol ? `, tatil (${hol.groupName}): ${hol.name}` : ''}" ${hol ? html`title="Tatil (${hol.groupName}): ${hol.name}" style="--hol:${hol.color}"` : ''}>${Number(d.slice(8))}</button>`;
+            if (i % 7) return day;
+            // Satır başına ISO 8601 hafta numarası: satırın 4. günü (Pazartesi başlangıçlı haftada Perşembe) hangi ISO haftasındaysa o numara
+            const anchor = days[i + 3];
+            const week = isoWeek(anchor);
+            return html`<button type="button" class="mini-wk" data-week="${anchor}" aria-label="${week}. hafta (ISO)" title="${week}. hafta (ISO 8601) — Hafta görünümünde aç">${week}</button>${day}`;
           })}
         </div>
       </div>`;
   }
 
   function navLink(item, state) {
-    const i = NAV_ITEMS.indexOf(item);
     const active = state.view === item.id;
     return html`<a href="#/${item.id}?date=${state.cursor}" class="nav-item ${active ? 'is-active' : ''}"
-                   data-nav="${item.id}" title="${item.label} (${i + 1})" ${active ? 'aria-current="page"' : ''}>
-        ${icon(item.icon)}<span>${item.label}</span><kbd>${i + 1}</kbd>
+                   data-nav="${item.id}" title="${item.label} (${item.key})" ${active ? 'aria-current="page"' : ''}>
+        ${icon(item.icon)}<span>${item.label}</span><kbd>${item.key}</kbd>
       </a>`;
   }
 
@@ -113,6 +123,12 @@ export function mountSidebar(el, ctx) {
     if (nav) {
       e.preventDefault();
       ctx.go(nav.dataset.nav);
+      ctx.closeMobile();
+      return;
+    }
+    const wk = t.closest('.mini-wk');
+    if (wk) {
+      ctx.go('week', wk.dataset.week);
       ctx.closeMobile();
       return;
     }
