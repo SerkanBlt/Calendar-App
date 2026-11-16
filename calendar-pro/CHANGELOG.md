@@ -4,6 +4,17 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.28.0
+- **Yeni "Yıl" görünümü** (kenar çubuğunda; kısayol `9` — mevcut 1–8 kısayolları değişmedi; `Ctrl + K` → "Yıl Aç"): 12 ay kartı, Geri/İleri bir yıl kaydırır, ay başlığı Ay görünümünü açar. Çalışma dışı günler soluk, etkinlik olan günler noktalı,
+  bugün çerçeveli; telefonda 2 sütun
+- **Tatil günleri tanımlama**: Yıl görünümünde bir güne dokunarak (ya da **Tatil ekle** ile) tatil eklenir; pencerede ad, tarih, isteğe bağlı bitiş tarihi (çok günlü bayram → her gün ayrı kayıt, en çok 60 gün) ve
+  **"Her yıl aynı tarihte tekrarla"**: **açıksa** tatil her yıl aynı ay-günde çalışma dışı (off) görünür (geçmiş/gelecek tüm yıllar; 29 Şubat yalnızca artık yıllarda); **kapalıysa** (değişken tatil) yalnızca o yıl için geçerlidir.
+  Yılın tatil listesi (tarih, ad, "Her yıl" / "Yalnızca 2026" rozeti) düzenle/sil içerir; silme "Geri al" ile geri alınır. Aynı güne en çok bir kayıt tutulur (tekrarlı kayıt aynı ay-günün tek seferlik kayıtlarını birleştirir)
+- **Tatil = çalışma dışı (off) gün**: Ay görünümünde hücre soluk + kırmızı tonlu, adı hücrede (hafta günü sütunları yalnızca çalışma günü olmayan günlere göre gizlenir; tatil sütunu kalkmaz); Hafta görünümünde sütun soluk ve
+  "çalışma dışı gizli" iken tatil sütunu kalkar; Gün başlığında "Tatil: ad"; Scheduler'da sütun soluk; Gantt'ta gün sütunu gölgeli; mini takvimde kırmızı gün. Veri `settings.holidays` (ayarlar yedeğine dahil)
+- Test: 21 yeni birim testi (tekrarlı/değişken tatil, artık yıl, yıl sınırı, off-gün entegrasyonu, ekleme/birleştirme/aralık/düzenleme/silme); gerçek tarayıcıda (masaüstü + mobil) tanımlama, aralık, yıl gezinme (2025/2026/2027),
+  Ay/Hafta/Gün/Gantt/mini takvim yansıması, "çalışma dışı gizle", düzenle/sil/geri al, kalıcılık
+
 ## 1.27.0
 - **Proje bazlı Gantt**: etkinlik formunda **Bağımlılıkların altında yeni "Gantt projesi" alanı** (proje adı yazılır ya da önceki projelerden seçilir). Gantt'ta proje varsa başlıkta bir **proje seçici** çıkar:
   **Tüm projeler** (proje başlıkları altında gruplu satırlar; başlıkta görev sayısı, ağırlıklı ilerleme % ve ilk başlangıç → son bitiş özet çubuğu; başlığa tıklayınca grup **daralır/genişler**, kalıcı; projesiz görevler en sonda

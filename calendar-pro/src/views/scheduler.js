@@ -11,6 +11,7 @@ import { toolbar } from '../components/toolbar.js';
 import { renderTimeGrid } from '../components/timeGrid.js';
 import { icon } from '../components/icons.js';
 import { clamp } from '../core/utils.js';
+import { holidayDaySet } from '../core/holidays.js';
 
 const DAY_OPTIONS = [1, 3, 5, 7];
 const ZOOM_MIN = 32;
@@ -65,6 +66,7 @@ export default {
       hourHeight,
       snap: 15,
       scrollKey: `scheduler-${hourHeight}`,
+      offDays: holidayDaySet(settings.holidays, days), // tatil günleri soluk gösterilir
       onOpen: (occ) => ctx.openEditor(occ),
       onCreate: (range) => ctx.openEditor(range),
       onChange: (occ, changes) => ctx.moveOccurrence(occ, changes),

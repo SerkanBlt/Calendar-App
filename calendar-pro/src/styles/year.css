@@ -1,0 +1,63 @@
+/* ==========================================================================
+   year.css — Yıl görünümü (12 ay kartı) ve tatil günleri
+   ========================================================================== */
+.year { display: flex; flex-direction: column; gap: var(--space-4); }
+.year-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(224px, 1fr)); gap: var(--space-3); }
+.year-month { padding: var(--space-3); border-radius: var(--radius); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.year-month-title {
+  align-self: flex-start; padding: 2px 8px; margin-left: -8px; border: 0; border-radius: var(--radius-sm); background: transparent;
+  font-size: 14px; font-weight: 700; text-transform: capitalize; cursor: pointer; transition: background var(--dur), color var(--dur);
+}
+.year-month-title:hover { background: var(--surface-hover); color: var(--accent-text); }
+.year-weekdays, .year-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.year-dow { text-align: center; font-size: 10px; font-weight: 600; color: var(--text-faint); padding: 2px 0; }
+.year-day {
+  position: relative; display: grid; place-items: center; aspect-ratio: 1; min-width: 0; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; font-size: 12px; font-variant-numeric: tabular-nums; cursor: pointer; touch-action: manipulation;
+  transition: background var(--dur), color var(--dur);
+}
+.year-day:hover { background: var(--surface-hover); }
+.year-day:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.year-day.is-blank { visibility: hidden; pointer-events: none; }
+.year-day.is-off { color: var(--text-faint); background: var(--weekend); }
+.year-day.is-holiday { background: color-mix(in srgb, var(--danger) 22%, transparent); color: var(--danger); font-weight: 700; }
+.year-day.is-holiday.is-yearly { outline: 1px solid color-mix(in srgb, var(--danger) 55%, transparent); outline-offset: -1px; } /* her yıl tekrarlı tatil: ince halka */
+.year-day.is-today { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 700; }
+.year-day.has-events::after { content: ''; position: absolute; bottom: 3px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--accent); }
+
+.year-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); padding: 0 var(--space-2); font-size: 12px; color: var(--text-muted); }
+.year-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.year-key { display: inline-block; width: 14px; height: 14px; border-radius: 5px; position: relative; }
+.year-key.is-holiday { background: color-mix(in srgb, var(--danger) 30%, transparent); }
+.year-key.is-off { background: var(--weekend); border: 1px solid var(--border); }
+.year-key.has-events { background: transparent; border: 1px solid var(--border); }
+.year-key.has-events::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--accent); }
+
+.year-holidays { flex: none; }
+.holiday-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.holiday-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--space-3); padding: 6px 6px 6px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2);
+}
+.holiday-date { flex: none; min-width: 108px; font-size: 13px; font-weight: 600; color: var(--danger); font-variant-numeric: tabular-nums; }
+.holiday-name { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.holiday-badge { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--surface-hover); color: var(--text-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.holiday-badge .icon { width: 11px; height: 11px; }
+.holiday-badge.is-yearly { background: var(--accent-soft); color: var(--accent-text); }
+.holiday-actions { display: flex; gap: 4px; margin-left: auto; }
+.holiday-actions .btn-sm { padding: 5px 10px; }
+
+/* Tatil penceresi */
+.holiday-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.holiday-hint { margin: 0; padding: 8px 12px; border-radius: var(--radius-md); background: var(--accent-soft); color: var(--accent-text); font-size: 12.5px; line-height: 1.45; }
+.holiday-events { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.holiday-events ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.holiday-events li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+@media (max-width: 560px) {
+  .year-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  .year-month { padding: var(--space-2); }
+  .year-day { font-size: 11px; border-radius: 6px; }
+  .holiday-date { min-width: 96px; }
+  .holiday-actions { width: 100%; justify-content: flex-end; }
+}

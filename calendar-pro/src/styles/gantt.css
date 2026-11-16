@@ -43,6 +43,7 @@
 .gantt-chart { position: relative; }
 .gantt-bg { position: absolute; inset: 0; pointer-events: none; }
 .gantt-weekend { position: absolute; top: 0; bottom: 0; background: var(--weekend); }
+.gantt-weekend.is-holiday { background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .gantt-rowline { position: absolute; left: 0; right: 0; height: 1px; background: var(--grid-line); }
 .gantt-today { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--danger); opacity: 0.7; }
 

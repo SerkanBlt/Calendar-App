@@ -38,6 +38,7 @@ Tek seferlik ayar:
 | Timeline  | Ay/gün gruplu kronolojik akış; yaklaşan / tümü / geçmiş filtresi ve arama başlıkta; noktalar zaman çizgisinin tam üstünde |
 | Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı; **proje bazlı** görünüm (aşağıya bakın) |
 | Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (başlıkta **yalnızca ikonlu** iki düğme; filtre kutusu onlarla aynı satırda ve aynı yükseklikte; seçim kaydedilir). Her panel başlığındaki ok ya da başlığa tıklama ile **daraltılıp genişletilir** (durum kaydedilir; daraltılmış panele kart bırakılabilir); alt alta düzende paneller üst üste binmez, sayfa kayar |
+| Yıl       | 12 ay kartı (çalışma dışı günler soluk, **tatil günleri kırmızı**, etkinlik olan günler noktalı); bir güne dokunarak **tatil günü** tanımlanır; yıl listesi; ay başlığı Ay görünümünü açar (aşağıya bakın) |
 
 Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır:
 
@@ -45,6 +46,22 @@ Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekran
 - **Dokunmatik:** dokunmak öğeyi açar, parmakla kaydırmak sayfayı kaydırır, **basılı tutmak** sürüklemeyi başlatır.
 - Hafta/Gün/Scheduler'da saatli bir etkinliği **Tüm gün** satırına bırakmak onu tüm gün yapar; tek günlük bir tüm gün
   etkinliğini saat ızgarasına bırakmak, bırakılan saatte 1 saatlik etkinliğe çevirir (çok günlü olanlar yalnızca gün kaydırır).
+
+## Yıl görünümü ve tatil günleri
+
+**Yıl** görünümü (kenar çubuğunda, kısayol `9`) yılın 12 ayını küçük kartlar hâlinde gösterir (Geri/İleri bir yıl kaydırır; ay başlığına tıklamak Ay görünümünü açar; telefonda 2 sütun).
+**Tatil günleri** buradan tanımlanır: bir güne dokunun (ya da **Tatil ekle**) → pencerede **ad**, **tarih**, isteğe bağlı **bitiş tarihi** (birkaç günlük bayram tatili: her gün ayrı kayıt olur, en çok 60 gün) ve
+**"Her yıl aynı tarihte tekrarla"** anahtarı vardır:
+
+- **Anahtar AÇIK (tekrarlı):** tatil her yıl aynı ay-günde (ör. 29 Ekim) çalışma dışı (**off**) görünür — geçmiş ve gelecek tüm yıllarda. 29 Şubat'ta tanımlanırsa yalnızca artık yıllarda vardır.
+- **Anahtar KAPALI (değişken):** tatil **yalnızca o tarihin yılı** için geçerlidir (ör. tarihi her yıl değişen dini bayramlar); sonraki yıllarda görünmez.
+- Aynı güne en çok **bir** kayıt tutulur: tekrarlı kayıt eklenince aynı ay-günün tek seferlik kayıtları ona birleşir; tekrarlı bir tatilin zaten kapsadığı güne tek seferlik kayıt eklenmez (yalnızca adı güncellenir).
+- Altta o yılın **tatil listesi** vardır (tarih, ad, "Her yıl" / "Yalnızca 2026" rozeti, **Düzenle** / **Sil**). Silme "Geri al" ile geri alınır. Pencerede o günün etkinlikleri ve **Gün görünümü** kısayolu da bulunur.
+
+Tatil günleri **çalışma dışı (off) gün** sayılır: **Ay** görünümünde hücre soluk + kırmızı tonlu olur ve adı hücrede yazar (hafta günü sütunları yalnızca çalışma günü olmayan günlere göre gizlenir; tatil sütunu kalkmaz);
+**Hafta** görünümünde sütun soluktur ve **"Çalışma günleri" (çalışma dışı gizli)** seçiliyken tatil günü sütunu da kalkar; **Gün** başlığında "Tatil: ad" yazar ve ızgara soluktur; **Scheduler**'da sütun soluktur; **Gantt**'ta gün sütunu
+gölgelenir; kenar çubuğundaki **mini takvimde** gün kırmızı işaretlenir (ipucu: ad). Veri `settings.holidays` içinde `[{ id, date, name, yearly }]` olarak saklanır ve ayarlar yedeğine (JSON) dahildir.
+Mantık: `src/core/holidays.js` (saf, `tests/holidays.test.js`), off-gün entegrasyonu `src/core/workDays.js` (`offDaySet(günler, çalışmaGünleri, tatiller)`).
 
 ## Proje bazlı Gantt
 
@@ -375,7 +392,7 @@ Telefonda menü her zaman tam genişlikte, sağdan açılır.
 | `N` | Yeni etkinlik |
 | `T` | Bugüne git |
 | `←` / `→` | Önceki / sonraki dönem |
-| `1`–`8` | Görünüm değiştir |
+| `1`–`9` | Görünüm değiştir (1 Dashboard · 2 Ay · 3 Hafta · 4 Gün · 5 Scheduler · 6 Timeline · 7 Gantt · 8 Kanban · 9 Yıl) |
 | `[` | Kenar çubuğunu daralt / genişlet (logoya tıklamakla aynı) |
 | `Ctrl + Enter` | Formu kaydet |
 | `Esc` | Modal / palet kapat |

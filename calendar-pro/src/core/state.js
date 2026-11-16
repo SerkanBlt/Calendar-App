@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   weekStartsOn: 1, // 0 = Pazar, 1 = Pazartesi
   workDays: [1, 2, 3, 4, 5], // çalışma günleri (0 = Pazar … 6 = Cumartesi); varsayılan: Cumartesi ve Pazar çalışma dışı
   showOffDays: true, // Ay ve Hafta görünümünde çalışma dışı günler gösterilsin mi
+  holidays: [], // tatil günleri: [{ id, date, name, yearly }]; yearly = her yıl aynı gün, değilse yalnızca date'in yılı (bkz. core/holidays.js). Çalışma dışı (off) sayılır
   defaultReminder: 15,
   notificationsEnabled: false,
   schedulerDays: 7,

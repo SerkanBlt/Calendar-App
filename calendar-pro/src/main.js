@@ -14,6 +14,7 @@ import './styles/calendar.css';
 import './styles/scheduler.css';
 import './styles/gantt.css';
 import './styles/kanban.css';
+import './styles/year.css';
 
 import { store } from './core/state.js';
 import { router, ROUTES } from './core/router.js';
@@ -48,8 +49,9 @@ import scheduler from './views/scheduler.js';
 import timeline from './views/timeline.js';
 import gantt from './views/gantt.js';
 import kanban from './views/kanban.js';
+import year from './views/year.js';
 
-const VIEWS = { dashboard, month, week, day, scheduler, timeline, gantt, kanban };
+const VIEWS = { dashboard, month, week, day, scheduler, timeline, gantt, kanban, year };
 
 // ---------------------------------------------------------------------------
 // Kabuk
@@ -73,6 +75,7 @@ function shiftCursor(dir) {
   const { view, cursor, settings } = store.get();
   let next = cursor;
   if (view === 'month') next = toISODate(addMonths(cursor, dir));
+  else if (view === 'year') next = toISODate(addMonths(cursor, 12 * dir));
   else if (view === 'week') next = addDaysISO(cursor, 7 * dir);
   else if (view === 'day') next = addDaysISO(cursor, dir);
   else if (view === 'scheduler') next = addDaysISO(cursor, (settings.schedulerDays || 7) * dir);
@@ -272,7 +275,7 @@ document.addEventListener('keydown', (e) => {
   } else if (e.key === 't' || e.key === 'T') ctx.today();
   else if (e.key === 'ArrowLeft') shiftCursor(-1);
   else if (e.key === 'ArrowRight') shiftCursor(1);
-  else if (/^[1-8]$/.test(e.key)) ctx.go(ROUTES[Number(e.key) - 1]);
+  else if (/^[1-9]$/.test(e.key)) ctx.go(ROUTES[Number(e.key) - 1]);
   else if (e.key === '[') toggleSidebarCollapsed();
   else if (e.key === '/') {
     e.preventDefault(); // tarayıcının hızlı bul özelliğini açmasın

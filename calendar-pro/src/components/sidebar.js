@@ -9,6 +9,7 @@ import { html } from '../core/dom.js';
 import { store } from '../core/state.js';
 import { addMonths, formatDate, startOfMonth, startOfWeek, toISODate, todayISO, rangeDays, weekdayNames } from '../core/dateUtils.js';
 import { toggleSidebarCollapsed } from '../core/actions.js';
+import { holidayInfoFor } from '../core/holidays.js';
 import { icon } from './icons.js';
 import { openSettings } from './settingsPanel.js';
 import { APP_VERSION } from '../core/version.js';
@@ -22,9 +23,10 @@ export const NAV_ITEMS = Object.freeze([
   { id: 'timeline', label: 'Timeline', icon: 'timeline' },
   { id: 'gantt', label: 'Gantt', icon: 'gantt' },
   { id: 'kanban', label: 'Kanban', icon: 'kanban' },
+  { id: 'year', label: 'Yıl', icon: 'year' }, // en sonda: mevcut 1–8 kısayolları değişmesin
 ]);
 
-const DATE_VIEWS = new Set(['month', 'week', 'day', 'scheduler']);
+const DATE_VIEWS = new Set(['month', 'week', 'day', 'scheduler', 'year']);
 
 /**
  * @param {HTMLElement} el
@@ -38,6 +40,7 @@ export function mountSidebar(el, ctx) {
     const first = startOfWeek(miniMonth, settings.weekStartsOn);
     const days = rangeDays(toISODate(first), 42);
     const today = todayISO();
+    const holiday = holidayInfoFor(settings.holidays, days); // tatil günleri işaretlenir
     const busy = new Set();
     events.forEach((e) => {
       if (!e.recurrence) busy.add(e.startDate);
@@ -55,8 +58,9 @@ export function mountSidebar(el, ctx) {
           ${weekdayNames(settings.weekStartsOn, 'narrow').map((d) => html`<span class="mini-dow">${d}</span>`)}
           ${days.map((d) => {
             const outside = Number(d.slice(5, 7)) !== miniMonth.getMonth() + 1;
-            const cls = ['mini-day', outside && 'is-outside', d === today && 'is-today', d === cursor && 'is-selected', busy.has(d) && 'has-events'].filter(Boolean).join(' ');
-            return html`<button type="button" class="${cls}" data-date="${d}" aria-label="${formatDate(d)}">${Number(d.slice(8))}</button>`;
+            const cls = ['mini-day', outside && 'is-outside', d === today && 'is-today', d === cursor && 'is-selected', busy.has(d) && 'has-events', holiday.has(d) && 'is-holiday'].filter(Boolean).join(' ');
+            const hol = holiday.get(d);
+            return html`<button type="button" class="${cls}" data-date="${d}" aria-label="${formatDate(d)}${hol ? `, tatil: ${hol.name}` : ''}" ${hol ? html`title="Tatil: ${hol.name}"` : ''}>${Number(d.slice(8))}</button>`;
           })}
         </div>
       </div>`;

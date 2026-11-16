@@ -160,6 +160,7 @@ kbd {
 .mini-day:hover { background: var(--surface-hover); }
 .mini-day.is-outside { color: var(--text-faint); }
 .mini-day.is-today { color: var(--accent-text); font-weight: 700; }
+.mini-day.is-holiday:not(.is-selected) { color: var(--danger); font-weight: 700; } /* tatil günü */
 .mini-day.is-selected { background: var(--accent); color: var(--on-accent); }
 .mini-day.has-events::after {
   content: ''; position: absolute; bottom: 3px; left: 50%; width: 4px; height: 4px;

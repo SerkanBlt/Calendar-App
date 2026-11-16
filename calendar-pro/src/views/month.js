@@ -5,7 +5,8 @@
  * - Etkinliğe tıkla → düzenle; × → sil
  * - Etkinliği başka güne sürükle → taşı
  * - "+N daha" → gün görünümü
- * - Çalışma dışı günler soluk gösterilir; Ayarlar'da veya başlıktaki düğmeyle gizlenebilir (sütunları kalkar)
+ * - Çalışma dışı günler (çalışma günü olmayan hafta günleri + tatil günleri) soluk gösterilir; tatil günlerinin adı hücrede yazar (tanımlama: Yıl görünümü).
+ *   Ayarlar'da veya başlıktaki düğmeyle gizlenince hafta günü sütunları kalkar (tatiller sütun kaldırmaz)
  */
 import { html } from '../core/dom.js';
 import { addDaysISO, diffDays, formatDate, rangeDays, startOfMonth, startOfWeek, toISODate, todayISO, weekdayNames } from '../core/dateUtils.js';
@@ -16,6 +17,7 @@ import { eventChip } from '../components/eventCard.js';
 import { enableDragDrop } from '../components/dragDrop.js';
 import { deleteOccurrence } from '../core/actions.js';
 import { offDaySet, visibleDays } from '../core/workDays.js';
+import { holidayInfoFor } from '../core/holidays.js';
 import { offDaysToggle } from '../components/offDaysToggle.js';
 
 const MAX_VISIBLE = 3;
@@ -31,11 +33,13 @@ export default {
     const gridStart = toISODate(startOfWeek(monthStart, settings.weekStartsOn));
     const allDays = rangeDays(gridStart, 42);
     const occurrences = expandEvents(events, allDays[0], allDays[41]);
-    // Gösterilecek hafta günleri (ilk haftaya bakarak) ve çalışma dışı günler
-    const shownWeekdays = new Set(visibleDays(allDays.slice(0, 7), settings).map((d) => new Date(`${d}T00:00`).getDay()));
+    // Gösterilecek hafta günleri (ilk haftaya bakarak): sütunlar haftanın gününe göredir, bu yüzden TATİLLER sütun gizlemeyi etkilemez (yalnızca
+    // çalışma günü olmayan hafta günleri). Çalışma dışı günler (hafta sonu + tatiller) hücrede soluk gösterilir; tatil adı hücrede yazar.
+    const shownWeekdays = new Set(visibleDays(allDays.slice(0, 7), { ...settings, holidays: [] }).map((d) => new Date(`${d}T00:00`).getDay()));
     const days = allDays.filter((d) => shownWeekdays.has(new Date(`${d}T00:00`).getDay()));
     const cols = shownWeekdays.size;
-    const off = offDaySet(allDays, settings.workDays);
+    const off = offDaySet(allDays, settings.workDays, settings.holidays);
+    const holiday = holidayInfoFor(settings.holidays, allDays);
     const hiddenCount = 7 - cols;
     const byId = new Map(occurrences.map((o) => [o.id, o]));
     const today = todayISO();
@@ -59,9 +63,11 @@ export default {
           ${days.map((d, i) => {
             const items = forDay(d);
             const outside = Number(d.slice(5, 7)) - 1 !== month;
+            const hol = holiday.get(d);
             return html`
-              <div class="month-cell ${outside ? 'is-outside' : ''} ${off.has(d) ? 'is-off' : ''} ${i % cols === cols - 1 ? 'is-row-end' : ''} ${d === today ? 'is-today' : ''} ${d === cursor ? 'is-cursor' : ''}" data-date="${d}" data-drop-date="${d}">
-                <button type="button" class="month-daynum" data-day="${d}" aria-label="${formatDate(d)} gün görünümü">${Number(d.slice(8))}</button>
+              <div class="month-cell ${outside ? 'is-outside' : ''} ${off.has(d) ? 'is-off' : ''} ${hol ? 'is-holiday' : ''} ${i % cols === cols - 1 ? 'is-row-end' : ''} ${d === today ? 'is-today' : ''} ${d === cursor ? 'is-cursor' : ''}" data-date="${d}" data-drop-date="${d}">
+                <button type="button" class="month-daynum" data-day="${d}" aria-label="${formatDate(d)} gün görünümü${hol ? `, tatil: ${hol.name}` : ''}">${Number(d.slice(8))}</button>
+                ${hol ? html`<span class="month-holiday" title="Tatil: ${hol.name}">${hol.name}</span>` : ''}
                 <div class="month-events">
                   ${items.slice(0, MAX_VISIBLE).map((o) => eventChip(o, { deletable: true }))}
                   ${items.length > MAX_VISIBLE ? html`<button type="button" class="month-more" data-day="${d}">+${items.length - MAX_VISIBLE} daha</button>` : ''}

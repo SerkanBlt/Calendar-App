@@ -18,7 +18,7 @@ export default {
     const { cursor, events, settings } = ctx.state;
     const week = rangeDays(toISODate(startOfWeek(cursor, settings.weekStartsOn)), 7);
     const days = visibleDays(week, settings);
-    const off = offDaySet(week, settings.workDays);
+    const off = offDaySet(week, settings.workDays, settings.holidays); // hafta sonu + tatil günleri
     const occurrences = expandEvents(events, days[0], days[days.length - 1]);
     const last = days[days.length - 1];
     const title = `${formatDate(days[0], { day: 'numeric', month: 'short' })} – ${formatDate(last, { day: 'numeric', month: 'short', year: 'numeric' })}`;

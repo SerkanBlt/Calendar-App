@@ -8,7 +8,7 @@
 import { store } from './state.js';
 import { isValidISODate } from './dateUtils.js';
 
-export const ROUTES = ['dashboard', 'month', 'week', 'day', 'scheduler', 'timeline', 'gantt', 'kanban'];
+export const ROUTES = ['dashboard', 'month', 'week', 'day', 'scheduler', 'timeline', 'gantt', 'kanban', 'year'];
 
 function parse(hash) {
   const cleaned = hash.replace(/^#\/?/, '');

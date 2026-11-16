@@ -28,6 +28,11 @@
   background-image: repeating-linear-gradient(135deg, var(--weekend) 0 6px, transparent 6px 12px);
 }
 .month-dow.is-off, .tg-dayhead.is-off .tg-dow, .tg-dayhead.is-off .tg-dnum { color: var(--text-faint); }
+/* Tatil günleri (Yıl görünümünde tanımlanır): çalışma dışı gibi taranır, ayrıca hafif kırmızı tonlu; adı hücrede yazar */
+.month-cell.is-holiday { background-color: color-mix(in srgb, var(--danger) 9%, transparent); }
+.month-cell.is-holiday .month-daynum { color: var(--danger); }
+.month-cell.is-holiday.is-today .month-daynum { color: var(--on-accent); }
+.month-holiday { display: block; max-width: 100%; margin-top: -2px; padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; font-weight: 600; line-height: 1.3; color: var(--danger); }
 .month-cell.is-outside .month-daynum { color: var(--text-faint); }
 .month-daynum {
   align-self: flex-start; border: 0; background: none; width: 28px; height: 28px; border-radius: 50%;
@@ -172,6 +177,7 @@
   .tg-dayhead { padding: 4px 4px; }
 }
 @media (max-width: 760px) {
+  .month-holiday { font-size: 9.5px; }
   .month-grid { grid-template-rows: auto repeat(6, minmax(72px, 1fr)); min-height: calc(36px + 6 * 72px); }
   .month-cell { padding: 3px; }
   .month-dow { padding: 8px 4px; text-align: center; font-size: 10.5px; }

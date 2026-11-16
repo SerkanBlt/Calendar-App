@@ -6,6 +6,7 @@
  * settings.showOffDays → Ay ve Hafta görünümlerinde çalışma dışı günler gösterilsin mi?
  */
 import { parseISODate } from './dateUtils.js';
+import { holidayDaySet } from './holidays.js';
 
 export const DEFAULT_WORK_DAYS = Object.freeze([1, 2, 3, 4, 5]);
 
@@ -18,19 +19,24 @@ export function normalizeWorkDays(value) {
 /** Hafta başlangıcına göre sıralı gün numaraları (ör. Pzt başlıyorsa [1,2,3,4,5,6,0]). */
 export const orderedWeekdays = (weekStartsOn = 1) => Array.from({ length: 7 }, (_, i) => (i + weekStartsOn) % 7);
 
-/** Çalışma dışı günlerin ISO tarih kümesi. */
-export function offDaySet(isoDays, workDays) {
+/**
+ * Çalışma dışı (off) günlerin ISO tarih kümesi: çalışma günü olmayan haftanın günleri + tatil günleri
+ * (`holidays`: settings.holidays; her yıl tekrarlı olanlar her yıl, diğerleri yalnızca kendi yılı için — bkz. holidays.js).
+ */
+export function offDaySet(isoDays, workDays, holidays = []) {
   const work = new Set(normalizeWorkDays(workDays));
-  return new Set(isoDays.filter((d) => !work.has(parseISODate(d).getDay())));
+  const off = new Set(isoDays.filter((d) => !work.has(parseISODate(d).getDay())));
+  for (const d of holidayDaySet(holidays, isoDays)) off.add(d);
+  return off;
 }
 
 /**
- * Görünümde gösterilecek günler: showOffDays kapalıysa çalışma dışı günler çıkarılır.
+ * Görünümde gösterilecek günler: showOffDays kapalıysa çalışma dışı günler (hafta sonu + tatiller) çıkarılır.
  * Hepsi çalışma dışıysa (ör. yalnızca hafta sonunu gösteren bir hafta yok) tüm günler döner.
  */
 export function visibleDays(isoDays, settings) {
   if (settings.showOffDays !== false) return isoDays;
-  const off = offDaySet(isoDays, settings.workDays);
+  const off = offDaySet(isoDays, settings.workDays, settings.holidays);
   const visible = isoDays.filter((d) => !off.has(d));
   return visible.length ? visible : isoDays;
 }

@@ -19,6 +19,7 @@ import { addDaysISO, diffDays, formatDate, isWeekend, rangeDays, todayISO } from
 import { compareByStart, isTimed } from '../core/eventModel.js';
 import { clamp } from '../core/utils.js';
 import { computeCriticalPath, wouldCreateCycle } from '../services/criticalPathService.js';
+import { holidayDaySet } from '../core/holidays.js';
 import { buildRows, combineCriticalPaths, NO_PROJECT, projectLabel, projectOptions, resolveProject } from '../services/ganttProjects.js';
 import { toolbar } from '../components/toolbar.js';
 import { icon } from '../components/icons.js';
@@ -109,6 +110,8 @@ export default {
     const start = addDaysISO(minStart, -3);
     const count = Math.max(35, diffDays(start, maxEnd) + 15);
     const days = rangeDays(start, count);
+    const holidayDays = holidayDaySet(settings.holidays, days); // tatil günleri hafta sonu gibi soluk gösterilir
+    const isOffDay = (d) => isWeekend(d) || holidayDays.has(d);
     const chartW = count * dayW;
     const chartH = rows.length * ROW_H;
     const xOf = (iso) => diffDays(start, iso) * dayW;
@@ -148,7 +151,7 @@ export default {
               <div class="gantt-corner"><span>Görev</span><span>%</span></div>
               <div class="gantt-header">
                 <div class="gantt-months">${monthSpans(days).map((m) => html`<div style="width:${m.count * dayW}px">${formatDate(`${m.key}-01`, { month: 'long', year: 'numeric' })}</div>`)}</div>
-                <div class="gantt-days">${days.map((d) => html`<div class="${d === today ? 'is-today' : ''} ${isWeekend(d) ? 'is-weekend' : ''}" style="width:${dayW}px">${dayW >= 36 ? html`<small>${formatDate(d, { weekday: 'narrow' })}</small>` : ''}${Number(d.slice(8))}</div>`)}</div>
+                <div class="gantt-days">${days.map((d) => html`<div class="${d === today ? 'is-today' : ''} ${isOffDay(d) ? 'is-weekend' : ''}" style="width:${dayW}px">${dayW >= 36 ? html`<small>${formatDate(d, { weekday: 'narrow' })}</small>` : ''}${Number(d.slice(8))}</div>`)}</div>
               </div>
               <div class="gantt-side">
                 ${rows.map((r) =>
@@ -168,7 +171,7 @@ export default {
               </div>
               <div class="gantt-chart" style="height:${chartH}px">
                 <div class="gantt-bg">
-                  ${days.map((d, i) => (isWeekend(d) ? html`<div class="gantt-weekend" style="left:${i * dayW}px;width:${dayW}px"></div>` : ''))}
+                   ${days.map((d, i) => (isOffDay(d) ? html`<div class="gantt-weekend ${holidayDays.has(d) ? 'is-holiday' : ''}" style="left:${i * dayW}px;width:${dayW}px"></div>` : ''))}
                   ${rows.map((r, i) => html`${r.kind === 'group' ? html`<div class="gantt-groupband" style="top:${i * ROW_H}px"></div>` : ''}<div class="gantt-rowline" style="top:${(i + 1) * ROW_H}px"></div>`)}
                   <div class="gantt-today" style="left:${xOf(today) + dayW / 2}px"></div>
                 </div>

@@ -13,8 +13,9 @@ import { toolbar } from '../components/toolbar.js';
 import { renderTimeGrid } from '../components/timeGrid.js';
 import { eventRow } from '../components/eventCard.js';
 import { icon } from '../components/icons.js';
+import { holidayOn } from '../core/holidays.js';
 
-const s = (o) => timeToMinutes(o.startTime);
+const s =(o) => timeToMinutes(o.startTime);
 const e = (o) => Math.max(timeToMinutes(o.endTime), s(o) + 15);
 
 /** `occ` için gün içindeki diğer etkinliklerle çakışmayan ilk boşluğu bulur. */
@@ -34,14 +35,15 @@ export default {
   title: 'Gün',
 
   render(el, ctx) {
-    const { cursor, events } = ctx.state;
+    const { cursor, events, settings } = ctx.state;
+    const holiday = holidayOn(settings.holidays, cursor); // tatil günü: başlıkta adı yazar, ızgara soluk gösterilir
     const occurrences = expandEvents(events, cursor, cursor).sort(compareByStart);
     const timed = occurrences.filter(isTimed);
     const conflicts = findConflicts(timed, s, e);
     const byId = new Map(occurrences.map((o) => [o.id, o]));
 
     el.innerHTML = html`
-      ${toolbar({ title: formatDate(cursor, { weekday: 'long', day: 'numeric', month: 'long' }), subtitle: `${relativeDayLabel(cursor)} · ${occurrences.length} etkinlik`, nav: true })}
+      ${toolbar({ title: formatDate(cursor, { weekday: 'long', day: 'numeric', month: 'long' }), subtitle: `${relativeDayLabel(cursor)} · ${occurrences.length} etkinlik${holiday ? ` · Tatil: ${holiday.name}` : ''}`, nav: true })}
       <div class="view-body day-layout">
         <div class="grid-host glass"></div>
         <aside class="day-side">
@@ -86,6 +88,7 @@ export default {
       hourHeight: 60,
       snap: 15,
       scrollKey: 'day',
+      offDays: holiday ? new Set([cursor]) : new Set(),
       onOpen: (occ) => ctx.openEditor(occ),
       onCreate: (range) => ctx.openEditor(range),
       onChange: (occ, changes) => ctx.moveOccurrence(occ, changes),
