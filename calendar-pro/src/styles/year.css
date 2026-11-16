@@ -9,7 +9,7 @@
   font-size: 14px; font-weight: 700; text-transform: capitalize; cursor: pointer; transition: background var(--dur), color var(--dur);
 }
 .year-month-title:hover { background: var(--surface-hover); color: var(--accent-text); }
-.year-weekdays, .year-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.year-weekdays, .year-days { display: grid; grid-template-columns: var(--wk-w, 22px) repeat(7, minmax(0, 1fr)); gap: 2px; }
 .year-dow { text-align: center; font-size: 10px; font-weight: 600; color: var(--text-faint); padding: 2px 0; }
 .year-day {
   position: relative; display: grid; place-items: center; aspect-ratio: 1; min-width: 0; padding: 0; border: 0; border-radius: 8px;
@@ -20,15 +20,15 @@
 .year-day:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .year-day.is-blank { visibility: hidden; pointer-events: none; }
 .year-day.is-off { color: var(--text-faint); background: var(--weekend); }
-.year-day.is-holiday { background: color-mix(in srgb, var(--danger) 22%, transparent); color: var(--danger); font-weight: 700; }
-.year-day.is-holiday.is-yearly { outline: 1px solid color-mix(in srgb, var(--danger) 55%, transparent); outline-offset: -1px; } /* her yıl tekrarlı tatil: ince halka */
+.year-day.is-holiday { background: color-mix(in srgb, var(--hol, var(--danger)) 24%, transparent); color: var(--hol, var(--danger)); font-weight: 700; }
+.year-day.is-holiday.is-yearly { outline: 1px solid color-mix(in srgb, var(--hol, var(--danger)) 60%, transparent); outline-offset: -1px; } /* her yıl tekrarlı tatil: ince halka */
 .year-day.is-today { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 700; }
 .year-day.has-events::after { content: ''; position: absolute; bottom: 3px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--accent); }
 
 .year-legend { display: flex; flex-wrap: wrap; gap: var(--space-4); padding: 0 var(--space-2); font-size: 12px; color: var(--text-muted); }
 .year-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .year-key { display: inline-block; width: 14px; height: 14px; border-radius: 5px; position: relative; }
-.year-key.is-holiday { background: color-mix(in srgb, var(--danger) 30%, transparent); }
+.year-key.is-holiday { background: color-mix(in srgb, var(--hol, var(--danger)) 35%, transparent); border: 1px solid color-mix(in srgb, var(--hol, var(--danger)) 60%, transparent); }
 .year-key.is-off { background: var(--weekend); border: 1px solid var(--border); }
 .year-key.has-events { background: transparent; border: 1px solid var(--border); }
 .year-key.has-events::after { content: ''; position: absolute; left: 50%; bottom: 2px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--accent); }
@@ -39,7 +39,7 @@
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--space-3); padding: 6px 6px 6px 12px;
   border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2);
 }
-.holiday-date { flex: none; min-width: 108px; font-size: 13px; font-weight: 600; color: var(--danger); font-variant-numeric: tabular-nums; }
+.holiday-date { flex: none; min-width: 108px; font-size: 13px; font-weight: 600; color: var(--hol, var(--danger)); font-variant-numeric: tabular-nums; }
 .holiday-name { flex: 1 1 160px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .holiday-badge { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--surface-hover); color: var(--text-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .holiday-badge .icon { width: 11px; height: 11px; }
@@ -61,3 +61,40 @@
   .holiday-date { min-width: 96px; }
   .holiday-actions { width: 100%; justify-content: flex-end; }
 }
+
+/* ISO hafta numaraları (her ay kartında satır başı) */
+.year-wk, .year-wk-head { color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.year-wk {
+  display: grid; place-items: center; aspect-ratio: auto; min-width: 0; padding: 0; border: 0; border-radius: 6px; background: transparent;
+  font-size: 10px; font-weight: 600; cursor: pointer; transition: background var(--dur), color var(--dur);
+}
+.year-wk:hover { background: var(--surface-hover); color: var(--accent-text); }
+.year-wk-head { font-weight: 700; }
+.year-key-wk { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 5px; font-size: 9px; color: var(--text-faint); border: 1px solid var(--border); }
+@media (max-width: 560px) { .year-month { --wk-w: 16px; } .year-wk { font-size: 9px; } }
+
+/* Tatil grupları: satırdaki grup etiketi, grup seçici (pencere) ve grup yönetim paneli */
+.holiday-group { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; white-space: nowrap;
+  background: color-mix(in srgb, var(--hol) 16%, transparent); color: var(--hol); }
+.holiday-group i, .group-chip i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--hol); flex: none; }
+.holiday-group-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.group-chip { position: relative; cursor: pointer; }
+.group-chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.group-chip span { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-2); font-size: 13px; transition: background var(--dur), border-color var(--dur); }
+.group-chip:hover span { border-color: var(--border-strong); }
+.group-chip input:checked + span { border-color: var(--hol); background: color-mix(in srgb, var(--hol) 18%, transparent); font-weight: 600; }
+.group-chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.group-list { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.group-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--space-3); padding: 6px 6px 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); }
+.group-color { flex: none; width: 30px; height: 30px; padding: 0; border: 2px solid var(--border-strong); border-radius: 50%; background: none; cursor: pointer; overflow: hidden; }
+.group-color::-webkit-color-swatch-wrapper { padding: 0; }
+.group-color::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.group-color::-moz-color-swatch { border: 0; border-radius: 50%; }
+.group-name { flex: 1 1 140px; min-width: 0; font-weight: 600; }
+.group-name-input { flex: 1 1 140px; min-width: 0; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-solid); }
+.group-name-input:focus { outline: none; border-color: var(--accent); }
+.group-badge, .group-count { flex: none; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--surface-hover); color: var(--text-muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.group-add { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.group-add input[type='text'] { flex: 1 1 160px; min-width: 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); }
+.group-add input[type='text']:focus { outline: none; border-color: var(--accent); }

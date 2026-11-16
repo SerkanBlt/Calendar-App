@@ -5,7 +5,10 @@ process.env.TZ = 'Europe/Istanbul';
 
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { addHolidays, holidayDaySet, holidayInfoFor, holidayOn, holidaysInYear, normalizeHolidays, removeHoliday, updateHoliday } from '../src/core/holidays.js';
+import {
+  DEFAULT_HOLIDAY_GROUPS, MAX_GROUPS, addHolidayGroup, addHolidays, holidayDaySet, holidayGroupColor, holidayGroupOf, holidayInfoFor, holidayOn, holidaysInYear,
+  normalizeHolidayGroups, normalizeHolidays, reassignHolidayGroup, removeHoliday, removeHolidayGroup, updateHoliday, updateHolidayGroup,
+} from '../src/core/holidays.js';
 import { offDaySet, visibleDays } from '../src/core/workDays.js';
 
 const yearly = (date, name = '') => ({ date, name, yearly: true });
@@ -166,5 +169,93 @@ describe('addHolidays / updateHoliday / removeHoliday', () => {
     const toYearly = updateHoliday(moved, moved[0].id, { date: '2026-03-21', name: 'Nevruz', yearly: true }).list;
     assert.deepEqual([toYearly.length, toYearly[0].yearly], [1, true]);
     assert.deepEqual(removeHoliday(toYearly, toYearly[0].id), []);
+  });
+});
+
+describe('tatil grupları', () => {
+  test('hazır gruplar: Resmî (mavi), Dini (yeşil), Özel (mor); boş/bozuk listeden de gelir', () => {
+    for (const raw of [undefined, null, [], 'x', [null, 5]]) {
+      const g = normalizeHolidayGroups(raw);
+      assert.deepEqual(g.map((x) => [x.id, x.name, x.color, x.preset]), [['official', 'Resmî', '#4f8cff', true], ['religious', 'Dini', '#3ecf8e', true], ['custom', 'Özel', '#7c6cff', true]]);
+    }
+    assert.equal(DEFAULT_HOLIDAY_GROUPS.length, 3);
+  });
+
+  test('hazır grupların rengi değiştirilebilir, adı sabit kalır; geçersiz renk yok sayılır', () => {
+    const saved = [{ id: 'official', name: 'HACK', color: '#112233' }, { id: 'religious', color: 'kırmızı' }];
+    const g = normalizeHolidayGroups(saved);
+    assert.equal(g[0].name, 'Resmî');
+    assert.equal(g[0].color, '#112233');
+    assert.equal(g[1].color, '#3ecf8e'); // geçersiz → varsayılan
+    assert.equal(g.length, 3);
+  });
+
+  test('kullanıcı grubu ekleme: kimlik üretilir, ad kırpılır, renk geçerli değilse yedek renk', () => {
+    const { list, id } = addHolidayGroup(undefined, { name: '  Okul tatilleri  ', color: '#F59E0B' });
+    assert.equal(id, 'g-okul-tatilleri');
+    assert.deepEqual(list[3], { id, name: 'Okul tatilleri', color: '#f59e0b', preset: false });
+    assert.match(addHolidayGroup(undefined, { name: 'x', color: 'zzz' }).list[3].color, /^#[0-9a-f]{6}$/);
+    assert.equal(addHolidayGroup(undefined, { name: '   ', color: '#fff' }).id, ''); // boş ad eklenmez
+    assert.equal(addHolidayGroup(undefined, { name: '   ', color: '#fff' }).list.length, 3);
+  });
+
+  test('aynı adlı gruplar farklı kimlik alır; grup sayısı sınırlıdır', () => {
+    let list = normalizeHolidayGroups();
+    const a = addHolidayGroup(list, { name: 'Okul', color: '#111111' });
+    const b = addHolidayGroup(a.list, { name: 'Okul', color: '#222222' });
+    assert.notEqual(a.id, b.id);
+    list = b.list;
+    for (let i = 0; list.length < MAX_GROUPS; i++) list = addHolidayGroup(list, { name: `G${i}`, color: '#333333' }).list;
+    assert.equal(list.length, MAX_GROUPS);
+    assert.equal(addHolidayGroup(list, { name: 'fazla', color: '#444444' }).id, '');
+  });
+
+  test('güncelleme: renk her grupta; ad yalnızca kullanıcı grubunda', () => {
+    let { list, id } = addHolidayGroup(undefined, { name: 'Okul', color: '#111111' });
+    list = updateHolidayGroup(list, id, { name: 'Okul tatili', color: '#abcdef' });
+    assert.deepEqual([list[3].name, list[3].color], ['Okul tatili', '#abcdef']);
+    list = updateHolidayGroup(list, 'official', { name: 'Başka', color: '#000000' });
+    assert.deepEqual([list[0].name, list[0].color], ['Resmî', '#000000']);
+    assert.equal(updateHolidayGroup(list, id, { name: '   ' })[3].name, 'Okul tatili'); // boş ad yok sayılır
+    assert.equal(updateHolidayGroup(list, id, { color: 'yanlış' })[3].color, '#abcdef');
+  });
+
+  test('silme: hazır gruplar silinemez, kullanıcı grubu silinir; tatiller Özel\'e taşınır', () => {
+    const { list, id } = addHolidayGroup(undefined, { name: 'Okul', color: '#111111' });
+    assert.equal(removeHolidayGroup(list, 'official').length, 4);
+    assert.equal(removeHolidayGroup(list, 'custom').length, 4);
+    assert.equal(removeHolidayGroup(list, id).length, 3);
+    const hs = [{ date: '2026-06-15', name: 'a', yearly: false, group: id }, { date: '2026-06-16', name: 'b', yearly: false, group: 'official' }];
+    assert.deepEqual(reassignHolidayGroup(hs, id).map((h) => h.group), ['custom', 'official']);
+  });
+
+  test('bilinmeyen/boş grup Özel sayılır (silinmiş grup, eski veri)', () => {
+    assert.equal(holidayGroupOf(undefined, '').id, 'custom');
+    assert.equal(holidayGroupOf(undefined, 'g-silinmis').id, 'custom');
+    assert.equal(holidayGroupOf(undefined, 'religious').name, 'Dini');
+    assert.equal(holidayGroupColor(undefined, 'official'), '#4f8cff');
+    assert.equal(normalizeHolidays([{ date: '2026-05-01', name: 'x' }])[0].group, ''); // eski kayıtta grup yok → Özel gibi davranır
+  });
+
+  test('tatil kaydı grup taşır; günün bilgisi grup adı ve rengini içerir', () => {
+    const groups = updateHolidayGroup(undefined, 'religious', { color: '#00aa55' });
+    const list = addHolidays([], { date: '2026-03-20', endDate: '2026-03-22', name: 'Ramazan Bayramı', group: 'religious' }).list;
+    assert.deepEqual(list.map((h) => h.group), ['religious', 'religious', 'religious']);
+    const info = holidayOn(list, '2026-03-21', groups);
+    assert.deepEqual([info.group, info.groupName, info.color], ['religious', 'Dini', '#00aa55']);
+    assert.equal(holidayInfoFor(list, ['2026-03-20', '2026-03-23'], groups).get('2026-03-20').color, '#00aa55');
+    assert.equal(holidayOn(list, '2026-03-21').color, '#3ecf8e'); // grup listesi verilmezse hazır renkler
+    assert.equal(holidayOn(addHolidays([], { date: '2026-05-01', name: 'x' }).list, '2026-05-01').groupName, 'Özel'); // grupsuz → Özel
+  });
+
+  test('düzenleme grubu değiştirir; aynı güne ekleme grubu günceller; her yıl tekrarlı kayıt grubu taşır', () => {
+    let list = addHolidays([], { date: '2026-10-29', name: 'Cumhuriyet Bayramı', yearly: true, group: 'official' }).list;
+    assert.equal(holidayOn(list, '2031-10-29').groupName, 'Resmî');
+    list = updateHoliday(list, list[0].id, { date: '2026-10-29', name: 'Cumhuriyet Bayramı', yearly: true, group: 'religious' }).list;
+    assert.equal(holidayOn(list, '2031-10-29').groupName, 'Dini');
+    list = addHolidays(list, { date: '2026-10-29', name: '', group: 'custom' }).list; // zaten tatil olan güne ekleme: grup güncellenir
+    assert.equal(list.length, 1);
+    assert.equal(holidayOn(list, '2026-10-29').groupName, 'Özel');
+    assert.equal(holidayOn(list, '2026-10-29').name, 'Cumhuriyet Bayramı');
   });
 });

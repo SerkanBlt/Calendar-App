@@ -29,10 +29,10 @@
 }
 .month-dow.is-off, .tg-dayhead.is-off .tg-dow, .tg-dayhead.is-off .tg-dnum { color: var(--text-faint); }
 /* Tatil günleri (Yıl görünümünde tanımlanır): çalışma dışı gibi taranır, ayrıca hafif kırmızı tonlu; adı hücrede yazar */
-.month-cell.is-holiday { background-color: color-mix(in srgb, var(--danger) 9%, transparent); }
-.month-cell.is-holiday .month-daynum { color: var(--danger); }
+.month-cell.is-holiday { background-color: color-mix(in srgb, var(--hol, var(--danger)) 11%, transparent); }
+.month-cell.is-holiday .month-daynum { color: var(--hol, var(--danger)); }
 .month-cell.is-holiday.is-today .month-daynum { color: var(--on-accent); }
-.month-holiday { display: block; max-width: 100%; margin-top: -2px; padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; font-weight: 600; line-height: 1.3; color: var(--danger); }
+.month-holiday { display: block; max-width: 100%; margin-top: -2px; padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; font-weight: 600; line-height: 1.3; color: var(--hol, var(--danger)); }
 .month-cell.is-outside .month-daynum { color: var(--text-faint); }
 .month-daynum {
   align-self: flex-start; border: 0; background: none; width: 28px; height: 28px; border-radius: 50%;
@@ -133,7 +133,7 @@
 
 /* ---------- Timeline ---------- */
 /* Sütun en çok 920 px ve ortalı; ama kaydırıcı (.view-body) tam genişliktedir: ortalama dolguyla yapılır ki kaydırma çubuğu sayfa kenarında kalsın */
-.timeline { display: flex; flex-direction: column; gap: var(--space-4); padding-inline: max(var(--space-2), calc((100% - 920px) / 2)); }
+.timeline { display: flex; flex-direction: column; gap: var(--space-4); padding-inline: max(0px, calc((100% - 920px) / 2)); }
 .timeline-stream { display: flex; flex-direction: column; gap: var(--space-5); padding-bottom: var(--space-6); }
 .tl-month-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: var(--space-3); }
 /* Çizgi ve noktalar aynı ölçülerden türetilir (--tl-*), böylece her ekran boyutunda noktanın merkezi çizginin tam üstündedir */

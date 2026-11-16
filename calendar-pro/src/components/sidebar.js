@@ -40,7 +40,7 @@ export function mountSidebar(el, ctx) {
     const first = startOfWeek(miniMonth, settings.weekStartsOn);
     const days = rangeDays(toISODate(first), 42);
     const today = todayISO();
-    const holiday = holidayInfoFor(settings.holidays, days); // tatil günleri işaretlenir
+    const holiday = holidayInfoFor(settings.holidays, days, settings.holidayGroups); // tatil günleri grubunun renginde işaretlenir
     const busy = new Set();
     events.forEach((e) => {
       if (!e.recurrence) busy.add(e.startDate);
@@ -60,7 +60,7 @@ export function mountSidebar(el, ctx) {
             const outside = Number(d.slice(5, 7)) !== miniMonth.getMonth() + 1;
             const cls = ['mini-day', outside && 'is-outside', d === today && 'is-today', d === cursor && 'is-selected', busy.has(d) && 'has-events', holiday.has(d) && 'is-holiday'].filter(Boolean).join(' ');
             const hol = holiday.get(d);
-            return html`<button type="button" class="${cls}" data-date="${d}" aria-label="${formatDate(d)}${hol ? `, tatil: ${hol.name}` : ''}" ${hol ? html`title="Tatil: ${hol.name}"` : ''}>${Number(d.slice(8))}</button>`;
+            return html`<button type="button" class="${cls}" data-date="${d}" aria-label="${formatDate(d)}${hol ? `, tatil (${hol.groupName}): ${hol.name}` : ''}" ${hol ? html`title="Tatil (${hol.groupName}): ${hol.name}" style="--hol:${hol.color}"` : ''}>${Number(d.slice(8))}</button>`;
           })}
         </div>
       </div>`;

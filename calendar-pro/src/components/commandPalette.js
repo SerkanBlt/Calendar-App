@@ -228,6 +228,7 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent, gr
     });
     backdrop.querySelector('[data-close]').addEventListener('click', close);
     document.addEventListener('keydown', onDocumentKeyDown, true);
+    document.body.classList.add('palette-open'); // kenar çubuğundaki "Hızlı komut" düğmesi yalnızca palet açıkken vurgulanır
     document.body.appendChild(backdrop);
     requestAnimationFrame(() => backdrop?.classList.add('is-visible'));
     update();
@@ -239,6 +240,7 @@ export function createCommandPalette({ getCommands, getEvents, onSelectEvent, gr
     const el = backdrop;
     backdrop = null;
     document.removeEventListener('keydown', onDocumentKeyDown, true);
+    document.body.classList.remove('palette-open');
     el.classList.remove('is-visible');
     setTimeout(() => el.remove(), 150);
     if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });

@@ -15,6 +15,7 @@ import './styles/scheduler.css';
 import './styles/gantt.css';
 import './styles/kanban.css';
 import './styles/year.css';
+import './styles/popups.css';
 
 import { store } from './core/state.js';
 import { router, ROUTES } from './core/router.js';
@@ -33,6 +34,9 @@ import { isTypingTarget } from './core/utils.js';
 import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js';
 import { exportCalendar, exportData, importCalendar, importData, moveOccurrence, resetData, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed, toggleShowOffDays } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
+import { autoCloseService } from './services/autoCloseService.js';
+import { installThemedSelects } from './components/themedSelect.js';
+import { installEventContextMenu } from './components/contextMenu.js';
 import { registerServiceWorker } from './services/updateService.js';
 import { mountSidebar, NAV_ITEMS } from './components/sidebar.js';
 import { createCommandPalette } from './components/commandPalette.js';
@@ -66,6 +70,17 @@ const sidebarEl = document.getElementById('sidebar');
 const viewEl = document.getElementById('view');
 
 const setMobileSidebar = (open) => appEl.classList.toggle('sidebar-open', open);
+
+/**
+ * Menü solda / sağda (yalnızca masaüstü kabuğunda etkilidir; mobilde kenar çubuğu her zaman sağdan açılan çekmecedir). Görsel yerleşimi CSS (`.sidebar-left`) belirler;
+ * DOM sırası da buna uyar ki Tab sırası görsel sırayla aynı olsun (solda: önce menü, sağda: önce içerik).
+ */
+function placeSidebar() {
+  const left = Boolean(store.get().settings.sidebarLeft);
+  appEl.classList.toggle('sidebar-left', left);
+  if (left) appEl.querySelector('.main').before(sidebarEl);
+  else appEl.querySelector('[data-scrim]').after(sidebarEl);
+}
 appEl.querySelector('[data-scrim]').addEventListener('click', () => setMobileSidebar(false));
 
 // ---------------------------------------------------------------------------
@@ -98,6 +113,9 @@ const ctx = {
 
 // Sağ alttaki yuvarlak "Yeni etkinlik" düğmesi (mobil/tablet; masaüstünde başlıktaki "Yeni" kullanılır).
 // Kısa dokunuş etkinlik açar; basılı tutunca dikey eksende taşınır, konum ayarlarda saklanır (bkz. components/fab.js).
+installThemedSelects(); // açılır kutu listeleri temaya uygun (ince işaretçide)
+installEventContextMenu(); // etkinliğe sağ tık: durum değiştir / aç / sil
+
 setupFab(appEl.querySelector('[data-fab]'), {
   onActivate: () => ctx.openEditor({ startDate: store.get().cursor }),
   getBottom: () => store.get().settings.fabBottom,
@@ -154,6 +172,7 @@ store.subscribe((s, prev) => {
   if (s.settings.theme !== prev.settings.theme) applyTheme(s.settings.theme);
   if (s.settings.fabBottom !== prev.settings.fabBottom) placeFab();
   if (s.settings.sidebarCollapsed !== prev.settings.sidebarCollapsed) appEl.classList.toggle('sidebar-collapsed', Boolean(s.settings.sidebarCollapsed));
+  if (s.settings.sidebarLeft !== prev.settings.sidebarLeft) placeSidebar();
   if (
     s.settings.background !== prev.settings.background ||
     s.settings.backgroundFit !== prev.settings.backgroundFit ||
@@ -329,6 +348,7 @@ async function boot() {
   }
 
   appEl.classList.toggle('sidebar-collapsed', Boolean(store.get().settings.sidebarCollapsed));
+  placeSidebar();
   mountSidebar(sidebarEl, {
     go: ctx.go,
     openEditor: ctx.openEditor,
@@ -339,6 +359,7 @@ async function boot() {
   router.start();
   store.set({ ready: true });
   notificationService.start();
+  autoCloseService.start(); // zamanı geçen "otomatik kapat" etkinliklerini tamamlandı yapar
   startServiceWorker();
 }
 

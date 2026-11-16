@@ -5,11 +5,12 @@
  *  - O tarih zaten bir tatilse düzenleme modu (ad, tarih, "Her yıl tekrarla", Sil); değilse yeni tatil (isteğe bağlı bitiş tarihiyle birkaç günlük).
  *  - "Her yıl aynı tarihte tekrarla" AÇIKSA tatil her yıl aynı ay-günde çalışma dışı (off) görünür; KAPALIYSA yalnızca o tarihin yılı için geçerlidir
  *    (değişken tatiller: ör. dini bayramlar). Kurallar ve birleştirme: core/holidays.js.
+ *  - Grup: Resmî / Dini / Özel (ya da kullanıcının eklediği gruplar); tatil günü grubunun renginde görünür. Yeni tatil Özel grubuyla başlar.
  *  - Pencerede o günün etkinlikleri ve "Gün görünümü" kısayolu da vardır (Yıl görünümünde bir güne dokunmak yalnızca tatil penceresini açtığı için).
  */
 import { html } from '../core/dom.js';
 import { formatDate, isValidISODate } from '../core/dateUtils.js';
-import { addHolidays, holidayOn, normalizeHolidays, removeHoliday, updateHoliday } from '../core/holidays.js';
+import { DEFAULT_GROUP_ID, addHolidays, holidayGroupOf, holidayOn, normalizeHolidayGroups, normalizeHolidays, removeHoliday, updateHoliday } from '../core/holidays.js';
 import { expandEvents } from '../services/recurrenceService.js';
 import { compareByStart } from '../core/eventModel.js';
 import { openModal } from './modal.js';
@@ -21,8 +22,10 @@ const longDate = (iso) => formatDate(iso, { weekday: 'long', day: 'numeric', mon
 export function openHolidayDialog({ date, ctx }) {
   const { settings, events } = ctx.state;
   const holidays = normalizeHolidays(settings.holidays);
-  const info = holidayOn(holidays, date);
+  const groups = normalizeHolidayGroups(settings.holidayGroups);
+  const info = holidayOn(holidays, date, groups);
   const entry = info?.entries[0] ?? null; // düzenlenen kayıt (bir tarih için en çok bir kayıt tutulur)
+  const currentGroup = entry ? holidayGroupOf(groups, entry.group).id : DEFAULT_GROUP_ID;
   const isEdit = Boolean(entry);
   const dayEvents = expandEvents(events, date, date).sort(compareByStart);
 
@@ -35,6 +38,12 @@ export function openHolidayDialog({ date, ctx }) {
     <div class="field-grid">
       <label class="field"><span>${isEdit ? 'Tarih' : 'Başlangıç'}</span><input type="date" name="date" value="${date}" required /></label>
       ${isEdit ? '' : html`<label class="field"><span>Bitiş <span class="muted">(isteğe bağlı)</span></span><input type="date" name="endDate" value="${date}" min="${date}" /></label>`}
+    </div>
+    <div class="field" role="radiogroup" aria-label="Tatil grubu">
+      <span>Grup</span>
+      <div class="holiday-group-pick">
+        ${groups.map((g) => html`<label class="group-chip" style="--hol:${g.color}"><input type="radio" name="group" value="${g.id}" ${g.id === currentGroup ? 'checked' : ''} /><span><i></i>${g.name}</span></label>`)}
+      </div>
     </div>
     <label class="switch"><input type="checkbox" name="yearly" ${entry?.yearly ? 'checked' : ''} /><span></span>Her yıl aynı tarihte tekrarla</label>
     <p class="holiday-hint" data-hint aria-live="polite"></p>
@@ -77,7 +86,7 @@ export function openHolidayDialog({ date, ctx }) {
       f.date.focus();
       return;
     }
-    const patch = { date: f.date.value, name: f.name.value, yearly: f.yearly.checked };
+    const patch = { date: f.date.value, name: f.name.value, yearly: f.yearly.checked, group: f.group.value || DEFAULT_GROUP_ID };
     const result = isEdit ? updateHoliday(holidays, entry.id, patch) : addHolidays(holidays, { ...patch, endDate: f.endDate?.value });
     ctx.setSetting('holidays', result.list);
     const added = result.added ?? 0;

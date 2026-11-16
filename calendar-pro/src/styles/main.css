@@ -85,12 +85,14 @@ kbd {
 
 /* ---------- Kabuk ---------- */
 .app {
+  /* Sayfa kenar boşluğu HER KENARDA aynıdır (üst, alt, sol, sağ; başlık, paneller ve kenar çubuğu pencere kenarına tam bu kadar uzaktır). İçerik ile kenar çubuğu arasındaki boşluk da aynı. */
+  --page-pad: var(--space-3);
   display: grid;
   grid-template-columns: 1fr auto; /* içerik solda, kenar çubuğu SAĞDA; kenar çubuğu genişliği .sidebar üzerinde (daraltma animasyonu için) */
   height: 100vh;
   height: 100dvh;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: var(--page-pad);
+  padding: var(--page-pad);
 }
 
 .main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
@@ -99,7 +101,7 @@ kbd {
 /* Kaydırma .view-body'dedir; başlık (.toolbar) içeriğin ÜSTÜNDE ayrı ve hareketsiz durur: kaydırılan içerik başlığın arkasından/altından akmaz,
    başlığın hemen altındaki kenardan kesilir. (Önceden .view kaydırılır, başlık üzerinde yapışkan durur ve içerik şeffaf başlığın arkasından görünürdü.) */
 .view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-.view-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0 var(--space-2) var(--space-2); }
+.view-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0; } /* yan/alt boşluk .app'in --page-pad'idir: içerik başlıkla aynı genişlikte ve pencere kenarına eşit uzaklıkta */
 
 /* ---------- Sidebar ---------- */
 .sidebar {
@@ -140,9 +142,9 @@ kbd {
   padding: 5px 10px; border-radius: var(--radius-md); border: 0; background: transparent;
   font-size: 14px; text-align: left; color: var(--text-muted); transition: background var(--dur), color var(--dur);
 }
-/* Yeni etkinlik: diğer düğmelerle aynı boyutta, vurgu renginde */
-.nav-item--primary { color: var(--accent-text); font-weight: 600; background: var(--accent-soft); }
-.nav-item--primary:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); color: var(--accent-text); }
+/* Hızlı komut: normalde diğer menü öğeleri gibidir (üzerine gelince vurgulanır); YALNIZCA palet açıkken seçili (vurgu renkli) görünür */
+.nav-item--primary { font-weight: 600; }
+.palette-open .nav-item--primary { color: var(--accent-text); background: var(--accent-soft); }
 .nav-item span { flex: 1; }
 .nav-item kbd { opacity: 0; transition: opacity var(--dur); }
 .nav-item:hover { background: var(--surface-hover); color: var(--text); }
@@ -160,7 +162,7 @@ kbd {
 .mini-day:hover { background: var(--surface-hover); }
 .mini-day.is-outside { color: var(--text-faint); }
 .mini-day.is-today { color: var(--accent-text); font-weight: 700; }
-.mini-day.is-holiday:not(.is-selected) { color: var(--danger); font-weight: 700; } /* tatil günü */
+.mini-day.is-holiday:not(.is-selected) { color: var(--hol, var(--danger)); font-weight: 700; } /* tatil günü */
 .mini-day.is-selected { background: var(--accent); color: var(--on-accent); }
 .mini-day.has-events::after {
   content: ''; position: absolute; bottom: 3px; left: 50%; width: 4px; height: 4px;
@@ -170,12 +172,12 @@ kbd {
 .sidebar-scrim { display: none; }
 
 /* ---------- Toolbar ---------- */
-/* Başlık her ekranda dört köşesi yuvarlak, çerçeveli bir panel; içerik paneliyle (view-body: 8 px yan boşluk) aynı genişliktedir. Her arka planda (açık/koyu tema,
+/* Başlık her ekranda dört köşesi yuvarlak, çerçeveli bir panel; içerik paneliyle aynı genişliktedir. Her arka planda (açık/koyu tema,
    fotoğraf) okunur kalır. Eskiden masaüstünde kaydırılan içeriği örten, yarı saydam, kenarsız bir bant vardı; kaydırma başlığın altına taşınınca (1.24.0)
    bant gereksizleşti ve panelden taşan, yalnız alt köşeleri yuvarlak bir koyu dikdörtgen olarak kalmıştı. */
 .toolbar {
   display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
-  margin: 0 var(--space-2) var(--space-2);
+  margin: 0 0 var(--space-2);
   padding: var(--space-3);
   flex: none; /* kaydırılmaz; içerik kendi kaydırıcısında akar */
   border: 1px solid var(--border);
@@ -801,6 +803,11 @@ select:not([multiple]):not([size]):disabled { opacity: 0.6; }
 @media (min-width: 901px) and (min-height: 501px) {
   :root:has(.app.sidebar-collapsed) { --sidebar-w: 64px; }
   .toast-stack { right: calc(var(--sidebar-w) + var(--space-3) * 2 + var(--space-4)); }
+  /* Menü solda: kenar çubuğu içeriğin soluna taşınır (DOM sırası da main.js'te değişir); bildirimler sağ alt köşede kenar çubuğunun payı olmadan durur */
+  .app.sidebar-left { grid-template-columns: auto 1fr; }
+  .app.sidebar-left .sidebar { grid-column: 1; }
+  .app.sidebar-left .main { grid-column: 2; }
+  :root:has(.app.sidebar-left) .toast-stack { right: var(--space-5); }
 }
 
 @media (min-width: 901px) {
@@ -818,9 +825,9 @@ select:not([multiple]):not([size]):disabled { opacity: 0.6; }
 /* Mobil kabuk (kenar çubuğu çekmece, hamburger, yüzen düğme, başlık paneli): dar ekran (≤900px genişlik) VEYA kısa ekran (≤500px yükseklik = telefon yatay).
    Yatayda genişlik 900 px'i aşsa bile ekran kısadır; sabit kenar çubuğu ve uzun başlık içeriğe yer bırakmaz. */
 @media (max-width: 900px), (max-height: 500px) {
-  .app { grid-template-columns: 1fr; padding: var(--space-2); gap: 0; }
+  .app { grid-template-columns: 1fr; gap: 0; } /* padding: taban kural (--page-pad: her kenarda eşit) */
   .sidebar {
-    position: fixed; inset: 8px 8px 8px auto; width: min(300px, calc(100vw - 32px)); z-index: 60;
+    position: fixed; inset: var(--page-pad) var(--page-pad) var(--page-pad) auto; width: min(300px, calc(100vw - 32px)); z-index: 60;
     transform: translateX(calc(100% + 16px)); transition: transform 240ms var(--ease); /* sağ kenardan kayarak açılır */
     background: var(--surface-solid);
   }
@@ -828,6 +835,7 @@ select:not([multiple]):not([size]):disabled { opacity: 0.6; }
   .sidebar-scrim { position: fixed; inset: 0; z-index: 55; background: var(--scrim); }
   .sidebar-open .sidebar-scrim { display: block; }
   .only-mobile { display: inline-grid !important; }
+  .settings-row.desktop-only { display: none; } /* Menü solda: yalnızca masaüstü kabuğunda anlamlı */
   /* Mobil: başlık paneli (taban kural) aynen geçerli; hamburger sağ uçtadır (başlıktan sonra gelir). */
   /* Hamburger ve sayfa adı büyük; panel yüksekliği değişmesin diye satır yüksekliği sabit (27px) ve uzun ad üç noktayla kısalır.
      Başlık bloğu (27px ad + altyazı) 44px'lik hamburgerden yüksek kaldığı için satır yüksekliğini o belirler. */
@@ -843,9 +851,8 @@ select:not([multiple]):not([size]):disabled { opacity: 0.6; }
   .toolbar-actions .gantt-push { margin-left: auto; } /* Gantt: Kritik yol ve sağındaki düğme sağa dayalı (S-M-L solda kalır) */
   .toolbar [data-action='new'] { display: none; }
   .fab { display: grid; }
-  /* Sayfa altında boşluk yok: paneller alt kenara (8 px) kadar uzar. FAB panelin üstünde yüzer (yeri değiştirilebilir). Kaydırmalı sayfalarda son
+  /* Sayfa altında ekstra boşluk yok: paneller alt kenara --page-pad kadar yaklaşır. FAB panelin üstünde yüzer (yeri değiştirilebilir). Kaydırmalı sayfalarda son
      öğeler FAB'ın altında kalmasın diye boşluk, son panelin İÇİNE verilir. */
-  .view-body { padding-bottom: var(--space-2); }
   .dash-grid > .panel:last-child, .day-side > .panel:last-child, .kanban--rows .kanban-col:last-child { padding-bottom: 72px; }
   .kanban:not(.kanban--rows) .kanban-list { padding-bottom: 64px; }
   .timeline-stream { padding-bottom: 72px; }
@@ -996,3 +1003,4 @@ select:not([multiple]):not([size]):disabled { opacity: 0.6; }
 .md a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; }
 .md hr { border: 0; border-top: 1px solid var(--border-strong); margin: 0.8em 0; }
 .md del { opacity: 0.7; }
+.switch.is-disabled { opacity: 0.5; cursor: not-allowed; }

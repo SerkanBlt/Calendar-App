@@ -12,7 +12,7 @@ import { notificationService } from '../services/notificationService.js';
 import { resetAllData } from '../services/resetService.js';
 import { userBackgroundRepo } from './userBackgroundRepo.js';
 import { COLOR_BG, USER_PREFIX } from './backgrounds.js';
-import { normalizeHexColor } from './eventModel.js';
+import { normalizeHexColor, STATUS_LABELS, statusPatch } from './eventModel.js';
 
 /** Onay alıp siler; "Geri al" ile etkinlik geri yüklenir (ekler hariç). */
 export async function deleteEventWithUndo(id, { skipConfirm = false } = {}) {
@@ -43,14 +43,41 @@ export async function deleteEventWithUndo(id, { skipConfirm = false } = {}) {
  */
 export function chooseRecurrenceScope(intent) {
   const isDelete = intent === 'delete';
+  const isStatus = intent === 'status';
   return choiceDialog({
-    title: isDelete ? 'Tekrarlayan etkinliği sil' : 'Tekrarlayan etkinliği değiştir',
-    message: isDelete ? 'Yalnızca bu etkinlik mi, yoksa serinin tamamı mı silinsin?' : 'Değişiklik yalnızca bu etkinliğe mi, yoksa serinin tamamına mı uygulansın?',
+    title: isDelete ? 'Tekrarlayan etkinliği sil' : isStatus ? 'Tekrarlayan etkinliğin durumunu değiştir' : 'Tekrarlayan etkinliği değiştir',
+    message: isDelete
+      ? 'Yalnızca bu etkinlik mi, yoksa serinin tamamı mı silinsin?'
+      : isStatus
+        ? 'Durum yalnızca bu etkinlik için mi, yoksa serinin tamamı için mi değişsin?'
+        : 'Değişiklik yalnızca bu etkinliğe mi, yoksa serinin tamamına mı uygulansın?',
     choices: [
       { value: 'single', label: 'Yalnızca bu etkinlik', variant: isDelete ? 'btn-danger' : 'btn-primary' },
       { value: 'series', label: 'Tüm seri', variant: 'btn-ghost' },
     ],
   });
+}
+
+/**
+ * Etkinliği açmadan durumunu değiştirir (sağ tık menüsü). `target` bir etkinlik ya da tekrarlayan serinin örneğidir (isRecurring);
+ * örnekte "Yalnızca bu / Tüm seri" sorulur ("Yalnızca bu" örneği seriden ayırır). `series: true` → target seri kaydıdır (Kanban/Gantt): seri düzeyinde değişir.
+ */
+export async function changeEventStatus(target, status, { series = false } = {}) {
+  const master = eventRepo.getById(target.masterId || target.id);
+  if (!master) return;
+  try {
+    const patch = statusPatch(target, status);
+    if (!series && target.isRecurring) {
+      const scope = await chooseRecurrenceScope('status');
+      if (!scope) return;
+      await eventRepo.applyOccurrenceChange(target, patch, scope);
+    } else {
+      await eventRepo.update(master.id, patch);
+    }
+    toast(`"${master.title}" → ${STATUS_LABELS[status]}`, { type: 'success', duration: 3000 });
+  } catch (err) {
+    toast(err.message, { type: 'error' });
+  }
 }
 
 /** Sürükleme sırasında DOM'da yapılan görsel değişiklikleri geri almak için view'ı yeniden çizdirir. */
@@ -227,6 +254,9 @@ export function toggleWorkDay(day) {
   } else current.add(day);
   return settingsRepo.set('workDays', [...current].sort((a, b) => a - b));
 }
+
+/** Masaüstünde kenar çubuğunu (menü) içeriğin soluna / sağına taşır. */
+export const setSidebarLeft = (left) => settingsRepo.set('sidebarLeft', Boolean(left));
 
 /** Kenar çubuğunu ikon moduna daraltır / genişletir (masaüstü). */
 export const toggleSidebarCollapsed = () => settingsRepo.set('sidebarCollapsed', !store.get().settings.sidebarCollapsed);

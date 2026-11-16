@@ -36,14 +36,14 @@ export default {
 
   render(el, ctx) {
     const { cursor, events, settings } = ctx.state;
-    const holiday = holidayOn(settings.holidays, cursor); // tatil günü: başlıkta adı yazar, ızgara soluk gösterilir
+    const holiday = holidayOn(settings.holidays, cursor, settings.holidayGroups); // tatil günü: başlıkta adı yazar, ızgara soluk gösterilir
     const occurrences = expandEvents(events, cursor, cursor).sort(compareByStart);
     const timed = occurrences.filter(isTimed);
     const conflicts = findConflicts(timed, s, e);
     const byId = new Map(occurrences.map((o) => [o.id, o]));
 
     el.innerHTML = html`
-      ${toolbar({ title: formatDate(cursor, { weekday: 'long', day: 'numeric', month: 'long' }), subtitle: `${relativeDayLabel(cursor)} · ${occurrences.length} etkinlik${holiday ? ` · Tatil: ${holiday.name}` : ''}`, nav: true })}
+      ${toolbar({ title: formatDate(cursor, { weekday: 'long', day: 'numeric', month: 'long' }), subtitle: `${relativeDayLabel(cursor)} · ${occurrences.length} etkinlik${holiday ? ` · Tatil (${holiday.groupName}): ${holiday.name}` : ''}`, nav: true })}
       <div class="view-body day-layout">
         <div class="grid-host glass"></div>
         <aside class="day-side">

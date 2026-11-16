@@ -100,6 +100,7 @@ export function openEventEditor(input = {}) {
     <div class="field-row">
       <label class="switch"><input type="checkbox" name="allDay" ${allDay ? 'checked' : ''} /><span></span>Tüm gün</label>
       <label class="switch"><input type="checkbox" name="critical" ${ev.critical ? 'checked' : ''} /><span></span>Kritik görev</label>
+      <label class="switch" data-autoclose><input type="checkbox" name="autoClose" ${ev.autoClose ? 'checked' : ''} /><span></span>Zamanı geçince otomatik kapat</label>
     </div>
 
     <div class="field-grid field-grid--when">
@@ -222,6 +223,19 @@ export function openEventEditor(input = {}) {
   });
   const f = form.elements;
 
+  // "Zamanı geçince otomatik kapat": bitiş zamanı geçince durum otomatik Tamamlandı olur (bkz. autoCloseService.js). Tekrarlayan SERİDE kullanılamaz (durum seri düzeyindedir);
+  // "Yalnızca bu" kapsamında ayrılan tek örnek için kullanılabilir.
+  const autoCloseLabel = form.querySelector('[data-autoclose]');
+  const syncAutoClose = () => {
+    const blocked = scope === 'series' && Boolean(f.freq.value);
+    f.autoClose.disabled = blocked;
+    autoCloseLabel.classList.toggle('is-disabled', blocked);
+    autoCloseLabel.title = blocked ? 'Tekrarlayan serilerde kullanılamaz: durum seri düzeyindedir' : 'Bitiş zamanı geçince durum otomatik "Tamamlandı" olur';
+  };
+  form.addEventListener('change', (e) => {
+    if (e.target === f.freq) syncAutoClose();
+  });
+
   // --- Dinamik alan davranışları ---
   const syncAllDay = () => form.classList.toggle('is-allday', f.allDay.checked);
   syncAllDay();
@@ -311,6 +325,7 @@ export function openEventEditor(input = {}) {
       if (!wasDirty) baseline = snapshot();
     }
     form.classList.toggle('scope-single', scope === 'single');
+    syncAutoClose();
     form.querySelectorAll('[data-scope]').forEach((b) => {
       const on = b.dataset.scope === scope;
       b.classList.toggle('is-active', on);
@@ -406,6 +421,7 @@ export function openEventEditor(input = {}) {
       category: f.category.value,
       project: f.project.value,
       critical: f.critical.checked,
+      autoClose: f.autoClose.disabled ? false : f.autoClose.checked,
       reminder: Number(f.reminder.value),
       recurrence: recurrence.getRule(), // silinmiş/eklenmiş/ayrılmış örnek tarihleri (exdates/rdates) kural içinde korunur
       dependencies: deps,

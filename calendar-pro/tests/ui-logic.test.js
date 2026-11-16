@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { buildRows } from '../src/components/commandPalette.js';
 import { clampFabBottom, FAB_SIZE } from '../src/components/fab.js';
-import { dayMonthShort, shiftEnd } from '../src/core/dateUtils.js';
-import { normalizeHexColor } from '../src/core/eventModel.js';
+import { dayMonthShort, isoWeek, isoWeekInfo, shiftEnd } from '../src/core/dateUtils.js';
+import { dueForAutoClose, normalizeEvent, normalizeHexColor, statusPatch } from '../src/core/eventModel.js';
 
 describe('shiftEnd (başlangıç–bitiş bağı: süre korunur)', () => {
   const prev = { startDate: '2026-11-16', startTime: '09:00', endDate: '2026-11-16', endTime: '10:30' }; // 1,5 saat
@@ -135,5 +135,92 @@ describe('clampFabBottom (yüzen düğme konumu)', () => {
     assert.equal(clampFabBottom(undefined, 800), 16);
     assert.equal(clampFabBottom('240', 800), 240);
     assert.equal(clampFabBottom(100.6, 800), 101);
+  });
+});
+
+describe('ISO 8601 hafta numarası (Yıl görünümü)', () => {
+  test('yılın ilk Perşembesini içeren hafta 1. haftadır', () => {
+    assert.equal(isoWeek('2026-01-01'), 1); // Perşembe
+    assert.equal(isoWeek('2026-01-04'), 1); // Pazar: haftanın son günü
+    assert.equal(isoWeek('2026-01-05'), 2);
+    assert.equal(isoWeek('2021-01-04'), 1); // 1 Oca 2021 Cuma → önceki yılın 53. haftası, 4 Oca 1. hafta
+  });
+
+  test('yıl sınırında komşu yılın haftasına ait olabilir', () => {
+    assert.deepEqual(isoWeekInfo('2025-12-29'), { week: 1, year: 2026 });
+    assert.deepEqual(isoWeekInfo('2024-12-30'), { week: 1, year: 2025 });
+    assert.deepEqual(isoWeekInfo('2021-01-01'), { week: 53, year: 2020 });
+    assert.deepEqual(isoWeekInfo('2027-01-03'), { week: 53, year: 2026 });
+    assert.deepEqual(isoWeekInfo('2026-12-31'), { week: 53, year: 2026 });
+  });
+
+  test('53 haftalı yıllar (2020, 2026) ve 52 haftalı yıllar', () => {
+    assert.equal(isoWeek('2020-12-31'), 53);
+    assert.equal(isoWeek('2026-12-28'), 53);
+    assert.equal(isoWeek('2025-12-28'), 52);
+    assert.equal(isoWeek('2023-12-31'), 52);
+  });
+
+  test('her gün için numara 1–53 arasındadır ve haftalar Pazartesi başlar', () => {
+    for (let d = new Date(2019, 0, 1); d < new Date(2031, 0, 1); d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const w = isoWeek(iso);
+      assert.ok(w >= 1 && w <= 53, iso);
+      if (d.getDay() === 1 && w !== 1) {
+        const prev = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+        const prevIso = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}-${String(prev.getDate()).padStart(2, '0')}`;
+        assert.equal(isoWeek(prevIso), w - 1, `${iso} Pazartesi: bir önceki Pazar bir önceki hafta`);
+      }
+    }
+  });
+});
+
+describe('otomatik kapat (dueForAutoClose)', () => {
+  const ev = (over) => normalizeEvent({ id: 'e', title: 'T', startDate: '2026-11-15', endDate: '2026-11-15', startTime: '09:00', endTime: '10:00', autoClose: true, ...over });
+  const now = new Date(2026, 10, 16, 12, 0, 0);
+
+  test('seçenek açık + bitiş zamanı geçmiş + tamamlanmamış → kapanır', () => {
+    assert.deepEqual(dueForAutoClose([ev({})], now).map((e) => e.id), ['e']);
+    assert.equal(dueForAutoClose([ev({ status: 'doing' })], now).length, 1);
+  });
+
+  test('seçenek kapalıysa, zaten tamamlanmışsa ya da zamanı gelmediyse kapanmaz', () => {
+    assert.equal(dueForAutoClose([ev({ autoClose: false })], now).length, 0);
+    assert.equal(dueForAutoClose([ev({ status: 'done', progress: 100 })], now).length, 0);
+    assert.equal(dueForAutoClose([ev({ startDate: '2026-11-16', endDate: '2026-11-16', startTime: '13:00', endTime: '14:00' })], now).length, 0);
+  });
+
+  test('bitiş saati geçince kapanır (saatli etkinlik): sınır dakikası', () => {
+    const e = ev({ startDate: '2026-11-16', endDate: '2026-11-16', startTime: '10:00', endTime: '12:00' });
+    assert.equal(dueForAutoClose([e], new Date(2026, 10, 16, 11, 59, 59)).length, 0);
+    assert.equal(dueForAutoClose([e], new Date(2026, 10, 16, 12, 0, 1)).length, 1);
+  });
+
+  test('tüm gün etkinliği bitiş gününün sonunda kapanır', () => {
+    const e = ev({ startTime: '', endTime: '', startDate: '2026-11-16', endDate: '2026-11-16' });
+    assert.equal(dueForAutoClose([e], new Date(2026, 10, 16, 23, 0, 0)).length, 0);
+    assert.equal(dueForAutoClose([e], new Date(2026, 10, 17, 0, 0, 1)).length, 1);
+  });
+
+  test('tekrarlayan seriler otomatik kapanmaz; alan kaydedilir/normalleşir', () => {
+    assert.equal(dueForAutoClose([ev({ recurrence: { freq: 'daily', interval: 1 } })], now).length, 0);
+    assert.equal(normalizeEvent({ title: 'x', startDate: '2026-11-16', endDate: '2026-11-16' }).autoClose, false);
+    assert.equal(ev({ autoClose: 1 }).autoClose, true);
+  });
+});
+
+describe('statusPatch (sağ tık menüsüyle durum değişimi)', () => {
+  test('Tamamlandı ilerlemeyi %100 yapar', () => {
+    assert.deepEqual(statusPatch({ progress: 30 }, 'done'), { status: 'done', progress: 100 });
+  });
+
+  test('tamamlanmış etkinlik yeniden açılınca ilerleme tutarlı kalır', () => {
+    assert.deepEqual(statusPatch({ progress: 100 }, 'doing'), { status: 'doing', progress: 50 });
+    assert.deepEqual(statusPatch({ progress: 100 }, 'todo'), { status: 'todo', progress: 0 });
+  });
+
+  test('yarım ilerleme durum değişiminde korunur', () => {
+    assert.deepEqual(statusPatch({ progress: 40 }, 'todo'), { status: 'todo' });
+    assert.deepEqual(statusPatch({ progress: 40 }, 'doing'), { status: 'doing' });
   });
 });

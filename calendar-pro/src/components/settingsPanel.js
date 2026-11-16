@@ -31,6 +31,7 @@ import {
   toggleNotifications,
   toggleShowOffDays,
   toggleSidebarCollapsed,
+  setSidebarLeft,
   toggleWorkDay,
 } from '../core/actions.js';
 import { openModal } from './modal.js';
@@ -156,9 +157,9 @@ function calendarSection(settings) {
     </section>`;
 }
 
-function toggleRow({ key, iconName, title, hint, checked }) {
+function toggleRow({ key, iconName, title, hint, checked, className = '' }) {
   return html`
-    <label class="settings-row">
+    <label class="settings-row ${className}">
       <span class="settings-row-icon">${icon(iconName)}</span>
       <span class="settings-row-text"><b>${title}</b><small>${hint}</small></span>
       <span class="switch"><input type="checkbox" data-fk="toggle-${key}" data-toggle="${key}" ${checked ? 'checked' : ''} /><span></span></span>
@@ -170,6 +171,14 @@ function generalSections(settings) {
     <section class="settings-section" data-section="sidebar">
       <h3>${icon('menu')} Kenar çubuğu</h3>
       ${toggleRow({ key: 'sidebar', iconName: 'menu', title: 'Yalnızca ikonlar', hint: 'Kenar çubuğunu daraltır. Logoya tıklamak veya [ tuşu da aynı işi yapar.', checked: settings.sidebarCollapsed })}
+      ${toggleRow({
+        key: 'sidebar-left',
+        iconName: 'menu',
+        title: 'Menü solda',
+        hint: 'Menüyü içeriğin soluna taşır. Kapalıyken menü sağdadır (varsayılan). Yalnızca masaüstü görünümünde; mobilde menü her zaman sağdan açılır.',
+        checked: settings.sidebarLeft,
+        className: 'desktop-only',
+      })}
     </section>
     <section class="settings-section" data-section="notifications">
       <h3>${icon('bell')} Hatırlatmalar</h3>
@@ -375,6 +384,8 @@ export function openSettings({ section } = {}) {
     if (!toggle) return;
     if (toggle.dataset.toggle === 'sidebar') {
       if (toggle.checked !== Boolean(store.get().settings.sidebarCollapsed)) toggleSidebarCollapsed();
+    } else if (toggle.dataset.toggle === 'sidebar-left') {
+      setSidebarLeft(toggle.checked);
     } else if (toggle.dataset.toggle === 'offdays') {
       toggleShowOffDays(toggle.checked);
     } else if (toggle.dataset.toggle === 'notify') {

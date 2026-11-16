@@ -68,6 +68,22 @@ export function diffDays(a, b) {
   return Math.round((ub - ua) / 86400000);
 }
 
+/**
+ * ISO 8601 hafta numarası ve hafta yılı: hafta Pazartesi başlar; 1. hafta, yılın ilk Perşembesini (= 4 Ocak'ı) içeren haftadır.
+ * Yıl başı/sonu günleri komşu yılın haftasına ait olabilir (ör. 2026-12-31 → 2026 hafta 53, 2027-01-01 → 2026 hafta 53, 2024-12-30 → 2025 hafta 1).
+ * @returns {{week: number, year: number}}
+ */
+export function isoWeekInfo(date) {
+  const d = toDate(date);
+  const thursday = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 3 - ((d.getDay() + 6) % 7)); // bu haftanın Perşembesi
+  const jan4 = new Date(thursday.getFullYear(), 0, 4);
+  const firstThursday = new Date(jan4.getFullYear(), 0, 4 + 3 - ((jan4.getDay() + 6) % 7));
+  return { week: 1 + Math.round(diffDays(firstThursday, thursday) / 7), year: thursday.getFullYear() };
+}
+
+/** ISO 8601 hafta numarası (1–53). */
+export const isoWeek = (date) => isoWeekInfo(date).week;
+
 /** Başlangıçtan itibaren `count` günlük ISO tarih dizisi. */
 export function rangeDays(startISO, count) {
   return Array.from({ length: count }, (_, i) => addDaysISO(startISO, i));

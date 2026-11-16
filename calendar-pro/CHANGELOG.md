@@ -4,6 +4,23 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.29.0
+- **Zamanı geçince otomatik kapat**: etkinlik formunda yeni anahtar; açıksa bitiş zamanı geçince etkinlik **Tamamlandı** (%100) olur (açılışta, her 30 sn'de ve sekme görününce denetlenir; kapananlar tek bildirimle
+  duyurulur). Tekrarlayan serilerde pasif (durum seri düzeyindedir). Yeni alan `autoClose` (eski kayıtlar: kapalı)
+- **Sayfa kenar boşluğu her kenarda aynı** (`--page-pad`, 12 px): paneller ve kenar çubuğu ekran kenarlarından ve birbirinden eşit uzaklıkta; masaüstünde kenar çubuğunun alt kenarı artık alttaki panellerle hizalı
+  (önceden daha yakındı); mobil çekmece de aynı boşlukla açılır
+- **Hızlı komut yalnızca açıkken vurgulu**: palet kapalıyken düğme artık "hep seçili" görünmez
+- **Menü solda** (Ayarlar → Genel → Kenar çubuğu; yalnız masaüstü, mobilde görünmez): varsayılan KAPALI = menü sağda. Açılınca kenar çubuğu soldaki sütuna geçer, Tab sırası/gölge/bildirim konumu da uyar. `settings.sidebarLeft`
+- **Temalı açılır listeler**: `select` listeleri yerel tarayıcı listesi yerine temanın renkleriyle çizilir (açık/koyu/özel temalar); tam klavye desteği; dokunmatik cihazlarda yerel liste korunur
+- **Sağ tık menüsü ile durum değiştirme**: etkinliği açmadan Durum (Yapılacak · Devam Ediyor · Tamamlandı) + Aç + Sil; Ay/Hafta/Gün/Scheduler/Timeline/Kanban/Gantt/Dashboard'da çalışır; tekrarlayan örneklerde
+  "Yalnızca bu / Tüm seri" sorulur; ilerleme tutarlı kalır; klavyeyle kullanılır
+- **Tatil grupları**: hazır gruplar **Resmî (mavi)**, **Dini (yeşil)**, **Özel (mor)**; tatil penceresinde grup seçici; Yıl görünümünde **Tatil grupları** paneli (renk değiştirme — hazır gruplarda da —, yeni grup ekleme,
+  eklenen grupların adını değiştirme ve silme; silinen grubun tatilleri Özel'e taşınır, Geri al). Tatil günleri grubunun renginde görünür: Yıl kartları ve lejantı, Yıl listesi, Ay hücresi, mini takvim, Gantt gölgesi,
+  Gün başlığı. `settings.holidayGroups` (ayarlar yedeğine dahil); tatil kaydına `group` alanı eklendi (eski kayıtlar Özel sayılır)
+- **Yıl görünümünde ISO hafta numaraları**: her ay kartında satır başı numara (sütun başlığı **H**), ISO 8601'e göre (1. hafta = yılın ilk Perşembesini içeren hafta; 2026 → 53 hafta); numaraya tıklamak o haftayı açar
+- Test: ISO hafta (yıl sınırları, 53 haftalı yıllar, 2019–2030 tüm günler), otomatik kapat, durum yaması ve tatil grupları için 21 yeni birim test; gerçek tarayıcıda (masaüstü + mobil) hafta numaraları, grup ekleme/renk/ad/silme/geri al,
+  tatil rengi (Yıl/Ay/Gün/Gantt/mini takvim), sağ tık menüsü, temalı liste, otomatik kapat, kenar boşlukları ve Menü solda
+
 ## 1.28.0
 - **Yeni "Yıl" görünümü** (kenar çubuğunda; kısayol `9` — mevcut 1–8 kısayolları değişmedi; `Ctrl + K` → "Yıl Aç"): 12 ay kartı, Geri/İleri bir yıl kaydırır, ay başlığı Ay görünümünü açar. Çalışma dışı günler soluk, etkinlik olan günler noktalı,
   bugün çerçeveli; telefonda 2 sütun

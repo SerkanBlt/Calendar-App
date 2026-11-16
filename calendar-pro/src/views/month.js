@@ -39,7 +39,7 @@ export default {
     const days = allDays.filter((d) => shownWeekdays.has(new Date(`${d}T00:00`).getDay()));
     const cols = shownWeekdays.size;
     const off = offDaySet(allDays, settings.workDays, settings.holidays);
-    const holiday = holidayInfoFor(settings.holidays, allDays);
+    const holiday = holidayInfoFor(settings.holidays, allDays, settings.holidayGroups); // tatil günleri grubunun renginde
     const hiddenCount = 7 - cols;
     const byId = new Map(occurrences.map((o) => [o.id, o]));
     const today = todayISO();
@@ -65,9 +65,9 @@ export default {
             const outside = Number(d.slice(5, 7)) - 1 !== month;
             const hol = holiday.get(d);
             return html`
-              <div class="month-cell ${outside ? 'is-outside' : ''} ${off.has(d) ? 'is-off' : ''} ${hol ? 'is-holiday' : ''} ${i % cols === cols - 1 ? 'is-row-end' : ''} ${d === today ? 'is-today' : ''} ${d === cursor ? 'is-cursor' : ''}" data-date="${d}" data-drop-date="${d}">
-                <button type="button" class="month-daynum" data-day="${d}" aria-label="${formatDate(d)} gün görünümü${hol ? `, tatil: ${hol.name}` : ''}">${Number(d.slice(8))}</button>
-                ${hol ? html`<span class="month-holiday" title="Tatil: ${hol.name}">${hol.name}</span>` : ''}
+              <div class="month-cell ${outside ? 'is-outside' : ''} ${off.has(d) ? 'is-off' : ''} ${hol ? 'is-holiday' : ''} ${i % cols === cols - 1 ? 'is-row-end' : ''} ${d === today ? 'is-today' : ''} ${d === cursor ? 'is-cursor' : ''}" data-date="${d}" data-drop-date="${d}" ${hol ? html`style="--hol:${hol.color}"` : ''}>
+                <button type="button" class="month-daynum" data-day="${d}" aria-label="${formatDate(d)} gün görünümü${hol ? `, tatil (${hol.groupName}): ${hol.name}` : ''}">${Number(d.slice(8))}</button>
+                ${hol ? html`<span class="month-holiday" title="Tatil (${hol.groupName}): ${hol.name}">${hol.name}</span>` : ''}
                 <div class="month-events">
                   ${items.slice(0, MAX_VISIBLE).map((o) => eventChip(o, { deletable: true }))}
                   ${items.length > MAX_VISIBLE ? html`<button type="button" class="month-more" data-day="${d}">+${items.length - MAX_VISIBLE} daha</button>` : ''}

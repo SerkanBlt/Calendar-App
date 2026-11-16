@@ -4,6 +4,7 @@
  * Model:
  * { id, title, description, date, startDate, endDate, startTime, endTime, color, status,
  *   progress, category, project, critical, recurrence, reminder, dependencies, createdAt, updatedAt }
+ * - autoClose: "Zamanı geçince otomatik kapat"; bitiş zamanı geçince durum otomatik Tamamlandı olur.
  * - project: "Gantt projesi" (serbest metin, en çok 80 karakter); Gantt görünümünü proje bazlı gruplar (bkz. services/ganttProjects.js).
  *
  * - startTime boşsa etkinlik "tüm gün" kabul edilir.
@@ -87,6 +88,7 @@ export function normalizeEvent(input = {}, existing = null) {
     category: String(e.category ?? '').trim().slice(0, 60),
     project: String(e.project ?? '').trim().slice(0, 80), // Gantt projesi: aynı adı taşıyan görevler Gantt'ta bir proje altında gruplanır
     critical: Boolean(e.critical),
+    autoClose: Boolean(e.autoClose), // bitiş zamanı geçince durum otomatik "Tamamlandı" olur (bkz. services/autoCloseService.js; tekrarlayan serilerde uygulanmaz)
     recurrence: normalizeRecurrence(e.recurrence),
     reminder: REMINDER_VALUES.includes(Number(e.reminder)) ? Number(e.reminder) : 0,
     dependencies,
@@ -96,6 +98,22 @@ export function normalizeEvent(input = {}, existing = null) {
     createdAt: typeof e.createdAt === 'string' ? e.createdAt : now,
     updatedAt: now,
   };
+}
+
+/**
+ * Durum değiştirirken birlikte güncellenecek alanlar: Tamamlandı → ilerleme %100; tamamlanmış (%100) bir etkinlik yeniden açılırsa %100 kalmaz
+ * (Devam Ediyor → %50, Yapılacak → %0). Diğer durumlarda ilerleme korunur.
+ */
+export function statusPatch(ev, status) {
+  const patch = { status };
+  if (status === 'done') patch.progress = 100;
+  else if (Number(ev.progress) === 100) patch.progress = status === 'doing' ? 50 : 0;
+  return patch;
+}
+
+/** Otomatik kapanması gereken etkinlikler: "Zamanı geçince otomatik kapat" açık, tekrarsız, tamamlanmamış ve bitiş zamanı geçmiş (bkz. autoCloseService). */
+export function dueForAutoClose(events, now = new Date()) {
+  return events.filter((e) => e.autoClose && !e.recurrence && e.status !== 'done' && eventEnd(e) < now);
 }
 
 export const isAllDay = (ev) => !ev.startTime;

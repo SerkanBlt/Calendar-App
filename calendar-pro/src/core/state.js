@@ -6,11 +6,13 @@
  * view'lar store'u okur ve değişikliklerde yeniden çizilir.
  */
 import { todayISO } from './dateUtils.js';
+import { DEFAULT_HOLIDAY_GROUPS } from './holidays.js';
 
 export const DEFAULT_SETTINGS = Object.freeze({
   theme: 'dark', // 'dark' | 'light' | 'system' | özel tema adı (bkz. core/theme.js)
   background: 'standard', // arka plan adı (bkz. core/backgrounds.js)
   sidebarCollapsed: false, // kenar çubuğu ikon modunda mı (logoya tıklanınca değişir)
+  sidebarLeft: false, // yalnızca masaüstü: kenar çubuğu (menü) içeriğin SOLUNDA mı? Varsayılan false = sağda (mobilde her zaman sağdan açılan çekmece)
   backgroundFit: 'fill', // görsel yerleşimi: fill | fit | stretch | tile | center
   bgColorMode: 'single', // "Renk" arka planı: 'single' (tek renk) | 'dual' (iki renkli degrade)
   bgColor1: '#1e293b',
@@ -18,6 +20,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   weekStartsOn: 1, // 0 = Pazar, 1 = Pazartesi
   workDays: [1, 2, 3, 4, 5], // çalışma günleri (0 = Pazar … 6 = Cumartesi); varsayılan: Cumartesi ve Pazar çalışma dışı
   showOffDays: true, // Ay ve Hafta görünümünde çalışma dışı günler gösterilsin mi
+  holidayGroups: DEFAULT_HOLIDAY_GROUPS, // tatil grupları: [{ id, name, color }] — hazır: Resmî (mavi), Dini (yeşil), Özel (mor); kullanıcı ekleyebilir/renk değiştirebilir (bkz. core/holidays.js)
   holidays: [], // tatil günleri: [{ id, date, name, yearly }]; yearly = her yıl aynı gün, değilse yalnızca date'in yılı (bkz. core/holidays.js). Çalışma dışı (off) sayılır
   defaultReminder: 15,
   notificationsEnabled: false,

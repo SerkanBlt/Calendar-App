@@ -38,7 +38,7 @@ Tek seferlik ayar:
 | Timeline  | Ay/gün gruplu kronolojik akış; yaklaşan / tümü / geçmiş filtresi ve arama başlıkta; noktalar zaman çizgisinin tam üstünde |
 | Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı; **proje bazlı** görünüm (aşağıya bakın) |
 | Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (başlıkta **yalnızca ikonlu** iki düğme; filtre kutusu onlarla aynı satırda ve aynı yükseklikte; seçim kaydedilir). Her panel başlığındaki ok ya da başlığa tıklama ile **daraltılıp genişletilir** (durum kaydedilir; daraltılmış panele kart bırakılabilir); alt alta düzende paneller üst üste binmez, sayfa kayar |
-| Yıl       | 12 ay kartı (çalışma dışı günler soluk, **tatil günleri kırmızı**, etkinlik olan günler noktalı); bir güne dokunarak **tatil günü** tanımlanır; yıl listesi; ay başlığı Ay görünümünü açar (aşağıya bakın) |
+| Yıl       | 12 ay kartı (satır başlarında **ISO hafta numaraları**; çalışma dışı günler soluk, **tatil günleri grubunun renginde**, etkinlik olan günler noktalı); bir güne dokunarak **tatil günü** tanımlanır; **tatil grupları**; yıl listesi; ay başlığı Ay görünümünü açar (aşağıya bakın) |
 
 Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır:
 
@@ -50,17 +50,26 @@ Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekran
 ## Yıl görünümü ve tatil günleri
 
 **Yıl** görünümü (kenar çubuğunda, kısayol `9`) yılın 12 ayını küçük kartlar hâlinde gösterir (Geri/İleri bir yıl kaydırır; ay başlığına tıklamak Ay görünümünü açar; telefonda 2 sütun).
+Her kartta satırların başında **ISO 8601 hafta numaraları** vardır (sütun başlığı **H**): 1. hafta, yılın ilk Perşembesini içeren haftadır; yıl başı/sonu günleri komşu yılın haftasına ait olabilir
+(ör. 29 Aralık 2025 → 2026'nın 1. haftası, 1 Ocak 2021 → 2020'nin 53. haftası; 2026 yılı 53 haftalıdır). Satırlar "Haftanın başladığı gün" ayarına göredir, numara her zaman ISO'dur;
+numaraya tıklamak o haftayı **Hafta** görünümünde açar. Hesap `src/core/dateUtils.js` → `isoWeek` / `isoWeekInfo` (Perşembe-çapa algoritması, `tests/ui-logic.test.js`).
 **Tatil günleri** buradan tanımlanır: bir güne dokunun (ya da **Tatil ekle**) → pencerede **ad**, **tarih**, isteğe bağlı **bitiş tarihi** (birkaç günlük bayram tatili: her gün ayrı kayıt olur, en çok 60 gün) ve
 **"Her yıl aynı tarihte tekrarla"** anahtarı vardır:
 
 - **Anahtar AÇIK (tekrarlı):** tatil her yıl aynı ay-günde (ör. 29 Ekim) çalışma dışı (**off**) görünür — geçmiş ve gelecek tüm yıllarda. 29 Şubat'ta tanımlanırsa yalnızca artık yıllarda vardır.
 - **Anahtar KAPALI (değişken):** tatil **yalnızca o tarihin yılı** için geçerlidir (ör. tarihi her yıl değişen dini bayramlar); sonraki yıllarda görünmez.
 - Aynı güne en çok **bir** kayıt tutulur: tekrarlı kayıt eklenince aynı ay-günün tek seferlik kayıtları ona birleşir; tekrarlı bir tatilin zaten kapsadığı güne tek seferlik kayıt eklenmez (yalnızca adı güncellenir).
-- Altta o yılın **tatil listesi** vardır (tarih, ad, "Her yıl" / "Yalnızca 2026" rozeti, **Düzenle** / **Sil**). Silme "Geri al" ile geri alınır. Pencerede o günün etkinlikleri ve **Gün görünümü** kısayolu da bulunur.
+- Altta o yılın **tatil listesi** vardır (tarih, ad, grup, "Her yıl" / "Yalnızca 2026" rozeti, **Düzenle** / **Sil**). Silme "Geri al" ile geri alınır. Pencerede o günün etkinlikleri ve **Gün görünümü** kısayolu da bulunur.
 
-Tatil günleri **çalışma dışı (off) gün** sayılır: **Ay** görünümünde hücre soluk + kırmızı tonlu olur ve adı hücrede yazar (hafta günü sütunları yalnızca çalışma günü olmayan günlere göre gizlenir; tatil sütunu kalkmaz);
-**Hafta** görünümünde sütun soluktur ve **"Çalışma günleri" (çalışma dışı gizli)** seçiliyken tatil günü sütunu da kalkar; **Gün** başlığında "Tatil: ad" yazar ve ızgara soluktur; **Scheduler**'da sütun soluktur; **Gantt**'ta gün sütunu
-gölgelenir; kenar çubuğundaki **mini takvimde** gün kırmızı işaretlenir (ipucu: ad). Veri `settings.holidays` içinde `[{ id, date, name, yearly }]` olarak saklanır ve ayarlar yedeğine (JSON) dahildir.
+**Tatil grupları:** her tatil bir gruba aittir ve **grubunun renginde** görünür. Hazır gruplar **Resmî (mavi)**, **Dini (yeşil)** ve **Özel (mor)**'dür; yeni tatil **Özel** ile başlar, tatil penceresindeki
+**Grup** seçiciyle değiştirilir (düzenlerken kayıtlı grup seçili gelir). Yıl görünümünün altındaki **Tatil grupları** panelinde: renk yuvarlağına basarak **grubun rengi değiştirilir** (hazır gruplarda da; adları sabittir),
+**Yeni grup adı + renk → Grup ekle** ile kendi grubunuzu eklersiniz (en çok 20 grup; aynı ad iki kez kullanılamaz), eklenen grupların adı yazılarak değiştirilir ve **Sil** ile silinir — silinen grubun tatilleri
+**Özel**'e taşınır, **Geri al** hepsini geri getirir. Hazır gruplar silinemez. Renk; Yıl kartlarında, Ay görünümünde (hücre tonu, gün numarası, tatil adı), kenar çubuğu mini takviminde, Gantt gün gölgesinde ve
+Gün başlığındaki "Tatil (Grup): ad" yazısında kullanılır; Yıl görünümündeki açıklama (lejant) grupları listeler. Gruplar `settings.holidayGroups` içinde `[{ id, name, color, preset }]` olarak saklanır.
+
+Tatil günleri **çalışma dışı (off) gün** sayılır: **Ay** görünümünde hücre soluk + grup renginde tonlu olur ve adı hücrede yazar (hafta günü sütunları yalnızca çalışma günü olmayan günlere göre gizlenir; tatil sütunu kalkmaz);
+**Hafta** görünümünde sütun soluktur ve **"Çalışma günleri" (çalışma dışı gizli)** seçiliyken tatil günü sütunu da kalkar; **Gün** başlığında "Tatil (Grup): ad" yazar ve ızgara soluktur; **Scheduler**'da sütun soluktur; **Gantt**'ta gün sütunu
+gölgelenir; kenar çubuğundaki **mini takvimde** gün grup renginde işaretlenir (ipucu: ad). Veri `settings.holidays` içinde `[{ id, date, name, yearly, group }]` olarak saklanır ve ayarlar yedeğine (JSON) dahildir.
 Mantık: `src/core/holidays.js` (saf, `tests/holidays.test.js`), off-gün entegrasyonu `src/core/workDays.js` (`offDaySet(günler, çalışmaGünleri, tatiller)`).
 
 ## Proje bazlı Gantt
@@ -120,10 +129,10 @@ Kanban kolonunun üstündeki durum şeridi gölge değil iç çizgidir (`inset`)
 
 ### Sayfa altı
 
-Sayfaların altında boşluk bırakılmaz: paneller (Ay/Hafta/Gün/Planlayıcı ızgarası, Gantt, Kanban bantları, Dashboard kutuları) görünür alanın altına, standart 8 px dış kenar boşluğuna kadar uzar.
+Sayfaların altında boşluk bırakılmaz: paneller (Ay/Hafta/Gün/Planlayıcı ızgarası, Gantt, Kanban bantları, Dashboard kutuları) görünür alanın altına, standart sayfa kenar boşluğuna (`--page-pad`, 12 px) kadar uzar.
 **Başlık sabittir ve içerikten ayrıdır**: kaydırma `.view-body` içinde olur, sayfa başlığı (`.toolbar`) içeriğin üstünde hareketsiz durur; kaydırılan içerik başlığın arkasından/altından **akmaz**, başlığın hemen
 altındaki kenardan kesilir. (Önceden `.view` kaydırılır, başlık yapışkan durur ve içerik şeffaf başlığın arkasından görünürdü.) **Başlık her ekranda aynı panel**dir: dört köşesi yuvarlak, ince kenarlı,
-içerik paneliyle (8 px yan boşluk) **aynı genişlikte ve hizada**; açık/koyu temada ve fotoğraf arka planlarında okunur kalır. Aynı görünüm yeniden çizildiğinde (ör. bir etkinlik değişince) kaydırma konumu
+içerik paneliyle **aynı genişlikte ve hizada**; açık/koyu temada ve fotoğraf arka planlarında okunur kalır. Aynı görünüm yeniden çizildiğinde (ör. bir etkinlik değişince) kaydırma konumu
 korunur; başka bir görünüme geçince sayfa en üstten başlar. Timeline'ın 920 px'lik ortalı sütunu, kaydırıcının tam genişlikte kalması için dolguyla ortalanır (kaydırma çubuğu sayfa kenarında, tekerlek kenar boşluğunda da çalışır).
 Mobilde yüzen düğme panelin **üstünde yüzer** (yeri değiştirilebilir). Kaydırmalı sayfalarda son öğeler düğmenin altında kalmasın diye boşluk **son panelin içine** verilir
 (Dashboard/Gün'ün son kutusu, alt alta Kanban'ın son bandı; yan yana Kanban'da kolon listelerinin sonu; Timeline listesinin sonu).
@@ -158,12 +167,17 @@ Yeni hazır görsel arka plan eklemek için:
 
 ## Kenar çubuğu
 
-Kenar çubuğu ekranın **sağındadır**: masaüstünde içeriğin sağında kalıcı bir sütun, telefon/dar ekran/yatay telefonda hamburger düğmesine (başlığın sağ ucunda) basınca **sağ kenardan kayarak
+Kenar çubuğu varsayılan olarak ekranın **sağındadır** (masaüstünde **Ayarlar → Genel → Kenar çubuğu → Menü solda** açılırsa sola geçer; bu ayar mobil/dar görünümde görünmez ve etkisizdir): masaüstünde içeriğin sağında kalıcı bir sütun, telefon/dar ekran/yatay telefonda hamburger düğmesine (başlığın sağ ucunda) basınca **sağ kenardan kayarak
 açılan çekmece**. (DOM'da da `main`'den sonra gelir; Tab sırası görsel sırayla aynıdır.) Masaüstünde sağ-alttaki bildirimler kenar çubuğunun soluna oturur ve daraltılmış genişliği izler.
+
+**Sayfa kenar boşluğu her kenarda aynıdır** (`--page-pad`, 12 px): içerik panelleri ile kenar çubuğu ekranın sağ/sol/üst/alt kenarından, ayrıca birbirinden aynı uzaklıktadır (masaüstünde kenar çubuğunun alt kenarı da alttaki panellerle hizalıdır);
+telefonda çekmece de aynı boşlukla açılır.
 
 Üstte **Hızlı komut** (komut paleti, `Ctrl + K`) ve **Ara** (etkinlik arama paneli, `/`), ardından görünümler ve mini
 takvim yer alır. Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesinin sağında
 uygulamanın sürüm numarası görünür.
+
+**Hızlı komut** düğmesi yalnızca palet **açıkken** vurgulu görünür (kapalıyken diğer öğeler gibi normaldir).
 
 **Hızlı komut** paletinde Kanban'dan sonraki komutlardan gruplanabilenler açılıp kapanabilen gruplarda toplanır (**Veri**, **Tema**, **Arka plan**;
 başlığa tıklayın veya `Enter` / `→` `←`). Arama yazınca gruplar yok sayılır, eşleşen komutlar düz listelenir. Yeni bir grup için `src/main.js` içindeki
@@ -179,7 +193,7 @@ Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinl
 |-------|--------|
 | Görünüm | Tema, arka plan (Standart / Renk / kendi görselin), yerleşim |
 | Takvim | Çalışma günleri, çalışma dışı günleri göster/gizle |
-| Genel | Kenar çubuğu ikon modu, hatırlatmalar |
+| Genel | Kenar çubuğu: ikon modu, **menü solda** (yalnız masaüstü); hatırlatmalar |
 | Veri | JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma, tüm verileri sıfırlama |
 | Hakkında | Sürüm bilgisi |
 
@@ -424,7 +438,7 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
 
 ```js
 { id, title, description, date, startDate, endDate, startTime, endTime, color, status,
-  progress, category, project, critical, recurrence, reminder, dependencies, createdAt, updatedAt }
+  progress, category, project, critical, autoClose, recurrence, reminder, dependencies, createdAt, updatedAt }
 ```
 
 - `startTime` boşsa etkinlik tüm gündür (formda "Tüm gün" açılınca bitiş tarihi başlangıca eşitlenir).
@@ -438,6 +452,24 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
 - `reminder`: 0 / 5 / 15 / 60 dakika.
 - `dependencies`: Gantt için öncül görev id'leri.
 - `project`: "Gantt projesi" (serbest metin, en çok 80 karakter); Gantt'ı proje bazlı gruplar (bkz. "Proje bazlı Gantt"). Eski kayıtlarda yoktur (boş sayılır).
+- `autoClose`: "Zamanı geçince otomatik kapat" (bkz. aşağıdaki bölüm). Eski kayıtlarda yoktur (kapalı sayılır).
+
+## Otomatik kapat, sağ tık menüsü ve temalı açılır listeler
+
+**Zamanı geçince otomatik kapat:** etkinlik formunda (Tüm gün / Bağ anahtarlarının yanında) **"Zamanı geçince otomatik kapat"** anahtarı vardır. Açıksa etkinliğin **bitiş zamanı** geçtiğinde durumu otomatik olarak
+**Tamamlandı** (ilerleme %100) olur: saatli etkinlikte bitiş saati, tüm gün/çok günlü etkinlikte bitiş gününün sonu. Uygulama açılışında, her 30 saniyede bir ve sekme yeniden görününce denetlenir; kapananlar tek bir
+bildirimle duyurulur. Zaten tamamlanmış etkinliğe dokunulmaz. **Tekrarlayan seriler** için seçenek kapalıdır (durum seri düzeyindedir; formda anahtar pasif olur ve nedeni ipucunda yazar); bir örnek "Yalnızca bu
+etkinlik" ile seriden ayrılırsa o kayıt kendi başına otomatik kapanabilir. Kapanan bir etkinliği yeniden açarsanız bitiş zamanı geçmiş olduğundan yeniden kapanır — istemiyorsanız o etkinlikte seçeneği kapatın.
+Mantık: `src/core/eventModel.js` → `dueForAutoClose` (saf, test edilir), zamanlayıcı `src/services/autoCloseService.js`.
+
+**Sağ tık menüsü (durum değiştirme):** farenin sağ tuşuyla bir etkinliğe tıklanınca — Ay/Hafta/Gün/Scheduler çip ve blokları, Timeline/Dashboard satırları, Kanban/Dashboard kartları, Gantt çubukları ve görev satırları —
+etkinliği açmadan **Durum** (Yapılacak · Devam Ediyor · Tamamlandı; geçerli olan işaretli), **Aç** ve **Sil** içeren küçük bir menü açılır. Durum değişince ilerleme tutarlı kalır (Tamamlandı → %100; tamamlanmış etkinlik
+yeniden açılırsa Devam Ediyor → %50, Yapılacak → %0). Tekrarlayan serinin bir **örneğinde** "Yalnızca bu etkinlik / Tüm seri" sorulur. Menü klavyeyle de kullanılır (↑ ↓ Home End, Enter/Boşluk, Esc, Tab).
+Dokunmatik ekranda devreye girmez (basılı tutma sürüklemeye ayrılmıştır); metin kutularında tarayıcının kendi menüsü korunur. Kod: `src/components/contextMenu.js`, `core/actions.js` → `changeEventStatus`.
+
+**Temalı açılır listeler:** tüm açılır kutuların (`select`) listesi, tarayıcının yerel listesi yerine uygulama temasının renkleriyle çizilir (açık/koyu/özel temalar; seçili seçenekte onay işareti). Açma/kapama
+fare ve klavyeyle yapılır (Boşluk/Enter/F4/Alt+↓ açar; ↑ ↓ Home End PageUp PageDown gezinir; harf yazmak seçeneğe gider; Esc yalnızca listeyi kapatır). **Telefon/tablet gibi dokunmatik (kaba işaretçili)
+cihazlarda yerel liste korunur** (işletim sisteminin seçicisi daha uygundur). `multiple`, `size > 1` ve `data-native` işaretli kutular kapsam dışıdır. Kod: `src/components/themedSelect.js`, stiller `src/styles/popups.css`.
 
 ## Bilinen davranışlar
 

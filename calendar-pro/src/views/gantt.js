@@ -19,7 +19,7 @@ import { addDaysISO, diffDays, formatDate, isWeekend, rangeDays, todayISO } from
 import { compareByStart, isTimed } from '../core/eventModel.js';
 import { clamp } from '../core/utils.js';
 import { computeCriticalPath, wouldCreateCycle } from '../services/criticalPathService.js';
-import { holidayDaySet } from '../core/holidays.js';
+import { holidayInfoFor } from '../core/holidays.js';
 import { buildRows, combineCriticalPaths, NO_PROJECT, projectLabel, projectOptions, resolveProject } from '../services/ganttProjects.js';
 import { toolbar } from '../components/toolbar.js';
 import { icon } from '../components/icons.js';
@@ -110,7 +110,7 @@ export default {
     const start = addDaysISO(minStart, -3);
     const count = Math.max(35, diffDays(start, maxEnd) + 15);
     const days = rangeDays(start, count);
-    const holidayDays = holidayDaySet(settings.holidays, days); // tatil günleri hafta sonu gibi soluk gösterilir
+    const holidayDays = holidayInfoFor(settings.holidays, days, settings.holidayGroups); // tatil günleri hafta sonu gibi gölgelenir (grubunun renginde)
     const isOffDay = (d) => isWeekend(d) || holidayDays.has(d);
     const chartW = count * dayW;
     const chartH = rows.length * ROW_H;
@@ -171,7 +171,7 @@ export default {
               </div>
               <div class="gantt-chart" style="height:${chartH}px">
                 <div class="gantt-bg">
-                   ${days.map((d, i) => (isOffDay(d) ? html`<div class="gantt-weekend ${holidayDays.has(d) ? 'is-holiday' : ''}" style="left:${i * dayW}px;width:${dayW}px"></div>` : ''))}
+                   ${days.map((d, i) => (isOffDay(d) ? html`<div class="gantt-weekend ${holidayDays.has(d) ? 'is-holiday' : ''}" style="left:${i * dayW}px;width:${dayW}px${holidayDays.has(d) ? `;--hol:${holidayDays.get(d).color}` : ''}"></div>` : ''))}
                   ${rows.map((r, i) => html`${r.kind === 'group' ? html`<div class="gantt-groupband" style="top:${i * ROW_H}px"></div>` : ''}<div class="gantt-rowline" style="top:${(i + 1) * ROW_H}px"></div>`)}
                   <div class="gantt-today" style="left:${xOf(today) + dayW / 2}px"></div>
                 </div>
