@@ -231,6 +231,27 @@ bitiş tarihi ertesi güne geçer (23:00 → 01:30), geri dönünce iner; çok g
 (yalnızca bitiş başlangıçtan önceye düşemez). Yeniden bağlanınca o anki fark korunacak süre olur; bitişi elle değiştirmek de süreyi günceller. Bağ **etkinliğe her girişte açıktır** (kalıcı bir ayar değildir) ve
 tek başına "değişiklik" sayılmaz. Mantık: `shiftEnd` (`src/core/dateUtils.js`, saf ve testli).
 
+### Tekrarlayan etkinlikler
+
+Formun **Tekrar** bölümünde sıklık (Günlük · Haftalık · Aylık · **Çeyreklik** · Yıllık), "her N …" aralığı, **desen**, bitiş ve **Tüm tarihler** listesi vardır
+(arayüz: `src/components/recurrenceEditor.js`, hesap: `src/services/recurrenceService.js`). Sıklığa göre desen:
+
+| Sıklık | Seçilebilenler |
+|--------|----------------|
+| Günlük | Hangi günler: **Her gün**, **İş günleri** (Ayarlar'daki çalışma günleri) ya da istediğiniz günler (Pzt … Paz düğmeleri). "2 günde bir + yalnızca iş günleri" de olur |
+| Haftalık | Haftanın **birden çok günü** (ör. Salı + Perşembe); hiçbiri seçilmezse başlangıç günü. Başlangıç tarihi değişirse otomatik gün de değişir |
+| Aylık | **Ayın N. günü** (1–31 ya da *Son gün*) **veya** **ayın N. haftasının X günü**: ilk / ikinci / üçüncü / dördüncü / son × Pazartesi … Pazar ya da **iş günü** (ör. "ayın son iş günü", "ayın ilk Salısı") |
+| Çeyreklik | **Çeyreğin 1. / 2. / 3. ayı** (Oca·Nis·Tem·Eki …) + aylıktaki gün/hafta deseni. Aralık "çeyrek" cinsindendir (2 → altı ayda bir) |
+| Yıllık | **Ay** + aylıktaki gün/hafta deseni (ör. "Mart'ın ilk Pazartesisi") |
+
+- **Bitiş:** yok · belirli tarihte · belirli sayıda tekrar. Seçimler canlı bir **özet** cümlesine yansır ("Her çeyrek · çeyreğin 2. ayı · ayın son iş günü").
+- Ayın 29–31'i seçilirse, o günü olmayan ayda **ayın son günü** kullanılır; "5. hafta" olmayan aylar atlanır. Başlangıç tarihi desene uymuyorsa (ör. Pazartesi başlayıp "Sal–Per") ilk örnek ondan sonraki ilk uygun gündür.
+- **Tüm tarihler** (açılır liste, başlıkta sayı): kuralın ürettiği tarihler (sonsuz serilerde 24'er 24'er, "Daha fazla göster") tek tek **değiştirilebilir** (başka güne alınır), **silinebilir** (üstü çizilir; **Geri al**) ve altındaki
+  **Tarih ekle** ile yeni tarih **eklenebilir**. Eklenenler "Eklendi", "Yalnızca bu" ile ayrı düzenlenmiş örnekler "Ayrı düzenlendi" etiketi taşır. Bunlar kuralın `exdates` / `rdates` alanlarına yazılır; kural sonradan
+  değiştirilse de silinen/eklenen tarihler korunur. Silinmiş bir tarihi tekrar eklemek onu geri getirir. Bir tarihin **saatini ya da içeriğini** değiştirmek için o tarihteki etkinlik açılıp "Yalnızca bu" seçilir.
+- Satırda tarih düzenlenirken `Enter` onaylar, `Esc` yalnızca satır düzenlemesini kapatır (pencereyi kapatmaz). Tekrar bölümü ve liste yalnızca "Tüm seri" kapsamında görünür; değişiklikler "kaydedilmemiş değişiklik" denetimine dahildir.
+- Eski seriler (desen alanı olmayan) aynen çalışır ve açılıp kapatılınca değişmez.
+
 **Başlık:** sayfanın başlığında etkinliğin **kendi adı** görünür ("Etkinliği düzenle" yazmaz). Ad düz metin gibi durur, **dokununca metin kutusuna dönüşür**
 (zemin + vurgu kenarlığı); uzunsa **üç nokta** ile kısalır (tamamı ipucu olarak görünür). Yeni etkinlikte ad boştur, "Yeni etkinlik" ipucu görünür ve kutu açılışta odaklıdır;
 düzenlemede hiçbir alan kendiliğinden odaklanmaz (telefonda klavye açılmaz). Adda `Enter` veya `Ctrl/⌘ + Enter` kaydeder. Ad girdisi formun dışında (başlıkta) durduğu için
@@ -280,7 +301,7 @@ Bu **tek seferlik bir aktarımdır**, iki yönlü senkron değildir. Mantık `sr
 |------|--------------|-------------|
 | Başlık, açıklama, kategori | `SUMMARY`, `DESCRIPTION`, `CATEGORIES` | Aynı; kategori olarak yalnızca ilki alınır |
 | Tarih / saat | Saatler **saat dilimsiz** (floating) yazılır; takvimin saat dilimine göre yorumlanır. Tüm gün: `VALUE=DATE`, bitiş ertesi gün | UTC (`Z`), IANA (`Europe/Istanbul`) ve Outlook'un Windows adları (`Turkey Standard Time`) yerel saate çevrilir. Tanınmayan dilim yerel saat sayılır ve bildirilir |
-| Tekrar | `RRULE` (günlük/haftalık/aylık/yıllık, aralık, adet, bitiş) + `EXDATE` | Aynı kurallar; aşağıdaki sınırlamalara bakın |
+| Tekrar | `RRULE` (günlük/haftalık/aylık/yıllık, aralık, adet, bitiş; `BYDAY`, `BYMONTHDAY`, `BYMONTH`, `BYSETPOS` desenleri; çeyreklik = `FREQ=MONTHLY;INTERVAL=3N`) + `EXDATE` (silinen tarihler) + `RDATE` (eklenen tarihler). `DTSTART` kuralın ürettiği **ilk tarihtir** | Aynı kurallar; aşağıdaki sınırlamalara bakın |
 | Tek örnek değişikliği | Aynı UID + `RECURRENCE-ID` ile ayrı `VEVENT` | Seriye bağlanır ("Seriye geri döndür" çalışır) |
 | Hatırlatma | `VALARM` (5/15/60 dk) | Alarm en yakın 5/15/60 dakikaya yuvarlanır |
 | Durum, ilerleme, renk, kritik, bağımlılık | `X-CALENDAR-PRO-*` ve `RELATED-TO;RELTYPE=DEPENDS-ON`; diğer uygulamalar yok sayar | Yalnızca bu uygulamanın dışa aktarımında geri yüklenir |
@@ -294,10 +315,11 @@ Bu **tek seferlik bir aktarımdır**, iki yönlü senkron değildir. Mantık `sr
 - İptal edilmiş (`STATUS:CANCELLED`) etkinlikler atlanır.
 - Dosya boyutu en fazla 20 MB.
 
-**Sınırlamalar:** uygulamanın tekrar modeli yalnızca `FREQ` / `INTERVAL` / `COUNT` / `UNTIL` bilir. Başlangıç gününden türetilebilen
-`BYDAY` / `BYMONTHDAY` / `BYMONTH` (ör. haftalık + başlangıç günü) desteklenir; haftanın birden çok günü (`BYDAY=MO,WE,FR`),
-"ayın 2. salısı", `BYSETPOS`, `RDATE` gibi kurallar desteklenmez — bu etkinlikler **yalnızca ilk örnek** olarak eklenir ve içe aktarma
-bildiriminde sayısı belirtilir. Ekler (attachments) ICS'e dahil edilmez.
+**Tekrar kuralları:** `FREQ` / `INTERVAL` / `COUNT` / `UNTIL`, günlük/haftalık `BYDAY` listeleri (`BYDAY=MO,WE,FR`), aylık/yıllık `BYMONTHDAY`
+(tek gün ya da `-1` = son gün), "ayın N. haftasının X günü" (`BYDAY=2TU`, `-1FR`), "ayın N. iş günü" (`BYDAY=MO,TU,WE,TH,FR;BYSETPOS=N`), yıllıkta `BYMONTH`
+ve `FREQ=YEARLY;BYMONTH=1,4,7,10` (çeyreklik) ile `RDATE` desteklenir. **Desteklenmeyenler** (`BYYEARDAY`, ayda her salı, birden çok `BYMONTHDAY` gibi) **yalnızca ilk örnek**
+olarak eklenir ve içe aktarma bildiriminde sayısı belirtilir. Ayın 29–31'i: uygulamada kısa aylarda ayın son gününe kayar; ICS'te 31 `BYMONTHDAY=-1` olarak yazılır,
+29/30 ise o günü olmayan ayları atlayan `BYMONTHDAY=N` olur. Ekler (attachments) ICS'e dahil edilmez.
 
 ## Verileri sıfırlama
 
@@ -378,7 +400,10 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
 - `startTime` boşsa etkinlik tüm gündür (formda "Tüm gün" açılınca bitiş tarihi başlangıca eşitlenir).
 - `color`: paletten veya özel olarak seçilen herhangi bir `#rrggbb` (bkz. "Etkinlik rengi").
 - `description`: ham Markdown metni olarak saklanır (bkz. "Açıklamada Markdown").
-- `recurrence`: `{ freq: 'daily'|'weekly'|'monthly'|'yearly', interval, until, count, exdates }` — yalnızca ana kayıt saklanır, tekrarlar görüntüleme anında üretilir; `exdates` üretilmeyecek tarihlerdir.
+- `recurrence`: `{ freq: 'daily'|'weekly'|'monthly'|'quarterly'|'yearly', interval, until, count, exdates, … }` — yalnızca ana kayıt saklanır, tekrarlar görüntüleme anında üretilir.
+  İsteğe bağlı alanlar (yalnızca anlamlıysa saklanır; eski kayıtlar değişmeden çalışır): `weekdays` (günlük/haftalık günler), `monthDay` (1–31 ya da -1 = son gün),
+  `nth` + `weekday` (ayın N. haftasının X günü; `weekday`: 0–6 ya da `'work'` = iş günü), `quarterMonth` (çeyreğin 1./2./3. ayı), `month` (yıllık), `rdates` (elle eklenen tarihler).
+  Sonuç = (kuralın tarihleri ∪ `rdates`) \ `exdates`. Mantık `src/services/recurrenceService.js` içindedir (saf, `tests/recurrence.test.js` ile test edilir).
 - `seriesId` / `originalDate`: seriden ayrılıp tek başına düzenlenmiş örneğin bağlantısı.
 - `reminder`: 0 / 5 / 15 / 60 dakika.
 - `dependencies`: Gantt için öncül görev id'leri.
@@ -388,6 +413,7 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
 - Tekrarlayan bir örnek taşındığında, boyutlandırıldığında veya silindiğinde **"Yalnızca bu etkinlik / Tüm seri"** sorulur;
   düzenleme formunda da aynı seçim üstteki kapsam seçiciyle yapılır. "Yalnızca bu" seçilirse örneğin tarihi serinin
   `recurrence.exdates` listesine eklenir ve `seriesId` + `originalDate` ile seriye bağlı bağımsız bir kayıt oluşturulur.
+  Bir örneği sürükleyip **"Tüm seri"** seçilirse seri o kadar kayar ve desen taşınan örneğe uyar (haftanın günleri döner; "ayın 15'i" → yeni gün; "ayın ilk salısı" → yeni gün/hafta).
   Bu kayıt açıldığında **"Seriye geri döndür"** ile değişiklik geri alınabilir. Seri silinirse ayrılmış örnekleri de silinir.
 - Ekler, tekrar kuralı ve bağımlılıklar yalnızca seri düzeyinde düzenlenir ("Yalnızca bu" modunda gizlenir).
 - Service worker yalnızca üretim build'inde kaydedilir (geliştirmede HMR ile çakışmaması için).

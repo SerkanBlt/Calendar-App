@@ -9,6 +9,7 @@ import { store } from './state.js';
 import { addDaysISO, diffDays } from './dateUtils.js';
 import { compareByStart, normalizeEvent } from './eventModel.js';
 import { createId } from './utils.js';
+import { shiftRule } from '../services/recurrenceService.js';
 
 function commit(events) {
   store.set({ events: [...events].sort(compareByStart) });
@@ -166,8 +167,8 @@ export const eventRepo = {
       ...changes,
       startDate,
       endDate: addDaysISO(startDate, span),
-      // Hariç tutulan tarihler seriyle birlikte kayar
-      recurrence: shift ? { ...master.recurrence, exdates: (master.recurrence.exdates ?? []).map((d) => addDaysISO(d, shift)) } : master.recurrence,
+      // Hariç tutulan/eklenen tarihler seriyle birlikte kayar; haftanın günleri, ayın günü/haftası taşınan örneğe göre uyarlanır
+      recurrence: shift ? shiftRule(master.recurrence, occ.startDate, newStart) : master.recurrence,
     });
   },
 };

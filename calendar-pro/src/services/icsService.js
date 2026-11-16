@@ -7,20 +7,23 @@
  *  - Saatler "floating" (saat dilimsiz) yazılır: uygulama saatleri zaten yerel duvar saati olarak saklar; bu sayede
  *    tekrarlayan etkinlikler yaz/kış saati geçişinde kaymaz. Gmail/Outlook bunları takvimin saat dilimine göre yorumlar.
  *  - Tüm gün etkinliklerde DTEND, RFC gereği bitiş gününden bir sonraki gündür (exclusive).
- *  - Tekrar: RRULE (FREQ/INTERVAL/COUNT/UNTIL) + EXDATE. Seriden ayrılmış tek örnekler aynı UID ile RECURRENCE-ID'li
- *    ayrı VEVENT olarak yazılır (bu durumda ana serinin EXDATE'inde yer almaz).
+ *  - Tekrar: RRULE (FREQ/INTERVAL/COUNT/UNTIL + BYDAY/BYMONTHDAY/BYMONTH/BYSETPOS desenleri; çeyreklik = FREQ=MONTHLY;INTERVAL=3N),
+ *    EXDATE (silinen tarihler) ve RDATE (elle eklenen tarihler). DTSTART, kuralın ürettiği ilk tarihtir. Seriden ayrılmış tek örnekler
+ *    aynı UID ile RECURRENCE-ID'li ayrı VEVENT olarak yazılır (bu durumda ana serinin EXDATE'inde yer almaz).
  *  - Hatırlatma: VALARM. Durum, ilerleme, renk, kritik ve bağımlılıklar yalnızca bu uygulamanın okuduğu
  *    X-CALENDAR-PRO-* / RELATED-TO alanlarıyla taşınır; diğer uygulamalar bunları yok sayar.
  *
  * İçe aktarma (parseICS + planImport)
  *  - Saat dilimleri yerel saate çevrilir: UTC ("Z"), IANA adları (Europe/Istanbul) ve Outlook'un Windows adları
  *    ("Turkey Standard Time"). Tanınmayan dilim yerel saat sayılır ve bildirilir.
- *  - Uygulamanın modelinde karşılığı olmayan tekrar kuralları (BYDAY ile birden çok gün, "ayın 2. salısı" vb.) yalnızca
- *    ilk örnek olarak eklenir ve bildirilir (bkz. convertRRule).
+ *  - Uygulamanın modelinde karşılığı olmayan tekrar kuralları (BYYEARDAY, "ayın her salısı", birden çok BYMONTHDAY vb.) yalnızca
+ *    ilk örnek olarak eklenir ve bildirilir (bkz. convertRRule). Haftalık/günlük BYDAY listeleri, "ayın 2. salısı", "ayın son iş günü",
+ *    BYMONTHDAY ve RDATE desteklenir.
  *  - Aynı UID tekrar içe aktarılırsa kayıt çoğalmaz, güncellenir (kimlik UID'den türetilir).
  */
-import { addDaysISO, combineDateTime, isValidISODate, pad, parseISODate, toISODate } from '../core/dateUtils.js';
+import { addDaysISO, combineDateTime, diffDays, isValidISODate, pad, parseISODate, toISODate } from '../core/dateUtils.js';
 import { eventEnd, normalizeEvent, REMINDER_OPTIONS, STATUSES } from '../core/eventModel.js';
+import { firstRuleDate } from './recurrenceService.js';
 
 const UID_DOMAIN = 'calendar-pro';
 const OWN_UID = /^([A-Za-z0-9_-]{1,80})@calendar-pro$/;
@@ -128,9 +131,32 @@ function fold(line) {
 /** Tüm gün (time boş) ise VALUE=DATE, değilse floating tarih-saat. */
 const dateProp = (name, iso, time) => (time ? `${name}:${localDateTime(iso, time)}` : `${name};VALUE=DATE:${compactDate(iso)}`);
 
-function rruleLine(rec, allDay) {
-  const parts = [`FREQ=${rec.freq.toUpperCase()}`];
-  if (rec.interval > 1) parts.push(`INTERVAL=${rec.interval}`);
+const ICS_WORKDAYS = 'MO,TU,WE,TH,FR';
+/** Haftanın günleri Pazartesi başlangıçlı sıralanır (RFC varsayılanı WKST=MO). */
+const sortByMonday = (days) => [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+
+/**
+ * RRULE satırı. Çeyreklik = her 3 ayda bir (FREQ=MONTHLY;INTERVAL=3N). Dışa aktarılan DTSTART, kuralın ürettiği İLK tarihtir (başlangıç tarihi
+ * desene uymuyorsa ondan sonraki ilk uygun gün); böylece INTERVAL/BYDAY dönemleri tam olarak uygulamadakiyle örtüşür.
+ * `firstDate`: bu ilk tarih (yıllık desenlerde BYMONTH'u türetmek için).
+ */
+function rruleLine(rec, allDay, firstDate) {
+  const parts = [`FREQ=${rec.freq === 'quarterly' ? 'MONTHLY' : rec.freq.toUpperCase()}`];
+  const interval = rec.freq === 'quarterly' ? rec.interval * 3 : rec.interval;
+  if (interval > 1) parts.push(`INTERVAL=${interval}`);
+  if ((rec.freq === 'daily' || rec.freq === 'weekly') && rec.weekdays?.length) {
+    parts.push(`BYDAY=${sortByMonday(rec.weekdays).map((d) => WEEKDAYS[d]).join(',')}`);
+    if (rec.freq === 'weekly' && rec.interval > 1) parts.push('WKST=MO');
+  } else if (rec.freq === 'monthly' || rec.freq === 'quarterly' || rec.freq === 'yearly') {
+    // Yıllıkta BYMONTH açık yazılır; yoksa BYDAY/BYMONTHDAY tüm yıla yayılırdı
+    if (rec.freq === 'yearly' && (rec.month || rec.nth || rec.monthDay)) parts.push(`BYMONTH=${rec.month || Number(firstDate.slice(5, 7))}`);
+    if (rec.nth && rec.weekday !== undefined) {
+      if (rec.weekday === 'work') parts.push(`BYDAY=${ICS_WORKDAYS}`, `BYSETPOS=${rec.nth}`);
+      else parts.push(`BYDAY=${rec.nth}${WEEKDAYS[rec.weekday]}`);
+    } else if (rec.monthDay) {
+      parts.push(`BYMONTHDAY=${rec.monthDay === 31 ? -1 : rec.monthDay}`); // uygulamada 31, kısa aylarda ayın son günüdür
+    }
+  }
   // RFC: COUNT ve UNTIL birlikte kullanılamaz; ikisi de varsa COUNT yazılır.
   if (rec.count) parts.push(`COUNT=${rec.count}`);
   else if (rec.until) parts.push(`UNTIL=${compactDate(rec.until)}${allDay ? '' : 'T235959'}`); // UNTIL, DTSTART ile aynı türde olmalı
@@ -148,19 +174,28 @@ function eventLines(ev, ctx) {
     `CREATED:${utcStamp(ev.createdAt, ctx.now)}`,
     `LAST-MODIFIED:${utcStamp(ev.updatedAt, ctx.now)}`,
   ];
+  // Tekrarlayan seride DTSTART, kuralın ürettiği ilk tarihtir (başlangıç tarihi desene uymayabilir: ör. Pazartesi başlayıp "Sal–Per")
+  const firstDate = ev.recurrence ? firstRuleDate(ev.recurrence, ev.startDate) : ev.startDate;
+  const shift = diffDays(ev.startDate, firstDate);
+  const startDate = shift ? firstDate : ev.startDate;
+  const endDate = shift ? addDaysISO(ev.endDate, shift) : ev.endDate;
   if (series) out.push(dateProp('RECURRENCE-ID', ev.originalDate, series.startTime));
-  out.push(dateProp('DTSTART', ev.startDate, ev.startTime));
-  out.push(allDay ? dateProp('DTEND', addDaysISO(ev.endDate, 1), '') : dateProp('DTEND', ev.endDate, ev.endTime || ev.startTime));
+  out.push(dateProp('DTSTART', startDate, ev.startTime));
+  out.push(allDay ? dateProp('DTEND', addDaysISO(endDate, 1), '') : dateProp('DTEND', endDate, ev.endTime || ev.startTime));
   out.push(`SUMMARY:${escapeText(ev.title)}`);
   if (ev.description) out.push(`DESCRIPTION:${escapeText(ev.description)}`);
   if (ev.category) out.push(`CATEGORIES:${escapeText(ev.category)}`);
 
   if (ev.recurrence) {
-    out.push(rruleLine(ev.recurrence, allDay));
+    out.push(rruleLine(ev.recurrence, allDay, firstDate));
     const replaced = ctx.overridden.get(ev.id);
     const exdates = (ev.recurrence.exdates || []).filter((d) => !replaced?.has(d));
     if (exdates.length) {
       out.push(allDay ? `EXDATE;VALUE=DATE:${exdates.map(compactDate).join(',')}` : `EXDATE:${exdates.map((d) => localDateTime(d, ev.startTime)).join(',')}`);
+    }
+    const rdates = ev.recurrence.rdates || []; // elle eklenen tarihler
+    if (rdates.length) {
+      out.push(allDay ? `RDATE;VALUE=DATE:${rdates.map(compactDate).join(',')}` : `RDATE:${rdates.map((d) => localDateTime(d, ev.startTime)).join(',')}`);
     }
   }
 
@@ -375,10 +410,31 @@ function parseDuration(value) {
 // İçe aktarma: tekrar, hatırlatma, etkinlik dönüştürme
 // ---------------------------------------------------------------------------
 
+const ICS_DAY_NUMBERS = Object.fromEntries(WEEKDAYS.map((code, i) => [code, i]));
+const NTH_ALLOWED = [1, 2, 3, 4, 5, -1];
+
+/** "MO,TU" / "2TU" / "-1FR" → [{ n, day }]; geçersiz öğe varsa null. */
+function parseByDay(value) {
+  const out = [];
+  for (const token of value.split(',')) {
+    const m = /^([+-]?\d{1,2})?(SU|MO|TU|WE|TH|FR|SA)$/.exec(token.trim());
+    if (!m) return null;
+    out.push({ n: m[1] ? Number(m[1]) : 0, day: ICS_DAY_NUMBERS[m[2]] });
+  }
+  return out;
+}
+
+const sameNumbers = (a, b) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
+
 /**
- * RRULE'u uygulamanın modeline çevirir. Model yalnızca FREQ/INTERVAL/COUNT/UNTIL bilir; başlangıç tarihinden
- * türetilebilen BYDAY/BYMONTHDAY/BYMONTH (ör. haftalık + başlangıç günü) kabul edilir, gerisi desteklenmez.
- * @returns {{freq, interval, until, count}|null} desteklenmiyorsa null
+ * RRULE'u uygulamanın modeline çevirir (bkz. recurrenceService.js): FREQ/INTERVAL/COUNT/UNTIL ve
+ *  - günlük/haftalık + BYDAY (günlerin listesi),
+ *  - aylık/yıllık + BYMONTHDAY (tek gün ya da -1 = son gün), BYDAY=2TU / -1FR (ayın N. haftasının X günü),
+ *    BYDAY=MO,TU,WE,TH,FR + BYSETPOS=N (ayın N. iş günü), yıllıkta BYMONTH (tek ay),
+ *  - FREQ=YEARLY + BYMONTH=m,m+3,m+6,m+9 → çeyreklik.
+ * Başlangıç tarihinden türetilebilen değerler (haftalıkta başlangıç günü, ayın başlangıç günü, başlangıç ayı) kurala yazılmaz.
+ * Gerisi (BYYEARDAY, ayda her Salı, birden çok BYMONTHDAY …) desteklenmez.
+ * @returns {object|null} desteklenmiyorsa null
  */
 function convertRRule(value, startDate, ctx) {
   const rule = {};
@@ -386,14 +442,10 @@ function convertRRule(value, startDate, ctx) {
     const eq = part.indexOf('=');
     if (eq > 0) rule[part.slice(0, eq).trim().toUpperCase()] = part.slice(eq + 1).trim().toUpperCase();
   }
-  const freq = rule.FREQ?.toLowerCase();
+  let freq = rule.FREQ?.toLowerCase();
   if (!['daily', 'weekly', 'monthly', 'yearly'].includes(freq)) return null;
-  if (['BYSETPOS', 'BYYEARDAY', 'BYWEEKNO', 'BYHOUR', 'BYMINUTE', 'BYSECOND'].some((k) => k in rule)) return null;
-
-  const start = parseISODate(startDate);
-  if ('BYDAY' in rule && !(freq === 'weekly' && rule.BYDAY === WEEKDAYS[start.getDay()])) return null;
-  if ('BYMONTHDAY' in rule && !((freq === 'monthly' || freq === 'yearly') && Number(rule.BYMONTHDAY) === start.getDate())) return null;
-  if ('BYMONTH' in rule && !(freq === 'yearly' && Number(rule.BYMONTH) === start.getMonth() + 1)) return null;
+  if (['BYYEARDAY', 'BYWEEKNO', 'BYHOUR', 'BYMINUTE', 'BYSECOND'].some((k) => k in rule)) return null;
+  if ('BYSETPOS' in rule && !(freq === 'monthly' || freq === 'yearly')) return null;
 
   let until = '';
   if (rule.UNTIL) {
@@ -401,7 +453,52 @@ function convertRRule(value, startDate, ctx) {
     if (!parsed) return null;
     until = parsed.date;
   }
-  return { freq, interval: Math.max(1, parseInt(rule.INTERVAL, 10) || 1), until, count: Math.max(0, parseInt(rule.COUNT, 10) || 0) };
+  const out = { freq, interval: Math.max(1, parseInt(rule.INTERVAL, 10) || 1), until, count: Math.max(0, parseInt(rule.COUNT, 10) || 0) };
+
+  const start = parseISODate(startDate);
+  const days = 'BYDAY' in rule ? parseByDay(rule.BYDAY) : null;
+  if ('BYDAY' in rule && !days) return null;
+
+  if (freq === 'daily' || freq === 'weekly') {
+    if ('BYMONTHDAY' in rule || 'BYMONTH' in rule || days?.some((d) => d.n)) return null;
+    if (days) {
+      const weekdays = [...new Set(days.map((d) => d.day))].sort((a, b) => a - b);
+      const startOnly = freq === 'weekly' && weekdays.length === 1 && weekdays[0] === start.getDay();
+      if (!startOnly && weekdays.length < 7) out.weekdays = weekdays;
+    }
+    return out;
+  }
+
+  // aylık / yıllık
+  if ('BYMONTH' in rule) {
+    const months = rule.BYMONTH.split(',').map(Number);
+    if (months.some((m) => !Number.isInteger(m) || m < 1 || m > 12)) return null;
+    if (freq === 'monthly') return null;
+    if (months.length === 1) {
+      if (months[0] !== start.getMonth() + 1) out.month = months[0];
+    } else if (out.interval === 1 && months.length === 4 && months[0] <= 3 && sameNumbers(months, [0, 3, 6, 9].map((b) => b + months[0]))) {
+      out.freq = 'quarterly';
+      out.quarterMonth = months[0];
+    } else return null;
+  }
+  if ('BYMONTHDAY' in rule) {
+    const values = rule.BYMONTHDAY.split(',').map(Number);
+    const md = values[0];
+    if (values.length !== 1 || days || 'BYSETPOS' in rule || !(md === -1 || (Number.isInteger(md) && md >= 1 && md <= 31))) return null;
+    if (md !== start.getDate()) out.monthDay = md;
+  } else if (days) {
+    const pos = 'BYSETPOS' in rule ? Number(rule.BYSETPOS) : 0;
+    if ('BYSETPOS' in rule) {
+      if (!NTH_ALLOWED.includes(pos) || days.some((d) => d.n)) return null;
+      if (days.length === 1) Object.assign(out, { nth: pos, weekday: days[0].day });
+      else if (sameNumbers(days.map((d) => d.day), [1, 2, 3, 4, 5])) Object.assign(out, { nth: pos, weekday: 'work' });
+      else return null;
+    } else {
+      if (days.length !== 1 || !NTH_ALLOWED.includes(days[0].n)) return null; // ayda her Salı gibi sıra numarasız kurallar desteklenmez
+      Object.assign(out, { nth: days[0].n, weekday: days[0].day });
+    }
+  } else if ('BYSETPOS' in rule) return null;
+  return out;
 }
 
 const nearestReminder = (minutes) => REMINDERS.reduce((best, v) => (Math.abs(v - minutes) < Math.abs(best - minutes) ? v : best));
@@ -418,16 +515,19 @@ function reminderFromAlarms(alarms) {
   return 0;
 }
 
-function collectExdates(raw, ctx) {
+function collectDates(raw, ctx, name) {
   const dates = new Set();
-  for (const prop of all(raw.props, 'EXDATE')) {
+  for (const prop of all(raw.props, name)) {
+    if ((prop.params.VALUE || '').toUpperCase() === 'PERIOD') continue; // süre aralıklı RDATE desteklenmez
     for (const v of prop.value.split(',')) {
       const parsed = parseDateTime({ value: v, params: prop.params }, ctx);
       if (parsed) dates.add(parsed.date);
     }
   }
-  return [...dates];
+  return [...dates].sort();
 }
+
+const collectExdates = (raw, ctx) => collectDates(raw, ctx, 'EXDATE');
 
 /** Tek bir VEVENT'i etkinlik alanlarına çevirir (kimlik hariç). Geçersizse null. */
 function convertEvent(raw, ctx, stats, { override = false } = {}) {
@@ -482,9 +582,14 @@ function convertEvent(raw, ctx, stats, { override = false } = {}) {
 
   if (!override) {
     const rrule = first(raw.props, 'RRULE');
-    const rule = rrule && convertRRule(rrule.value, start.date, ctx);
-    if (rule) rec.recurrence = { ...rule, exdates: collectExdates(raw, ctx) };
-    else if (rrule || first(raw.props, 'RDATE')) {
+    const hasRdate = Boolean(first(raw.props, 'RDATE'));
+    // RRULE yoksa ama RDATE varsa: yalnızca başlangıç tarihi + eklenen tarihler (1 tekrarlık günlük kural)
+    const rule = rrule ? convertRRule(rrule.value, start.date, ctx) : hasRdate ? { freq: 'daily', interval: 1, until: '', count: 1 } : null;
+    if (rule) {
+      rec.recurrence = { ...rule, exdates: collectExdates(raw, ctx) };
+      const rdates = collectDates(raw, ctx, 'RDATE');
+      if (rdates.length) rec.recurrence.rdates = rdates;
+    } else if (rrule) {
       stats.unsupportedRecurrence++; // yalnızca ilk örnek eklenir
       rec.recurrenceUnsupported = true;
     }
@@ -611,8 +716,10 @@ export function planImport(parsed, existing, now = new Date()) {
 
     if (prev) {
       if (prev.recurrence && fields.recurrence) {
-        // Yerelde exdates'e eklenmiş tarihleri kaybetmemek için birleştir
+        // Yerelde silinmiş (exdates) ve eklenmiş (rdates) tarihleri kaybetmemek için birleştir
         merged.recurrence = { ...fields.recurrence, exdates: [...new Set([...(prev.recurrence.exdates || []), ...fields.recurrence.exdates])] };
+        const rdates = [...new Set([...(prev.recurrence.rdates || []), ...(fields.recurrence.rdates || [])])].sort();
+        if (rdates.length) merged.recurrence.rdates = rdates;
       } else if (prev.recurrence && recurrenceUnsupported) {
         merged.recurrence = prev.recurrence; // yerelde elle kurulmuş seriyi, desteklenmeyen kuralla silme
       }

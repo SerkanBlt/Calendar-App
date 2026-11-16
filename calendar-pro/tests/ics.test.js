@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { normalizeEvent } from '../src/core/eventModel.js';
 import { buildICS, parseICS, planImport } from '../src/services/icsService.js';
+import { ruleDatesInRange } from '../src/services/recurrenceService.js';
 
 const NOW = new Date(2026, 10, 15, 12, 0); // 15 Kas 2026 12:00 yerel
 const ev = (input) => normalizeEvent(input);
@@ -59,6 +60,91 @@ describe('buildICS', () => {
     const ics = buildICS([ev({ id: 'a1', title: 'Doğum günü', startDate: '2026-11-02', recurrence: { freq: 'yearly', until: '2030-11-02', exdates: ['2027-11-02'] } })], { now: NOW });
     assert.match(ics, /RRULE:FREQ=YEARLY;UNTIL=20301102\r\n/);
     assert.match(ics, /EXDATE;VALUE=DATE:20271102\r\n/);
+  });
+
+  describe('desenli tekrarlar: RRULE, RDATE ve DTSTART', () => {
+    const rrule = (recurrence, over = {}) => {
+      const ics = buildICS([ev({ id: 'p1', title: 'Desen', startDate: '2026-11-16', startTime: '09:00', endTime: '10:00', recurrence, ...over })], { now: NOW });
+      return { ics, line: /RRULE:[^\r]*/.exec(ics)?.[0], dtstart: /DTSTART:[^\r]*/.exec(ics)?.[0] };
+    };
+
+    test('günlük iş günleri ve haftalık belirli günler', () => {
+      assert.equal(rrule({ freq: 'daily', weekdays: [1, 2, 3, 4, 5] }).line, 'RRULE:FREQ=DAILY;BYDAY=MO,TU,WE,TH,FR');
+      assert.equal(rrule({ freq: 'weekly', interval: 2, weekdays: [4, 2], count: 6 }).line, 'RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;WKST=MO;COUNT=6');
+      assert.equal(rrule({ freq: 'weekly', weekdays: [0, 6] }).line, 'RRULE:FREQ=WEEKLY;BYDAY=SA,SU'); // hafta Pazartesi başlar
+    });
+
+    test('DTSTART kuralın ürettiği ilk tarihtir (başlangıç Pazartesi, kural Sal/Per → Salı)', () => {
+      assert.equal(rrule({ freq: 'weekly', weekdays: [2, 4] }).dtstart, 'DTSTART:20261117T090000');
+      assert.match(rrule({ freq: 'weekly', weekdays: [2, 4] }).ics, /DTEND:20261117T100000\r\n/);
+      assert.equal(rrule({ freq: 'daily' }).dtstart, 'DTSTART:20261116T090000'); // desensiz: değişmez
+    });
+
+    test('aylık: ayın N. günü, son gün, N. haftanın X günü, N. iş günü', () => {
+      assert.equal(rrule({ freq: 'monthly', monthDay: 15 }).line, 'RRULE:FREQ=MONTHLY;BYMONTHDAY=15');
+      assert.equal(rrule({ freq: 'monthly', monthDay: -1 }).line, 'RRULE:FREQ=MONTHLY;BYMONTHDAY=-1');
+      assert.equal(rrule({ freq: 'monthly', monthDay: 31 }).line, 'RRULE:FREQ=MONTHLY;BYMONTHDAY=-1'); // 31, kısa aylarda son gün
+      assert.equal(rrule({ freq: 'monthly', nth: 1, weekday: 2 }).line, 'RRULE:FREQ=MONTHLY;BYDAY=1TU');
+      assert.equal(rrule({ freq: 'monthly', nth: -1, weekday: 5 }).line, 'RRULE:FREQ=MONTHLY;BYDAY=-1FR');
+      assert.equal(rrule({ freq: 'monthly', nth: -1, weekday: 'work' }).line, 'RRULE:FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1');
+    });
+
+    test('çeyreklik = her 3 ayda bir; yıllık BYMONTH açık yazılır', () => {
+      assert.equal(rrule({ freq: 'quarterly', quarterMonth: 1, nth: 1, weekday: 1 }).line, 'RRULE:FREQ=MONTHLY;INTERVAL=3;BYDAY=1MO');
+      assert.equal(rrule({ freq: 'quarterly', interval: 2, monthDay: 10 }).line, 'RRULE:FREQ=MONTHLY;INTERVAL=6;BYMONTHDAY=10');
+      assert.equal(rrule({ freq: 'yearly', month: 3, nth: 1, weekday: 1 }).line, 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=1MO');
+      assert.equal(rrule({ freq: 'yearly' }).line, 'RRULE:FREQ=YEARLY');
+    });
+
+    test('RDATE: saatli seride tarih-saat, tüm gün seride tarih; EXDATE yanında', () => {
+      const timed = rrule({ freq: 'weekly', exdates: ['2026-11-23'], rdates: ['2026-11-25', '2026-12-02'] }).ics;
+      assert.match(timed, /RDATE:20261125T090000,20261202T090000\r\n/);
+      assert.match(timed, /EXDATE:20261123T090000\r\n/);
+      const allDay = rrule({ freq: 'weekly', rdates: ['2026-11-25'] }, { startTime: '', endTime: '' }).ics;
+      assert.match(allDay, /RDATE;VALUE=DATE:20261125\r\n/);
+    });
+  });
+
+  describe('desenli tekrarlar: gidiş-dönüşte aynı tarihler', () => {
+    const cases = [
+      { freq: 'daily', weekdays: [1, 2, 3, 4, 5] },
+      { freq: 'daily', interval: 2, weekdays: [1, 2, 3, 4, 5] },
+      { freq: 'weekly', weekdays: [2, 4] },
+      { freq: 'weekly', interval: 2, weekdays: [1, 3, 5], count: 9 },
+      { freq: 'monthly', nth: 1, weekday: 2 },
+      { freq: 'monthly', nth: -1, weekday: 'work' },
+      { freq: 'monthly', monthDay: -1 },
+      { freq: 'monthly', interval: 2, monthDay: 15, until: '2027-12-31' },
+      { freq: 'quarterly', quarterMonth: 1, nth: 1, weekday: 1 },
+      { freq: 'quarterly', interval: 2, quarterMonth: 3, monthDay: 1 },
+      { freq: 'yearly', month: 3, nth: 1, weekday: 1 },
+      { freq: 'weekly', exdates: ['2026-11-23'], rdates: ['2026-11-25'] },
+    ];
+    for (const recurrence of cases) {
+      test(JSON.stringify(recurrence), () => {
+        const original = ev({ id: 'r1', title: 'Desen', startDate: '2026-11-18', startTime: '09:00', endTime: '10:00', recurrence });
+        const [back] = roundTrip([original]);
+        const window = ['2026-11-01', '2029-12-31'];
+        const want = ruleDatesInRange(original.recurrence, original.startDate, ...window);
+        const got = ruleDatesInRange(back.recurrence ?? { freq: 'daily', interval: 1, until: '', count: 0, exdates: [] }, back.startDate, ...window);
+        assert.ok(back.recurrence, 'kural geri okunabilmeli');
+        assert.deepEqual(got, want);
+      });
+    }
+
+    test('RDATE tek başına (RRULE yok): başlangıç + eklenen tarihler', () => {
+      const ics = ['BEGIN:VCALENDAR', 'BEGIN:VEVENT', 'UID:r1', 'DTSTART:20261102T100000Z', 'DTEND:20261102T110000Z', 'RDATE:20261110T100000Z,20261120T100000Z', 'SUMMARY:Elle tarihli', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+      const { events, stats } = parseICS(ics);
+      assert.equal(stats.unsupportedRecurrence, 0);
+      assert.deepEqual(ruleDatesInRange(normalizeEvent(events[0]).recurrence, events[0].startDate, '2026-11-01', '2026-12-31'), ['2026-11-02', '2026-11-10', '2026-11-20']);
+    });
+
+    test('yeniden içe aktarmada yerelde eklenen tarihler (rdates) korunur', () => {
+      const local = ev({ id: 'r2', title: 'S', startDate: '2026-11-02', startTime: '09:00', endTime: '10:00', recurrence: { freq: 'weekly', rdates: ['2026-11-25'] } });
+      const fromFile = parseICS(buildICS([ev({ id: 'r2', title: 'S', startDate: '2026-11-02', startTime: '09:00', endTime: '10:00', recurrence: { freq: 'weekly', rdates: ['2026-12-03'] } })], { now: NOW })).events;
+      const [merged] = planImport(fromFile, [local], NOW).events;
+      assert.deepEqual(merged.recurrence.rdates, ['2026-11-25', '2026-12-03']);
+    });
   });
 
   test('ayrılmış tek örnek aynı UID + RECURRENCE-ID ile yazılır ve ana serinin EXDATE\'inde tekrarlanmaz', () => {
@@ -212,20 +298,29 @@ const FOREIGN = [
   'DTEND;TZID=Europe/Istanbul:20261109T143000',
   'SUMMARY:Haftalık sync (taşındı)',
   'END:VEVENT',
-  // Desteklenmeyen: haftanın birden çok günü
+  // Desteklenen: haftanın birden çok günü
   'BEGIN:VEVENT',
   'UID:multi-1@google.com',
   'DTSTART:20261102T080000Z',
   'DTEND:20261102T083000Z',
   'RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR',
+  'RDATE:20261107T080000Z',
   'SUMMARY:Pzt-Çar-Cum',
   'END:VEVENT',
-  // Desteklenmeyen: ayın 2. salısı
+  // Desteklenen: ayın 2. salısı
   'BEGIN:VEVENT',
   'UID:nth-1@google.com',
   'DTSTART;VALUE=DATE:20261110',
   'RRULE:FREQ=MONTHLY;BYDAY=2TU',
   'SUMMARY:Ayın 2. salısı',
+  'END:VEVENT',
+  // Desteklenmeyen: ayın her salısı (sıra numarasız aylık BYDAY)
+  'BEGIN:VEVENT',
+  'UID:unsup-1@google.com',
+  'DTSTART:20261103T080000Z',
+  'DTEND:20261103T083000Z',
+  'RRULE:FREQ=MONTHLY;BYDAY=TU',
+  'SUMMARY:Ayın tüm salıları',
   'END:VEVENT',
   // Geçersiz: DTSTART yok
   'BEGIN:VEVENT',
@@ -268,7 +363,7 @@ describe('parseICS (yabancı dosya)', () => {
     assert.equal(by('İptal'), undefined);
     assert.equal(by('Tarihsiz'), undefined);
     assert.equal(stats.skipped, 2);
-    assert.equal(stats.total, 13);
+    assert.equal(stats.total, 14);
   });
 
   test('desteklenen seri: kural, exdates ve tek örnek bağlantısı', () => {
@@ -283,10 +378,14 @@ describe('parseICS (yabancı dosya)', () => {
     assert.equal(single.recurrence, null);
   });
 
+  test('BYDAY listesi, ayın N. günü ve RDATE desteklenir', () => {
+    assert.deepEqual(by('Pzt-Çar-Cum').recurrence, { freq: 'weekly', interval: 1, until: '', count: 0, weekdays: [1, 3, 5], exdates: [], rdates: ['2026-11-07'] });
+    assert.deepEqual(by('Ayın 2. salısı').recurrence, { freq: 'monthly', interval: 1, until: '', count: 0, nth: 2, weekday: 2, exdates: [] });
+  });
+
   test('desteklenmeyen tekrar kuralları ilk örnek olarak eklenir ve sayılır', () => {
-    assert.equal(by('Pzt-Çar-Cum').recurrence, null);
-    assert.equal(by('Ayın 2. salısı').recurrence, null);
-    assert.equal(stats.unsupportedRecurrence, 2);
+    assert.equal(by('Ayın tüm salıları').recurrence, null);
+    assert.equal(stats.unsupportedRecurrence, 1);
   });
 
   test('aynı UID aynı kimliği üretir (yeniden içe aktarma çoğaltmaz)', () => {
@@ -327,8 +426,8 @@ describe('planImport', () => {
 
   test('desteklenmeyen kural, yerelde elle kurulmuş seriyi silmez ve exdates birleşir', () => {
     const { events: parsed } = parseICS(FOREIGN);
-    const multi = parsed.find((e) => e.title === 'Pzt-Çar-Cum');
-    const local = ev({ id: multi.id, title: 'Pzt-Çar-Cum', startDate: '2026-11-02', startTime: '11:00', endTime: '11:30', recurrence: { freq: 'daily' } });
+    const multi = parsed.find((e) => e.title === 'Ayın tüm salıları');
+    const local = ev({ id: multi.id, title: 'Ayın tüm salıları', startDate: '2026-11-02', startTime: '11:00', endTime: '11:30', recurrence: { freq: 'daily' } });
     const [merged] = planImport([multi], [local], NOW).events;
     assert.equal(merged.recurrence.freq, 'daily');
 

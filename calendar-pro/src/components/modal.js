@@ -83,6 +83,7 @@ export function openModal({ title, titleNode, body, footer, size = 'md', classNa
   function onKey(e) {
     if (openStack[openStack.length - 1] !== entry) return;
     if (e.key === 'Escape') {
+      if (e.target.closest?.('[data-handles-escape]')) return; // iç bileşen Esc'yi kendisi işler (ör. tekrar listesinde tarih satırı düzenleme)
       e.preventDefault();
       e.stopPropagation();
       requestClose();

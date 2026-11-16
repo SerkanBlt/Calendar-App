@@ -4,6 +4,23 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.26.0
+- **Tekrarlı etkinliklerde tarih seçimi (desenler)**: Tekrar bölümü yeniden yazıldı (`recurrenceEditor.js`). Sıklığa göre desen seçilir:
+  **günlük** → her gün / **iş günleri** / belirli günler (ör. 2 günde bir + yalnızca iş günleri); **haftalık** → haftanın **birden çok günü** (Sal + Per); **aylık** → ayın **N. günü** (ya da son günü) veya
+  **ayın N. haftasının X günü** (ilk/ikinci/üçüncü/dördüncü/son × Pzt…Paz ya da *iş günü*: "ayın ilk Salısı", "ayın son iş günü"); yeni **çeyreklik** → çeyreğin **1./2./3. ayı** + aylık deseni;
+  **yıllık** → ay + aylık deseni. Bitiş: yok / tarihte / N tekrar. Seçimler canlı bir özet cümlesine yansır. Başlangıcı izleyen alanlar (haftanın günü, ayın günü, ay) başlangıç tarihi değişince kendiliğinden değişir
+- **Tüm tarihler listesi**: kuralın ürettiği tarihler (sonsuz serilerde 24'er 24'er) tek tek **değiştirilebilir** (başka güne alınır), **silinebilir** (**Geri al** ile) ve **Tarih ekle** ile yenisi **eklenebilir**;
+  "Eklendi", "Silindi", "Ayrı düzenlendi" etiketleri. Bunlar kuralın `exdates` (silinen) ve yeni `rdates` (eklenen) alanlarına yazılır: sonuç = (kural ∪ rdates) \ exdates. Silinmiş tarihi eklemek onu geri getirir;
+  `Enter` satır düzenlemesini onaylar, `Esc` yalnızca satırı kapatır (modal artık `data-handles-escape` ile iç bileşenin Esc'sini bırakabilir)
+- **Tekrar motoru** (`recurrenceService.js`) dönem dönem tarih üretir (gün/hafta/ay/çeyrek/yıl), hızlı atlama ve kaba tarama aynı sonucu verir; çok günlü örnekler aralığa taşarsa görünür. **Geriye uyumlu**: eski kurallar
+  (desen alanı yok) aynı tarihleri üretir; yeni alanlar yalnızca anlamlıysa saklanır, açılıp kapatılan eski seri değişmez. Bir örneği sürükleyip **"Tüm seri"** seçmek deseni taşınan örneğe uyarlar (`shiftRule`)
+- **ICS**: yeni desenler `RRULE`'a (`BYDAY`, `BYMONTHDAY`, `BYMONTH`, `BYSETPOS`; çeyreklik = `FREQ=MONTHLY;INTERVAL=3N`), eklenen tarihler `RDATE`'e yazılır; `DTSTART` kuralın ürettiği ilk tarihtir (dönemler başka
+  uygulamalarda birebir örtüşür). İçe aktarmada artık `BYDAY=MO,WE,FR`, "ayın 2. salısı", `-1FR`, "ayın son iş günü", `BYMONTHDAY`, çeyreklik `BYMONTH` ve `RDATE` (tek başına da) **desteklenir**; desteklenmeyenler
+  (ör. ayda her salı) yine ilk örnek olarak eklenip bildirilir. Yeniden içe aktarmada yerelde eklenen tarihler korunur. Eski dosyalar etkilenmez
+- Test: 40 tekrar motoru + 20 ICS birim testi (iş günleri, belirli günler, N. haftanın günü, çeyreklik, yıllık, rdates/exdates, hızlı atlama eşdeğerliği, shiftRule, gidiş-dönüşte aynı tarihler); gerçek tarayıcıda (masaüstü + mobil) tüm
+  sıklıklar, bitiş kipleri, tarih sil/geri al/değiştir/ekle, kaydet-yeniden aç, eski seri, ayrı düzenlenmiş örnek etiketi, hafta görünümünde iş günleri
+- Düzeltme: "Her 2 günda bir" yazım hatası ("günde bir"); `hidden` düğmeleri `.btn` ile görünür kalıyordu (Tekrar bölümünde giderildi)
+
 ## 1.25.1
 - **Masaüstü başlığı düzeltildi**: sayfa başlığının arkasında, içerik panelinden her iki yanda 8 px taşan, yalnız alt köşeleri yuvarlak, kenarsız koyu bir bant duruyordu (1.24.0'da kaydırma başlığın altına
   taşınınca gereksiz kalan, eskiden kaydırılan içeriği örten yarı saydam bandın artığı). Artık başlık, mobildeki gibi **dört köşesi yuvarlak, ince kenarlı bir panel**dir ve içerik paneliyle **aynı genişlik ve

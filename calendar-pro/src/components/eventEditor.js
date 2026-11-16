@@ -22,7 +22,7 @@ import { formatDate, shiftEnd, todayISO } from '../core/dateUtils.js';
 import { EVENT_COLORS, normalizeHexColor, REMINDER_OPTIONS, STATUSES, STATUS_LABELS } from '../core/eventModel.js';
 import { createColorPicker } from './colorPicker.js';
 import { createMarkdownEditor } from './markdownEditor.js';
-import { FREQUENCIES } from '../services/recurrenceService.js';
+import { createRecurrenceEditor } from './recurrenceEditor.js';
 import { deleteEventWithUndo, deleteOccurrence } from '../core/actions.js';
 import { choiceDialog, openModal } from './modal.js';
 import { toast } from './toast.js';
@@ -138,16 +138,7 @@ export function openEventEditor(input = {}) {
       <div data-color-host></div>
     </fieldset>
 
-    <div class="field-grid field-grid--3 series-only">
-      <label class="field"><span>Tekrar</span>
-        <select name="freq">
-          <option value="">Tekrar yok</option>
-          ${Object.entries(FREQUENCIES).map(([k, v]) => html`<option value="${k}" ${ev.recurrence?.freq === k ? 'selected' : ''}>${v}</option>`)}
-        </select>
-      </label>
-      <label class="field rec-field"><span>Aralık</span><input type="number" name="interval" min="1" max="365" value="${ev.recurrence?.interval || 1}" /></label>
-      <label class="field rec-field"><span>Bitiş tarihi</span><input type="date" name="until" value="${ev.recurrence?.until || ''}" /></label>
-    </div>
+    <div data-rec-host></div>
 
     ${depCandidates.length
       ? html`<details class="field deps series-only" ${ev.dependencies.length ? 'open' : ''}>
@@ -184,6 +175,16 @@ export function openEventEditor(input = {}) {
   form.querySelector('[data-description-host]').replaceWith(description.el);
   form.querySelector('[data-description-label]').addEventListener('click', () => description.focus());
 
+  // Tekrar: sıklık + desen (iş günleri, belirli günler, ayın N. günü/haftası, çeyrek …) + "Tüm tarihler" listesi (değiştir/sil/ekle); bkz. recurrenceEditor.js
+  const recurrence = createRecurrenceEditor({
+    recurrence: ev.recurrence,
+    getStartDate: () => form.elements.startDate?.value,
+    settings,
+    // "Yalnızca bu" ile ayrı düzenlenmiş örnekler: orijinal tarih → kayıt (listede "Ayrı düzenlendi" etiketi için)
+    detached: isEdit ? Object.fromEntries(events.filter((e) => e.seriesId === ev.id && e.originalDate).map((e) => [e.originalDate, e])) : {},
+  });
+  form.querySelector('[data-rec-host]').replaceWith(recurrence.el);
+
   // Başlık alanı modal başlığındadır: etkinliğin adı görünür (uzunsa üç nokta), dokununca metin kutusuna dönüşür.
   // Form dışında durduğu için `form` özniteliğiyle forma bağlanır (form.elements.title, Enter ile kaydetme çalışır).
   const titleInput = document.createElement('input');
@@ -215,16 +216,13 @@ export function openEventEditor(input = {}) {
 
   // --- Dinamik alan davranışları ---
   const syncAllDay = () => form.classList.toggle('is-allday', f.allDay.checked);
-  const syncRecurrence = () => form.classList.toggle('has-recurrence', Boolean(f.freq.value));
   syncAllDay();
-  syncRecurrence();
   f.allDay.addEventListener('change', () => {
     syncAllDay();
     // Tüm gün seçilince başlangıç ve bitiş tarihi aynı olur (çok günlü yapmak için bitiş sonradan değiştirilebilir)
     if (f.allDay.checked) f.endDate.value = f.startDate.value;
     commitRange();
   });
-  f.freq.addEventListener('change', syncRecurrence);
   f.progress.addEventListener('input', () => (f.progressOut.value = `${f.progress.value}%`));
 
   // --- Başlangıç–bitiş bağı ---
@@ -264,6 +262,7 @@ export function openEventEditor(input = {}) {
     commitRange();
   };
   for (const name of ['startDate', 'startTime']) for (const type of ['input', 'change']) f[name].addEventListener(type, onStartChange);
+  for (const type of ['input', 'change']) f.startDate.addEventListener(type, () => recurrence.onStartChange()); // başlangıcı izleyen desen alanları (haftanın günü, ayın günü…) ve tarih listesi yenilenir
   for (const name of ['endDate', 'endTime']) for (const type of ['input', 'change']) f[name].addEventListener(type, commitRange);
   f.status.addEventListener('change', () => {
     if (f.status.value === 'done') {
@@ -299,6 +298,7 @@ export function openEventEditor(input = {}) {
       f.startDate.value = range.start;
       f.endDate.value = range.end;
       commitRange(); // tarihler programla yazıldı (olay tetiklenmez): bağın süre kaydı yenilensin
+      recurrence.onStartChange();
       scope = next;
       if (!wasDirty) baseline = snapshot();
     }
@@ -384,8 +384,6 @@ export function openEventEditor(input = {}) {
   function collect() {
     const isAllDay = f.allDay.checked;
     const deps = f.dependencies ? [...form.querySelectorAll('input[name="dependencies"]:checked')].map((n) => n.value) : ev.dependencies;
-    // Seri düzenlenirken daha önce silinmiş/ayrılmış örnek tarihleri korunur
-    const exdates = ev.recurrence?.exdates || [];
     return {
       ...(isEdit ? { id: ev.id } : {}),
       title: f.title.value,
@@ -400,7 +398,7 @@ export function openEventEditor(input = {}) {
       category: f.category.value,
       critical: f.critical.checked,
       reminder: Number(f.reminder.value),
-      recurrence: f.freq.value ? { freq: f.freq.value, interval: Number(f.interval.value) || 1, until: f.until.value, exdates } : null,
+      recurrence: recurrence.getRule(), // silinmiş/eklenmiş/ayrılmış örnek tarihleri (exdates/rdates) kural içinde korunur
       dependencies: deps,
     };
   }
