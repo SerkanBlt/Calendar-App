@@ -24,7 +24,7 @@ import { createColorPicker } from './colorPicker.js';
 import { createMarkdownEditor } from './markdownEditor.js';
 import { FREQUENCIES } from '../services/recurrenceService.js';
 import { deleteEventWithUndo, deleteOccurrence } from '../core/actions.js';
-import { openModal } from './modal.js';
+import { choiceDialog, openModal } from './modal.js';
 import { toast } from './toast.js';
 import { icon } from './icons.js';
 
@@ -208,6 +208,7 @@ export function openEventEditor(input = {}) {
     className: 'modal--page',
     initialFocus: isEdit ? 'dialog' : 'first',
     onClose: () => description.destroy(), // CodeMirror belge düzeyinde dinleyici bırakır: pencere kapanınca temizlenir
+    canClose: () => confirmLeave(), // kaydedilmemiş değişiklik varsa ✕ / Esc / perde / İptal ile çıkarken sorar
   });
   const f = form.elements;
 
@@ -255,10 +256,12 @@ export function openEventEditor(input = {}) {
   // tekrar kuralı, bağımlılıklar ve ekler yalnızca seri düzeyinde düzenlenebilir.
   function syncScope(next) {
     if (next && next !== scope) {
+      const wasDirty = isDirty(); // kapsamı değiştirmek tarihleri yeniden yazar; kullanıcı başka bir şey düzenlemediyse bu bir "değişiklik" sayılmaz
       const range = dateRanges[next];
       f.startDate.value = range.start;
       f.endDate.value = range.end;
       scope = next;
+      if (!wasDirty) baseline = snapshot();
     }
     form.classList.toggle('scope-single', scope === 'single');
     form.querySelectorAll('[data-scope]').forEach((b) => {
@@ -319,6 +322,26 @@ export function openEventEditor(input = {}) {
   });
 
   // --- Kaydet / sil ---
+  let baseline; // açılıştaki form durumu (bkz. aşağıdaki "Kaydedilmemiş değişiklik denetimi")
+  const snapshot = () => JSON.stringify({ ...collect(), scope, pending: pendingFiles.map((file) => `${file.name}:${file.size}`) });
+  const isDirty = () => baseline !== undefined && snapshot() !== baseline;
+
+  /** Çıkmadan önce: değişiklik yoksa true; varsa Kaydet / Kaydetme / Vazgeç sorar. Yalnızca "Kaydetme" çıkışa izin verir; "Kaydet" kaydeder (başarılıysa kendisi kapatır). */
+  async function confirmLeave() {
+    if (!isDirty()) return true;
+    const choice = await choiceDialog({
+      title: 'Değişiklikler kaydedilsin mi?',
+      message: 'Bu etkinlikte kaydedilmemiş değişiklikler var. Kaydetmeden çıkarsanız kaybolacak.',
+      choices: [
+        { value: 'save', label: 'Kaydet', variant: 'btn-primary' },
+        { value: 'discard', label: 'Kaydetme', variant: 'btn-danger-ghost' },
+      ],
+    });
+    if (choice === 'discard') return true;
+    if (choice === 'save') await submit(); // doğrulama hatasında (ör. boş ad) pencere açık kalır, ilgili alan odaklanır
+    return false;
+  }
+
   function collect() {
     const isAllDay = f.allDay.checked;
     const deps = f.dependencies ? [...form.querySelectorAll('input[name="dependencies"]:checked')].map((n) => n.value) : ev.dependencies;
@@ -383,11 +406,16 @@ export function openEventEditor(input = {}) {
   f.title.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submit(e);
   });
-  footer.querySelector('[data-cancel]').addEventListener('click', () => modal.close());
+  footer.querySelector('[data-cancel]').addEventListener('click', () => modal.requestClose());
   footer.querySelector('[data-delete]')?.addEventListener('click', async () => {
     const done = occurrence ? await deleteOccurrence(occurrence, scope) : await deleteEventWithUndo(ev.id);
     if (done) modal.close();
   });
+
+  // --- Kaydedilmemiş değişiklik denetimi ---
+  // Form durumunun anlık görüntüsü açılışta alınır; çıkarken (✕, Esc, perde, İptal) bugünkü durumla karşılaştırılır. Değişiklik yapılıp geri alınırsa
+  // (başlangıç hâline dönülürse) sorulmaz. Kayıt ve silme `modal.close()` ile doğrudan kapatır, sorulmaz.
+  baseline = snapshot();
 
   return modal;
 }

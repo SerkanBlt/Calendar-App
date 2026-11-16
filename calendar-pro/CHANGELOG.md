@@ -4,6 +4,20 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.24.0
+- **Çıkarken sorar**: etkinlik editöründe kaydedilmemiş değişiklik varsa `Esc` / ✕ / **İptal** **"Değişiklikler kaydedilsin mi?"** diye sorar: **Kaydet** (kaydeder; ad boşsa pencere açık kalır) · **Kaydetme** (atar) ·
+  **Vazgeç**. Form açılıştaki anlık görüntüyle karşılaştırılır: değişiklik geri alınırsa sorulmaz; kapsam seçimi tek başına değişiklik sayılmaz; tam ekran açıklamadaki yazı sayılır; Kaydet/Sil sormaz.
+  `openModal` yeni `canClose` seçeneği ve `requestClose()` kazandı (doğrudan `close()` denetimi atlar)
+- **Açıklama düğmeleri seçim yokken de çalışır**: önceden Kalın, kelimenin ortasına `**kalın**` yer tutucusu sokuyordu (`mer**kalın**haba`). Artık imleç **kelimedeyse kelime sarılır/açılır** (imleç yerinde kalır),
+  **boşluktaysa** `**|**` gibi boş çift bırakılır (içindeyken tekrar basmak kaldırır); italik, çizili, kod aynı; bağlantıda kelime etiket olur. Ctrl+B/I de aynı. (`formatAtCaret`, 9 birim testi)
+- **Araç çubuğu notun içinde, üstte (dock=top)**: açıklama araç çubuğu kutunun dışından, kutunun içine **CodeMirror paneli** olarak taşındı; kenarlıkla bütün, içerik kutu içinde kayarken sabit. Kutunun alt sınırı
+  araç çubuğu dahil 140 px
+- **Kaydırırken içerik başlığın altından akmaz**: kaydırma `.view`'den `.view-body`'ye taşındı; sayfa başlığı içeriğin üstünde sabit ve ayrı. Önceden Dashboard, Gün, Ay (yatay) ve Timeline'da kaydırılan içerik şeffaf başlığın
+  arkasından görünüyordu (10 sayfa/boyutta ölçüldü; sonra hiçbirinde yok). Yan etkiler ele alındı: yeniden çizimde kaydırma konumu korunur; Timeline'ın ortalı sütunu dolguyla ortalanır (kaydırma çubuğu sayfa kenarında);
+  Ay `flex` düzeltildi; Kanban "alt alta" kendi kaydırıcısı oldu (sürüklerken otomatik kaydırma çalışır, yan yana düzende yatay kaydırma aynen). Başlık yükseklikleri ve sayfa altı boşlukları birebir aynı
+- Test: çıkış onayı (tüm kapanma yolları, geri alınan değişiklik, Kaydet/Kaydetme/Vazgeç, çift Esc, tam ekran, mobil), seçimsiz biçimlendirme (masaüstü/dokunma/kısayol), kaydırma yapısı (8 sayfa × 3 boyut, tekerlek,
+  Timeline, yeniden çizim, Kanban, otomatik kaydırma), panel yerleşimi
+
 ## 1.23.0
 - **Kenar çubuğu sağda**: masaüstünde kalıcı kenar çubuğu artık içeriğin **sağında**; telefon/dar ekran/yatay telefonda hamburgere (başlığın sağ ucunda) basınca menü **sağ kenardan kayarak** açılır.
   Kapatma yolları aynı (✕, perde, `Esc`); perde sol tarafı kaplar. DOM'da kenar çubuğu `main`'den sonra gelir, böylece Tab sırası görsel sırayla aynıdır.

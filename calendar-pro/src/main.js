@@ -109,10 +109,15 @@ window.addEventListener('resize', placeFab); // yön değişince/ekran küçül�
 let cleanupView = null;
 let renderQueued = false;
 
+let lastRenderedView = null;
+
 function renderView() {
   renderQueued = false;
   const { view } = store.get();
   const module = VIEWS[view] || dashboard;
+  // Kaydırma .view-body'dedir ve her çizimde yeni bir öğe olur: aynı görünüm yeniden çiziliyorsa (ör. bir etkinlik değişti) kaydırma konumu korunur
+  const prevBody = viewEl.querySelector('.view-body');
+  const keep = prevBody && lastRenderedView === view ? { top: prevBody.scrollTop, left: prevBody.scrollLeft } : null;
   cleanupView?.();
   cleanupView = null;
   viewEl.dataset.view = view;
@@ -122,6 +127,16 @@ function renderView() {
   } catch (err) {
     console.error(err);
     viewEl.innerHTML = html`<div class="empty-state glass"><p>Görünüm yüklenemedi: ${err.message}</p></div>`;
+  }
+  lastRenderedView = view;
+  const body = viewEl.querySelector('.view-body');
+  if (body && keep && (keep.top || keep.left)) {
+    const restore = () => {
+      body.scrollTop = keep.top;
+      body.scrollLeft = keep.left;
+    };
+    restore();
+    requestAnimationFrame(restore); // içerik sonradan dolan görünümler için ikinci deneme
   }
   document.title = `${module.title} · Calendar Pro`;
 }
@@ -147,7 +162,6 @@ store.subscribe((s, prev) => {
     applyBackgroundSettings(s.settings);
   }
   if (!s.ready) return;
-  if (s.view !== prev.view) viewEl.scrollTop = 0;
   if (s.ready !== prev.ready || s.view !== prev.view || s.cursor !== prev.cursor || s.events !== prev.events || s.settings !== prev.settings) {
     scheduleRender();
   }

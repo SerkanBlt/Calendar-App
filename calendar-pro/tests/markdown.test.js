@@ -3,7 +3,7 @@
  */
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { applyFormat, lineContentStart, listContinuation, renderMarkdown, stripMarkdown } from '../src/core/markdown.js';
+import { applyFormat, formatAtCaret, lineContentStart, listContinuation, renderMarkdown, stripMarkdown, wordRangeAt } from '../src/core/markdown.js';
 
 const md = (s) => String(renderMarkdown(s));
 
@@ -255,5 +255,69 @@ describe('lineContentStart / listContinuation', () => {
     assert.deepEqual(listContinuation('> '), { prefix: '', clear: true });
     assert.deepEqual(listContinuation('düz'), { prefix: '', clear: false });
     assert.deepEqual(listContinuation(''), { prefix: '', clear: false });
+  });
+});
+
+describe('formatAtCaret (seçim yokken araç çubuğu)', () => {
+  const at = (text, kind) => {
+    const i = text.indexOf('|');
+    const value = text.replace('|', '');
+    const r = formatAtCaret(value, i, i, kind);
+    return `${r.value.slice(0, r.start)}${r.start === r.end ? '|' : '['}${r.value.slice(r.start, r.end)}${r.start === r.end ? '' : ']'}${r.value.slice(r.end)}`;
+  };
+
+  test('wordRangeAt: kelimenin sınırları (Türkçe harfler dahil); kelime yoksa boş aralık', () => {
+    assert.deepEqual(wordRangeAt('merhaba dünya', 3), [0, 7]);
+    assert.deepEqual(wordRangeAt('merhaba dünya', 7), [0, 7]); // kelimenin hemen sonu
+    assert.deepEqual(wordRangeAt('merhaba dünya', 8), [8, 13]);
+    assert.deepEqual(wordRangeAt('çalışma_2', 4), [0, 9]);
+    assert.deepEqual(wordRangeAt('a  b', 2), [2, 2]);
+  });
+
+  test('kelimenin içinde kalın: kelime sarılır, imleç yerinde kalır', () => {
+    assert.equal(at('mer|haba dünya', 'bold'), '**mer|haba** dünya');
+    assert.equal(at('merhaba| dünya', 'bold'), '**merhaba|** dünya'); // kelimenin hemen sonu da kelimeye değer
+    assert.equal(at('|merhaba', 'bold'), '**|merhaba**');
+  });
+
+  test('zaten kalın kelimede tekrar basmak açar', () => {
+    assert.equal(at('**mer|haba** dünya', 'bold'), 'mer|haba dünya');
+  });
+
+  test('boşlukta: boş çift bırakılır, imleç ortada; tekrar basmak çifti kaldırır', () => {
+    assert.equal(at('abc |', 'bold'), 'abc **|**');
+    assert.equal(at('abc **|**', 'bold'), 'abc |');
+    assert.equal(at('|', 'italic'), '*|*');
+    assert.equal(at('|', 'strike'), '~~|~~');
+    assert.equal(at('|', 'code'), '`|`');
+  });
+
+  test('italik çifti, kalın çiftiyle karışmaz', () => {
+    assert.equal(at('**|**', 'italic'), '***|***'); // kalın çiftin içinde italik açılır; kalın çift bozulmaz
+  });
+
+  test('diğer biçimler de kelimeye uygulanır', () => {
+    assert.equal(at('bir ko|d iki', 'code'), 'bir `ko|d` iki');
+    assert.equal(at('çal|ışma', 'strike'), '~~çal|ışma~~');
+    assert.equal(at('ça|lışma', 'italic'), '*ça|lışma*');
+  });
+
+  test('bağlantı: kelime etiket olur ve adres seçilir; kelime yoksa yer tutucu', () => {
+    const w = formatAtCaret('git site şimdi', 6, 6, 'link');
+    assert.equal(w.value, 'git [site](https://) şimdi');
+    assert.equal(w.value.slice(w.start, w.end), 'https://');
+    const e = formatAtCaret('a ', 2, 2, 'link');
+    assert.equal(e.value, 'a [bağlantı](https://)');
+  });
+
+  test('satır biçimleri imleç satırına uygulanır (seçim gerekmez)', () => {
+    const r = formatAtCaret('birinci\nikinci', 10, 10, 'ul');
+    assert.equal(r.value, 'birinci\n- ikinci');
+    assert.equal(formatAtCaret('metin', 2, 2, 'h').value, '## metin');
+    assert.equal(formatAtCaret('metin', 2, 2, 'task').value, '- [ ] metin');
+  });
+
+  test('seçim varsa applyFormat ile aynıdır', () => {
+    assert.deepEqual(formatAtCaret('merhaba dünya', 0, 7, 'bold'), applyFormat('merhaba dünya', 0, 7, 'bold'));
   });
 });

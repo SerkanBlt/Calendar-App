@@ -96,8 +96,10 @@ kbd {
 .main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .main { grid-column: 1; grid-row: 1; }
 .sidebar { grid-column: 2; grid-row: 1; }
-.view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
-.view-body { flex: 1; min-height: 0; padding: 0 var(--space-2) var(--space-2); }
+/* Kaydırma .view-body'dedir; başlık (.toolbar) içeriğin ÜSTÜNDE ayrı ve hareketsiz durur: kaydırılan içerik başlığın arkasından/altından akmaz,
+   başlığın hemen altındaki kenardan kesilir. (Önceden .view kaydırılır, başlık üzerinde yapışkan durur ve içerik şeffaf başlığın arkasından görünürdü.) */
+.view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.view-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 0 var(--space-2) var(--space-2); }
 
 /* ---------- Sidebar ---------- */
 .sidebar {
@@ -170,10 +172,8 @@ kbd {
 .toolbar {
   display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
   padding: var(--space-3) var(--space-3) var(--space-4);
-  position: sticky; top: 0; z-index: 5;
-  /* Kaydırılan içerik başlığın arkasından görünmesin (buzlu cam) */
+  flex: none; /* kaydırılmaz; içerik altında kendi kaydırıcısında akar */
   background: color-mix(in srgb, var(--bg) 78%, transparent);
-  backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
   border-radius: 0 0 var(--radius) var(--radius);
 }
 .toolbar-title { flex: 1; min-width: 160px; }
@@ -842,7 +842,7 @@ kbd {
 .md-tools .icon-btn { width: 30px; height: 30px; }
 .md-tools .icon-btn .icon { width: 16px; height: 16px; }
 .md-surface {
-  position: relative; min-height: 96px; padding: 10px 12px 10px 7px; border-radius: var(--radius-md); cursor: text;
+  position: relative; min-height: 140px; padding: 0; overflow: hidden; display: flex; flex-direction: column; border-radius: var(--radius-md); cursor: text;
   background: var(--surface-2); border: 1px solid var(--border); line-height: 1.5; overflow-wrap: anywhere;
   transition: border-color var(--dur), background var(--dur);
 }
@@ -860,15 +860,17 @@ kbd {
 .md-grip:hover, .md-grip.is-dragging, .md-grip:focus-visible { opacity: 1; }
 .md-grip:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 /* ---- CodeMirror 6 (canlı önizleme: bkz. components/markdownLive.js). Temel temayı uygulamanın görünümüne uydurur. ---- */
-.md-surface .cm-editor { background: transparent; color: inherit; font: inherit; min-height: 74px; outline: none; }
+.md-surface .cm-editor { background: transparent; color: inherit; font: inherit; flex: 1 1 auto; min-height: 0; outline: none; } /* kutunun kalan yüksekliğini doldurur */
 .md-surface .cm-editor.cm-focused { outline: none; }
-.md-surface .cm-scroller { font: inherit; line-height: inherit; overflow: auto; }
+/* Araç çubuğu: notun İÇİNDE, üstte (CodeMirror paneli, dock=top); kutunun kenarlığıyla bir bütün, içerik kayarken sabit */
+.md-surface .cm-panels { background: transparent; color: inherit; border: 0; }
+.md-surface .cm-panels-top { border-bottom: 1px solid var(--border); }
+.md-surface .md-bar { padding: 3px 6px; cursor: default; }
+.md-surface .cm-scroller { font: inherit; line-height: inherit; overflow: auto; padding: 8px 12px 10px 7px; } /* metin dolgusu kaydırıcıda: araç çubuğu kenarlığa bitişik kalır */
 .md-surface .cm-content { padding: 0 0 0 9px; caret-color: var(--accent); } /* sol 9 px: aktif satır çubuğu kaydırma alanında kırpılmasın */
 .md-surface .cm-line { padding: 0; }
 .md-surface .cm-placeholder { color: var(--text-faint); }
 .md-surface .cm-content ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
-.md-surface.is-sized { overflow: hidden; }
-.md-surface.is-sized .cm-editor { height: 100%; }
 /* Aktif satır (imleç/seçim): ham Markdown görünür; solda vurgu çubuğu */
 .md-surface .cm-line.cm-md-active { position: relative; }
 .md-surface .cm-line.cm-md-active::before { content: ''; position: absolute; left: -6px; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--accent); }
@@ -899,8 +901,8 @@ kbd {
 .md-surface .cm-md-link--idle { cursor: pointer; }
 .md-editor--full { flex: 1; min-height: 0; }
 .md-editor--full .md-box { flex: 1; min-height: 0; display: flex; flex-direction: column; } /* yüzey .md-box içinde: tam ekranda kalan yüksekliği doldurur */
-.md-editor--full .md-surface { flex: 1; min-height: 0; overflow: hidden; padding: 14px 18px 14px 13px; font-size: 16px; }
-.md-editor--full .cm-editor { height: 100%; }
+.md-editor--full .md-surface { flex: 1; min-height: 0; font-size: 16px; }
+.md-editor--full .cm-scroller { padding: 14px 18px 14px 13px; }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
 .md p, .md ul, .md ol, .md blockquote, .md pre { margin: 0 0 0.6em; }

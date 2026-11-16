@@ -313,3 +313,42 @@ export function applyFormat(value, start, end, kind) {
   const replaced = changed.join('\n');
   return { value: value.slice(0, lineStart) + replaced + value.slice(lineEnd), start: lineStart, end: lineStart + replaced.length };
 }
+
+const WORD_CHAR = /[\p{L}\p{N}_]/u;
+
+/** İmlecin değdiği kelimenin [başlangıç, bitiş) aralığı (harf/rakam/alt çizgi); değmiyorsa boş aralık [pos, pos]. */
+export function wordRangeAt(value, pos) {
+  let s = pos;
+  let e = pos;
+  while (s > 0 && WORD_CHAR.test(value[s - 1])) s -= 1;
+  while (e < value.length && WORD_CHAR.test(value[e])) e += 1;
+  return [s, e];
+}
+
+/**
+ * Araç çubuğu eylemi: seçim YOKKEN de anlamlı çalışır (seçim varsa `applyFormat` ile aynıdır).
+ *  - Satır içi biçimler (kalın, italik, üstü çizili, kod): imleç bir kelimeye değiyorsa **kelime** sarılır (zaten sarılıysa açılır) ve imleç kelimenin
+ *    içinde, olduğu yerde kalır; boşluktaysa `**|**` gibi boş bir çift bırakılır, imleç ortasındadır (yazmaya devam edince biçimli yazılır). Boş çiftin
+ *    içindeyken tekrar basmak çifti kaldırır. Yer tutucu metin eklenmez.
+ *  - Bağlantı: imleç bir kelimeye değiyorsa kelime bağlantı etiketi olur (adres seçilir); aksi halde `[bağlantı](https://)`.
+ *  - Satır biçimleri (başlık, liste, görev, alıntı) imlecin bulunduğu satıra uygulanır (applyFormat zaten böyle çalışır).
+ * @returns {{value: string, start: number, end: number}} yeni metin ve yeni seçim
+ */
+export function formatAtCaret(value, start, end, kind) {
+  if (start !== end) return applyFormat(value, start, end, kind);
+  const [ws, we] = wordRangeAt(value, start);
+  const word = we > ws;
+  if (kind === 'link') return word ? applyFormat(value, ws, we, 'link') : applyFormat(value, start, end, 'link');
+  const wrap = WRAP[kind];
+  if (!wrap) return applyFormat(value, start, end, kind);
+  const { pre, post, guard } = wrap;
+  if (word) {
+    const r = applyFormat(value, ws, we, kind);
+    const caret = start + (r.value.length > value.length ? pre.length : -pre.length); // sarıldıysa işaret kadar sağa, açıldıysa sola
+    return { value: r.value, start: caret, end: caret };
+  }
+  const inPair = start >= pre.length && value.slice(start - pre.length, start) === pre && value.slice(start, start + post.length) === post
+    && !(guard && (value[start - pre.length - 1] === guard || value[start + post.length] === guard));
+  if (inPair) return { value: value.slice(0, start - pre.length) + value.slice(start + post.length), start: start - pre.length, end: start - pre.length };
+  return { value: value.slice(0, start) + pre + post + value.slice(start), start: start + pre.length, end: start + pre.length };
+}

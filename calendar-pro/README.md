@@ -91,6 +91,9 @@ Kanban kolonunun üstündeki durum şeridi gölge değil iç çizgidir (`inset`)
 ### Sayfa altı
 
 Sayfaların altında boşluk bırakılmaz: paneller (Ay/Hafta/Gün/Planlayıcı ızgarası, Gantt, Kanban bantları, Dashboard kutuları) görünür alanın altına, standart 8 px dış kenar boşluğuna kadar uzar.
+**Başlık sabittir ve içerikten ayrıdır**: kaydırma `.view-body` içinde olur, sayfa başlığı (`.toolbar`) içeriğin üstünde hareketsiz durur; kaydırılan içerik başlığın arkasından/altından **akmaz**, başlığın hemen
+altındaki kenardan kesilir. (Önceden `.view` kaydırılır, başlık yapışkan durur ve içerik şeffaf başlığın arkasından görünürdü.) Aynı görünüm yeniden çizildiğinde (ör. bir etkinlik değişince) kaydırma konumu
+korunur; başka bir görünüme geçince sayfa en üstten başlar. Timeline'ın 920 px'lik ortalı sütunu, kaydırıcının tam genişlikte kalması için dolguyla ortalanır (kaydırma çubuğu sayfa kenarında, tekerlek kenar boşluğunda da çalışır).
 Mobilde yüzen düğme panelin **üstünde yüzer** (yeri değiştirilebilir). Kaydırmalı sayfalarda son öğeler düğmenin altında kalmasın diye boşluk **son panelin içine** verilir
 (Dashboard/Gün'ün son kutusu, alt alta Kanban'ın son bandı; yan yana Kanban'da kolon listelerinin sonu; Timeline listesinin sonu).
 - Kaldırılan arka plan: eski **Deri** artık yok; onu seçmiş olanlar açılışta otomatik olarak Standart'a taşınır.
@@ -159,9 +162,13 @@ seçim tutamakları**, imleç/klavye, mobil klavye (IME), kopyala-yapıştır ve
   işlenmiş görünür. Fareyle/klavyeyle seçilen tüm satırlar ham açılır.
 - **Dokunmatik cihazlarda** (`pointer: coarse`) seçim sürerken (tutamaklar sürüklenirken) satırların ham/işlenmiş durumu **dondurulur**; seçim boşalınca, metin değişince ya da odak değişince yenilenir.
   Amaç: tutamak sürüklenirken görünümü değiştirmenin Android'de tutamağı bırakmasına yol açmasını önlemek. (Gerçek telefon tutamakları otomasyonla sürülemez; bu önlem emülasyonda doğrulanmıştır.)
-- Biçimlendirme araç çubuğu (kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı; `Ctrl/⌘ + B` ve `+ I`) **seçime ve seçili tüm satırlara** uygulanır
-  (birden çok satırı tek seferde listeye çevirmek dahil).
-- Kutunun **sağ alt köşesindeki tutamak** sürüklenerek (fare/dokunma) ya da `↑` `↓` ile kutuyu **büyütüp küçültür** (en az 96 px; çift tıklama otomatik yüksekliğe döner; yükseklik
+- **Biçimlendirme araç çubuğu notun İÇİNDE, üstte durur** (CodeMirror paneli, `dock = top`): kutunun kenarlığıyla bir bütündür ve içerik kutu içinde kayarken sabit kalır.
+  Düğmeler: kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı (`Ctrl/⌘ + B` ve `+ I`).
+  Seçim varsa **seçime ve seçili tüm satırlara** uygulanır (birden çok satırı tek seferde listeye çevirmek dahil). **Seçim yokken de anlamlı çalışır**: imleç bir **kelimedeyse kelime sarılır**
+  (`mer|haba` → `**merhaba**`; zaten sarılıysa açılır) ve imleç yerinde kalır; **boşluktaysa** `**|**` gibi boş bir çift bırakılır, imleç ortasındadır ve yazdıkça biçimli yazılır
+  (boş çiftin içinde tekrar basmak çifti kaldırır). Yer tutucu metin (`kalın`) eklenmez. Bağlantıda kelime etiket olur ve adres seçilir; başlık/liste/görev/alıntı imlecin satırına uygulanır.
+  Editör hiç odaklanmadıysa (ilk açılış) biçim metnin sonuna uygulanır. Mantık: `formatAtCaret` (`src/core/markdown.js`, saf ve testli).
+- Kutunun **sağ alt köşesindeki tutamak** sürüklenerek (fare/dokunma) ya da `↑` `↓` ile kutuyu **büyütüp küçültür** (en az 140 px: araç çubuğu dahil; çift tıklama otomatik yüksekliğe döner; yükseklik
   sabitlenince uzun metin kutu içinde kayar). Köşedeki düğme açıklamayı **tam ekranda** düzenletir. Kanban kartı ve arama özetlerinde işaretler gizlenir.
 - Açıklama (ve tam ekran düzenleyici) **ilk açıldığında hiçbir satır ham değildir** ve klavye açılmaz (editör odakta değilken tüm satırlar işlenmiş görünür). Düzenlemek için dokunulur.
 - **Görev listesi** (`- [ ]` / `- [x]`): onay kutusu satırın **dikeyde ortasındadır** (çok satırlı görevde de); tamamlanan görevin metni **üstü çizili ve soluk** görünür.
@@ -210,6 +217,11 @@ Renk alanı (`src/components/colorPicker.js`) **daraltılabilirdir**:
 
 Etkinlik (yeni veya düzenleme) **tam sayfa** açılır (`modal--page`): ekranı kaplar, içerik en çok 760 px'lik ortalanmış bir sütundadır, gövde kayar,
 Kaydet / İptal / Sil çubuğu altta sabittir. `Esc` kapatır; açıklamanın tam ekran düzenleyicisi bunun üstüne ayrı bir pencere olarak açılır.
+
+**Çıkarken sorar:** kaydedilmemiş değişiklik varsa `Esc`, ✕ ya da **İptal** ile çıkmak **"Değişiklikler kaydedilsin mi?"** diye sorar: **Kaydet** (kaydeder ve kapatır; ad boşsa pencere açık kalır ve ad kutusu
+işaretlenir), **Kaydetme** (değişiklikleri atar ve kapatır), **Vazgeç** (düzenlemeye devam). Karşılaştırma formun açılıştaki anlık görüntüsüne göredir: bir değişiklik geri alınırsa (başlangıç hâline dönülürse)
+**sorulmaz**; kapsam seçimi (Yalnızca bu / Tüm seri) tek başına değişiklik sayılmaz; tam ekran açıklamada yazılanlar da sayılır. Kaydet ve Sil doğrudan kapatır, sormaz. Ek dosyalar (mevcut etkinlikte) anında
+kaydedildiği için bu denetime dahil değildir. Altyapı: `openModal({ canClose })` ve `modal.requestClose()` (`src/components/modal.js`).
 
 **Başlık:** sayfanın başlığında etkinliğin **kendi adı** görünür ("Etkinliği düzenle" yazmaz). Ad düz metin gibi durur, **dokununca metin kutusuna dönüşür**
 (zemin + vurgu kenarlığı); uzunsa **üç nokta** ile kısalır (tamamı ipucu olarak görünür). Yeni etkinlikte ad boştur, "Yeni etkinlik" ipucu görünür ve kutu açılışta odaklıdır;

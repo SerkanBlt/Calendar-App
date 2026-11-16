@@ -4,9 +4,9 @@
 
 /* ---------- Ay ---------- */
 /* Ay ızgarası kullanılabilir yüksekliği doldurur ama 6 haftalık en küçük yüksekliğin altına sıkışmaz;
-   sığmazsa (ör. telefon yatay) görünüm aşağı kaydırılır. (overflow: hidden, flex öğesinin otomatik en küçük
+   sığmazsa (ör. telefon yatay) .view-body içinde aşağı kaydırılır (başlık sabit kalır). (overflow: hidden, flex öğesinin otomatik en küçük
    boyutunu sıfırladığı için alt sınır min-height ile açıkça verilir.) Hücre taşanı kendi içinde keser. */
-.month { display: flex; flex-direction: column; flex: 1 0 auto; }
+.month { display: flex; flex-direction: column; }
 .month-grid {
   flex: 1 1 0; min-height: calc(40px + 6 * 96px); display: grid; grid-template-columns: repeat(var(--month-cols, 7), minmax(0, 1fr)); /* çalışma dışı günler gizlenince azalır */
   grid-template-rows: auto repeat(6, minmax(96px, 1fr)); overflow: hidden;
@@ -127,7 +127,8 @@
 .conflict-list .btn { margin-top: 4px; align-self: flex-start; white-space: normal; height: auto; padding: 6px 10px; text-align: left; }
 
 /* ---------- Timeline ---------- */
-.timeline { display: flex; flex-direction: column; gap: var(--space-4); max-width: 920px; width: 100%; margin: 0 auto; }
+/* Sütun en çok 920 px ve ortalı; ama kaydırıcı (.view-body) tam genişliktedir: ortalama dolguyla yapılır ki kaydırma çubuğu sayfa kenarında kalsın */
+.timeline { display: flex; flex-direction: column; gap: var(--space-4); padding-inline: max(var(--space-2), calc((100% - 920px) / 2)); }
 .timeline-stream { display: flex; flex-direction: column; gap: var(--space-5); padding-bottom: var(--space-6); }
 .tl-month-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: var(--space-3); }
 /* Çizgi ve noktalar aynı ölçülerden türetilir (--tl-*), böylece her ekran boyutunda noktanın merkezi çizginin tam üstündedir */

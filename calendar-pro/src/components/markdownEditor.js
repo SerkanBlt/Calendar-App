@@ -6,16 +6,18 @@
  * satırlar ham Markdown (işaretleriyle), diğer satırlar işlenmiş görünür. Düzenleyici odaksızken (ör. ilk açılış) hiçbir satır ham değildir.
  *
  * Enter: liste/alıntı işareti yeni satıra sürer (numara artar), boş öğede Enter listeyi bitirir. Araç çubuğu: kalın, italik, üstü çizili, kod, bağlantı, başlık,
- * madde/numaralı/görev listesi, alıntı (Ctrl/⌘+B ve +I); seçime/satırlara uygulanır (core/markdown.js → applyFormat).
+ * madde/numaralı/görev listesi, alıntı (Ctrl/⌘+B ve +I). Çubuk NOT PANELİNİN İÇİNDE, üstte (dock=top) durur: CodeMirror paneli olarak kutunun kenarlığıyla bir bütündür
+ * ve içerik kutu içinde kayarken sabit kalır. Seçime/satırlara uygulanır; seçim YOKKEN de anlamlı çalışır: imleç bir kelimedeyse kelime sarılır/açılır, boşluktaysa
+ * `**|**` gibi boş bir çift bırakılır (core/markdown.js → formatAtCaret).
  * Yükseklik: sağ alt köşedeki tutamak (.md-grip) sürüklenerek (fare/dokunma) ya da ↑ ↓ ile ayarlanır; çift tıklama otomatik yüksekliğe döner.
  * Tam metin her değişiklikte gizli bir <textarea>'ya (`textarea`, isteğe bağlı `name`) yazılır ve oradan `input` olayı yayılır; böylece form onu sıradan
  * bir alan gibi okur. Metin HTML olarak yorumlanmaz; XSS yüzeyi yoktur.
  */
 import { EditorState, Transaction } from '@codemirror/state';
-import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/view';
+import { EditorView, keymap, placeholder as cmPlaceholder, showPanel } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { html } from '../core/dom.js';
-import { applyFormat, lineContentStart, listContinuation } from '../core/markdown.js';
+import { formatAtCaret, lineContentStart, listContinuation } from '../core/markdown.js';
 import { icon } from './icons.js';
 import { liveExtension, markdownLanguage } from './markdownLive.js';
 
@@ -44,12 +46,14 @@ const normalizeNewlines = (t) => String(t ?? '').replace(/\r\n?/g, '\n');
 export function createMarkdownEditor({ name = '', value = '', placeholder = '', fullscreen = false } = {}) {
   const root = document.createElement('div');
   root.className = `md-editor md-live${fullscreen ? ' md-editor--full' : ''}`;
+  // Araç çubuğu kutunun dışında değil İÇİNDE, üstte durur: CodeMirror paneli (dock=top) olarak eklenir (aşağıda `showPanel`)
+  const bar = document.createElement('div');
+  bar.className = 'md-bar';
+  bar.innerHTML = html`
+    <div class="md-tools" role="toolbar" aria-label="Biçimlendirme">
+      ${TOOLS.map((t) => html`<button type="button" class="icon-btn icon-btn-sm" data-md-tool="${t.kind}" title="${t.title}" aria-label="${t.title}">${icon(t.icon)}</button>`)}
+    </div>`;
   root.innerHTML = html`
-    <div class="md-bar">
-      <div class="md-tools" role="toolbar" aria-label="Biçimlendirme">
-        ${TOOLS.map((t) => html`<button type="button" class="icon-btn icon-btn-sm" data-md-tool="${t.kind}" title="${t.title}" aria-label="${t.title}">${icon(t.icon)}</button>`)}
-      </div>
-    </div>
     <div class="md-box">
       <div class="md-surface" role="group" aria-label="Açıklama"></div>
       ${fullscreen ? '' : html`<div class="md-grip" role="separator" aria-orientation="horizontal" tabindex="0" aria-label="Açıklama alanının yüksekliğini ayarla" title="Sürükleyerek büyüt / küçült (çift tıklama: otomatik yükseklik)"></div>`}
@@ -107,10 +111,12 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
     });
   }
 
+  let everFocused = false;
   function format(kind) {
-    if (!view.hasFocus) view.dispatch({ selection: { anchor: view.state.doc.length } }); // odak yokken biçim, metnin sonuna uygulanır
+    // Editör hiç odaklanmadıysa (ilk açılış) imleç henüz anlamlı bir yerde değildir: biçim metnin sonuna uygulanır; sonrasında son seçim kullanılır
+    if (!view.hasFocus && !everFocused) view.dispatch({ selection: { anchor: view.state.doc.length } });
     const sel = view.state.selection.main;
-    const r = applyFormat(view.state.doc.toString(), sel.from, sel.to, kind);
+    const r = formatAtCaret(view.state.doc.toString(), sel.from, sel.to, kind);
     replaceDoc(r.value, r.start, r.end);
     view.focus();
   }
@@ -129,6 +135,7 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
           ...BASE_KEYS,
         ]),
         EditorView.lineWrapping,
+        showPanel.of(() => ({ dom: bar, top: true })), // araç çubuğu: notun içinde, üstte
         markdownLanguage,
         liveExtension(),
         cmPlaceholder(placeholder),
@@ -147,8 +154,11 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
     if (tool) format(tool.dataset.mdTool);
   });
   // Kutunun içeriğin dışındaki boş alanı (altı, kenar boşlukları): odaklan, imleç metnin sonuna
+  view.dom.addEventListener('focusin', () => {
+    everFocused = true;
+  });
   surface.addEventListener('mousedown', (e) => {
-    if (view.contentDOM.contains(e.target)) return;
+    if (view.contentDOM.contains(e.target) || e.target.closest('.cm-panels')) return; // araç çubuğu paneline basmak imleci sona taşımasın
     e.preventDefault();
     view.focus();
     view.dispatch({ selection: { anchor: view.state.doc.length }, scrollIntoView: true });
@@ -158,7 +168,7 @@ export function createMarkdownEditor({ name = '', value = '', placeholder = '', 
   // Varsayılan: içeriğe göre otomatik yükseklik. Tutamakla sürüklenince yükseklik sabitlenir (içerik kutu içinde kayar). Fare, dokunma ve klavye
   // (↑ ↓, Home/çift tıklama = otomatik) ile çalışır. Tam ekran düzenleyicide yoktur (zaten ekranı kaplar).
   if (grip) {
-    const MIN_H = 96;
+    const MIN_H = 140; // araç çubuğu (≈38 px) + en az birkaç satır
     const STEP = 32;
     const maxH = () => Math.max(240, Math.round(window.innerHeight * 0.85));
     const setHeight = (h) => {

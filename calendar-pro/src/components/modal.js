@@ -17,13 +17,15 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
 export const isModalOpen = () => openStack.length > 0;
 
 /**
- * @param {{title: string, titleNode?: Node, body: Node|string, footer?: Node, size?: 'sm'|'md'|'lg', className?: string, initialFocus?: 'first'|'dialog', onClose?: Function}} options
+ * @param {{title: string, titleNode?: Node, body: Node|string, footer?: Node, size?: 'sm'|'md'|'lg', className?: string, initialFocus?: 'first'|'dialog', onClose?: Function, canClose?: () => boolean|Promise<boolean>}} options
  *   className: modal öğesine eklenecek ek sınıf (ör. sabit boyutlu paneller için)
  *   titleNode: verilirse başlık metni yerine bu öğe konur (ör. etkinlik adı girdisi); `title` o zaman yalnızca yedektir
  *   initialFocus: 'first' (varsayılan: [autofocus] veya ilk odaklanabilir öğe) | 'dialog' (hiçbir denetim odaklanmaz, pencerenin kendisi odaklanır)
- * @returns {{el: HTMLElement, body: HTMLElement, footer: HTMLElement, close: Function}}
+ *   canClose: kullanıcı kapatmak istediğinde (Esc, perdeye dokunma, ✕, `requestClose`) çağrılır; false dönerse pencere kapanmaz (ör. kaydedilmemiş değişiklik onayı).
+ *     Doğrudan `close()` çağrısı (ör. kayıt sonrası) bu denetimi atlar.
+ * @returns {{el: HTMLElement, body: HTMLElement, footer: HTMLElement, close: Function, requestClose: Function}}
  */
-export function openModal({ title, titleNode, body, footer, size = 'md', className = '', initialFocus = 'first', onClose }) {
+export function openModal({ title, titleNode, body, footer, size = 'md', className = '', initialFocus = 'first', onClose, canClose }) {
   const id = `modal-title-${++uid}`;
   const previousFocus = document.activeElement;
   const backdrop = document.createElement('div');
@@ -48,7 +50,24 @@ export function openModal({ title, titleNode, body, footer, size = 'md', classNa
   else footerEl.remove();
 
   let closed = false;
+  let asking = false;
   const entry = { close };
+
+  /** Kullanıcı kaynaklı kapatma isteği: `canClose` onay vermezse pencere açık kalır. */
+  async function requestClose() {
+    if (closed || asking) return;
+    if (canClose) {
+      asking = true;
+      let ok = false;
+      try {
+        ok = await canClose();
+      } finally {
+        asking = false;
+      }
+      if (!ok) return;
+    }
+    close();
+  }
 
   function close(result) {
     if (closed) return;
@@ -66,7 +85,7 @@ export function openModal({ title, titleNode, body, footer, size = 'md', classNa
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      close();
+      requestClose();
     } else if (e.key === 'Tab') {
       const items = [...modal.querySelectorAll(FOCUSABLE)].filter((n) => n.offsetParent !== null);
       if (!items.length) return;
@@ -86,9 +105,9 @@ export function openModal({ title, titleNode, body, footer, size = 'md', classNa
   }
 
   backdrop.addEventListener('pointerdown', (e) => {
-    if (e.target === backdrop) close();
+    if (e.target === backdrop) requestClose();
   });
-  backdrop.querySelector('[data-close]').addEventListener('click', () => close());
+  backdrop.querySelector('[data-close]').addEventListener('click', () => requestClose());
   document.addEventListener('keydown', onKey, true);
 
   swallowGhostClicks(); // dokunmayla açıldıysa, dokunulan noktadaki sahte fare olayları yeni pencerenin öğelerini tetiklemesin
@@ -103,7 +122,7 @@ export function openModal({ title, titleNode, body, footer, size = 'md', classNa
     autofocus?.focus({ preventScroll: true });
   }
 
-  return { el: modal, body: bodyEl, footer: footerEl, close };
+  return { el: modal, body: bodyEl, footer: footerEl, close, requestClose };
 }
 
 /**
