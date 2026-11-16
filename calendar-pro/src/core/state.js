@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   ganttShowCriticalPath: true,
   fabBottom: 16, // yüzen "Yeni" düğmesinin alt kenardan uzaklığı (px); basılı tutup dikey taşınarak değişir (bkz. components/fab.js)
   kanbanLayout: 'columns', // Kanban düzeni: 'columns' (kolonlar yan yana) | 'rows' (alt alta)
+  kanbanCollapsed: {}, // Kanban'da daraltılmış paneller: { todo?: true, doing?: true, done?: true }
   seeded: false,
 });
 

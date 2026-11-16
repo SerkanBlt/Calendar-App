@@ -40,7 +40,17 @@
 
 /* Alt alta düzen: her durum tam genişlikte bir bant, kartlar bandın içinde ızgara (dar ekranda tek sütun).
    Sayfa kaydırılır; .kanban kendi yüksekliğini içeriğe göre alır (flex: none). */
-.kanban.kanban--rows { grid-template-columns: 1fr; align-items: start; align-content: start; overflow-y: auto; overflow-x: hidden; scroll-snap-type: none; } /* .view-body kaydırır; bantlar içerik yüksekliğinde kalır */
-.kanban--rows .kanban-col { scroll-snap-align: none; }
+/* Alt alta: bantlar içerik yüksekliğinde yığılan bir flex sütunudur (.view-body kaydırır). (Kaydırıcı artık sabit yükseklikli bir kap olduğu için burada `grid` kullanmak,
+   otomatik satırları kapın yüksekliğine sıkıştırıp panelleri üst üste bindiriyordu.) */
+.kanban.kanban--rows { display: flex; flex-direction: column; gap: var(--space-4); overflow-y: auto; overflow-x: hidden; scroll-snap-type: none; }
+.kanban--rows .kanban-col { flex: none; }
 .kanban--rows .kanban-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); align-content: start; overflow: visible; min-height: 0; }
 .kanban--rows .kanban-empty { grid-column: 1 / -1; min-height: 64px; }
+
+/* ---- Daraltılabilir paneller: başlığa (ya da ok düğmesine) tıklanır; daraltılmış panel yalnızca başlık yüksekliğinde kalır ---- */
+.kanban-head { cursor: pointer; user-select: none; -webkit-user-select: none; }
+.kanban-toggle .icon { transition: transform var(--dur) var(--ease); }
+.kanban-col.is-collapsed .kanban-toggle .icon { transform: rotate(-90deg); }
+.kanban-list[hidden] { display: none !important; }
+.kanban-col.is-collapsed .kanban-head { padding-bottom: 4px; }
+.kanban:not(.kanban--rows) .kanban-col.is-collapsed { align-self: start; } /* yan yana düzende diğer paneller uzunken daraltılmış panel başlık yüksekliğinde kalır */

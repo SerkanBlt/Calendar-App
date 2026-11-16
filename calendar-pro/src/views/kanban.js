@@ -1,7 +1,7 @@
 /**
  * kanban.js — Todo / Doing / Done panosu.
  * Kartlar kolonlar arasında sürüklenerek durum değiştirir; "Done"a taşınan görevin ilerlemesi %100 olur.
- * Düzen seçilebilir (settings.kanbanLayout): kolonlar yan yana (varsayılan) veya alt alta.
+ * Düzen seçilebilir (settings.kanbanLayout): kolonlar yan yana (varsayılan) veya alt alta. Paneller başlıklarından daraltılıp genişletilebilir (settings.kanbanCollapsed).
  */
 import { html } from '../core/dom.js';
 import { compareByStart, STATUSES, STATUS_LABELS } from '../core/eventModel.js';
@@ -39,21 +39,27 @@ export default {
     });
 
     const board = el.querySelector('.kanban');
+    // Daraltılmış paneller (ayarlarda saklanır). Dışarıdan (içe aktarma) gelen değer güvenilmez: yalnızca bilinen durumlar ve yalnızca `true` kabul edilir.
+    const rawCollapsed = ctx.state.settings.kanbanCollapsed;
+    const collapsed = Object.fromEntries(STATUSES.map((st) => [st, Boolean(rawCollapsed && rawCollapsed[st] === true)]));
 
     function paint() {
       const q = normalizeText(viewState.query.trim());
       const visible = events.filter((e) => !q || normalizeText(`${e.title} ${e.category} ${e.description}`).includes(q));
       board.innerHTML = html`${STATUSES.map((status) => {
         const items = visible.filter((e) => e.status === status).sort(compareByStart);
+        const isCollapsed = collapsed[status];
         return html`
-          <section class="kanban-col glass kanban-col--${status}" data-status="${status}" aria-label="${STATUS_LABELS[status]}">
-            <header class="kanban-head">
+          <section class="kanban-col glass kanban-col--${status} ${isCollapsed ? 'is-collapsed' : ''}" data-status="${status}" aria-label="${STATUS_LABELS[status]}">
+            <header class="kanban-head" data-head="${status}">
+              <button type="button" class="icon-btn icon-btn-sm kanban-toggle" data-toggle="${status}" aria-expanded="${String(!isCollapsed)}" aria-controls="kanban-list-${status}"
+                      aria-label="${STATUS_LABELS[status]} panelini ${isCollapsed ? 'genişlet' : 'daralt'}" title="${isCollapsed ? 'Genişlet' : 'Daralt'}">${icon('chevronDown')}</button>
               <span class="status-dot status-dot--${status}"></span>
               <h2>${STATUS_LABELS[status]}</h2>
               <span class="count">${items.length}</span>
               <button type="button" class="icon-btn icon-btn-sm" data-add="${status}" aria-label="${STATUS_LABELS[status]} kolonuna ekle">${icon('plus')}</button>
             </header>
-            <div class="kanban-list">
+            <div class="kanban-list" id="kanban-list-${status}" ${isCollapsed ? 'hidden' : ''}>
               ${items.length ? items.map((e) => eventCard(e)) : html`<div class="kanban-empty">Kartı buraya sürükleyin</div>`}
             </div>
           </section>`;
@@ -62,7 +68,16 @@ export default {
 
     board.addEventListener('click', (e) => {
       const add = e.target.closest('[data-add]');
-      if (add) ctx.openEditor({ startDate: cursor, status: add.dataset.add, startTime: '', endTime: '' });
+      if (add) {
+        ctx.openEditor({ startDate: cursor, status: add.dataset.add, startTime: '', endTime: '' });
+        return;
+      }
+      // Panel başlığına (düğme dahil) tıklamak paneli daraltır/genişletir
+      const head = e.target.closest('[data-head]');
+      if (head) {
+        const status = head.dataset.head;
+        ctx.setSetting('kanbanCollapsed', { ...collapsed, [status]: !collapsed[status] });
+      }
     });
 
     el.querySelector('.toolbar input').addEventListener('input', (e) => {

@@ -397,6 +397,25 @@ kbd {
 .field-grid { display: grid; grid-template-columns: 1.4fr 1fr 1.4fr 1fr; gap: var(--space-3); }
 .field-grid--3 { grid-template-columns: repeat(3, 1fr); }
 .event-form.is-allday .time-field { opacity: 0.35; pointer-events: none; }
+
+/* Başlangıç–bitiş bağı: geniş ekranda tek satırda başlangıç grubu ile bitiş grubu arasında bir zincir düğmesi (yatay bağlayıcı çizgi); dar ekranda
+   (≤900 px) iki saat kutusunun sağında, ikisini birleştiren "]" ayracının ortasında. Tüm gün'de gizlenir (yer tutar: düzen kaymaz). */
+/* --tl-label: alan etiketinin kapladığı yükseklik (12 px × 1,5 satır + 6 px boşluk): hücre yalnızca kutuların hizasını kaplar; --tl-y: hücre üstünden kutu ortasına */
+.field-grid--when { grid-template-columns: 1.4fr 1fr 32px 1.4fr 1fr; --tl-label: 24px; --tl-y: 21px; }
+.time-link-cell { position: relative; grid-column: 3; grid-row: 1; align-self: stretch; margin-top: var(--tl-label); display: grid; place-items: center; }
+.time-link-cell::before { /* geniş: yatay bağlayıcı */
+  content: ''; position: absolute; left: calc(-1 * var(--space-3)); right: calc(-1 * var(--space-3)); top: 50%; height: 1px; background: var(--border-strong);
+}
+.time-link {
+  position: relative; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border-radius: 50%; cursor: pointer;
+  background: var(--surface-solid); color: var(--text-muted); border: 1px solid var(--border-strong);
+  transition: background var(--dur), color var(--dur), border-color var(--dur);
+}
+.time-link .icon { width: 15px; height: 15px; }
+.time-link:hover { color: var(--text); border-color: var(--text-muted); }
+.time-link[aria-pressed='true'] { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
+.time-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.event-form.is-allday .time-link-cell { visibility: hidden; }
 .event-form.scope-single .series-only { display: none; }
 .scope-picker { flex-wrap: wrap; }
 .scope-picker > span { flex: 1; font-weight: 600; }
@@ -786,6 +805,12 @@ kbd {
 @media (max-width: 900px) {
   .field-grid { grid-template-columns: 1fr 1fr; }
   .field-grid--3 { grid-template-columns: 1fr; }
+  .field-grid--when { grid-template-columns: 1fr 1fr 28px; column-gap: var(--space-2); } /* iki satır: başlangıç / bitiş; bağ düğmesi saat kutularının sağında */
+  .time-link-cell { grid-row: 1 / span 2; }
+  .time-link-cell::before { /* dar: iki saat kutusunun ortasını birleştiren "]" ayracı */
+    left: calc(-1 * var(--space-2)); right: 50%; top: var(--tl-y); bottom: var(--tl-y); height: auto; background: none;
+    border: 1px solid var(--border-strong); border-left: 0; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  }
 }
 
 @media (max-width: 560px) {

@@ -247,6 +247,11 @@ const WRAP = {
 const LINE_PREFIX = { h: '## ', ul: '- ', task: '- [ ] ', quote: '> ' };
 const LIST_MARK = /^(?:[-*+]|\d{1,9}[.)])\s+(?:\[[ xX]\]\s+)?/;
 
+/** `pos` konumunun bulunduğu satırın başı. (`lastIndexOf('\n', -1)` 0. konumu da taradığı için pos=0 ayrıca ele alınır: ilk satır boşsa yanlış 1 dönerdi.) */
+function lineStartOf(value, pos) {
+  return pos <= 0 ? 0 : value.lastIndexOf('\n', pos - 1) + 1;
+}
+
 /**
  * Seçili metne biçim uygular veya zaten uygulanmışsa kaldırır.
  * @param {string} value tüm metin
@@ -287,7 +292,7 @@ export function applyFormat(value, start, end, kind) {
   }
 
   // Satır başı biçimleri: seçilen tüm satırlara uygulanır; hepsinde varsa kaldırılır
-  const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+  const lineStart = lineStartOf(value, start);
   const stopAt = end > start && value[end - 1] === '\n' ? end - 1 : end;
   const nl = value.indexOf('\n', stopAt);
   const lineEnd = nl === -1 ? value.length : nl;
@@ -300,12 +305,15 @@ export function applyFormat(value, start, end, kind) {
     task: /^[-*+]\s\[[ xX]\]\s/,
     quote: /^>\s?/,
   }[kind];
-  const allHave = lines.every((l) => !l.trim() || exact.test(l));
   const nonEmpty = lines.filter((l) => l.trim()).length;
+  // Boş satırlar karışık bir seçimde atlanır; ama seçilen/imlecin bulunduğu satır(lar) HEP boşsa onlara da uygulanır ("- " ile liste başlatmak için satırda karakter gerekmez)
+  const onlyBlank = nonEmpty === 0;
+  const skip = (l) => !l.trim() && !onlyBlank;
+  const allHave = lines.every((l) => skip(l) || exact.test(l));
   let n = 0;
   const changed = lines.map((line) => {
-    if (!line.trim()) return line;
-    if (allHave && nonEmpty > 0) return line.replace(exact, '');
+    if (skip(line)) return line;
+    if (allHave) return line.replace(exact, '');
     n++;
     const base = kind === 'h' || kind === 'quote' ? line : line.replace(LIST_MARK, ''); // liste türünü değiştirirken eski işareti at
     return (kind === 'ol' ? `${n}. ` : LINE_PREFIX[kind]) + base;
@@ -331,7 +339,8 @@ export function wordRangeAt(value, pos) {
  *    içinde, olduğu yerde kalır; boşluktaysa `**|**` gibi boş bir çift bırakılır, imleç ortasındadır (yazmaya devam edince biçimli yazılır). Boş çiftin
  *    içindeyken tekrar basmak çifti kaldırır. Yer tutucu metin eklenmez.
  *  - Bağlantı: imleç bir kelimeye değiyorsa kelime bağlantı etiketi olur (adres seçilir); aksi halde `[bağlantı](https://)`.
- *  - Satır biçimleri (başlık, liste, görev, alıntı) imlecin bulunduğu satıra uygulanır (applyFormat zaten böyle çalışır).
+ *  - Satır biçimleri (başlık, liste, görev, alıntı) imlecin bulunduğu satıra uygulanır — satırda karakter olmasa da (`- `, `1. `, `- [ ] `, `> `, `## ` eklenir, imleç önekin
+ *    sonuna gelir; boş önek varken tekrar basmak onu kaldırır).
  * @returns {{value: string, start: number, end: number}} yeni metin ve yeni seçim
  */
 export function formatAtCaret(value, start, end, kind) {
@@ -340,7 +349,13 @@ export function formatAtCaret(value, start, end, kind) {
   const word = we > ws;
   if (kind === 'link') return word ? applyFormat(value, ws, we, 'link') : applyFormat(value, start, end, 'link');
   const wrap = WRAP[kind];
-  if (!wrap) return applyFormat(value, start, end, kind);
+  if (!wrap) {
+    // Satır biçimleri (başlık, liste, görev, alıntı): imlecin satırına uygulanır — satır boş olsa da. İmleç tüm satırı seçmek yerine önekin sonuna (ya da kaldırılınca olduğu yere) gelir.
+    const r = applyFormat(value, start, end, kind);
+    const lineStart = lineStartOf(value, start);
+    const caret = Math.max(lineStart, start + (r.value.length - value.length));
+    return { value: r.value, start: caret, end: caret };
+  }
   const { pre, post, guard } = wrap;
   if (word) {
     const r = applyFormat(value, ws, we, kind);

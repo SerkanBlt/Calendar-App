@@ -224,8 +224,15 @@ describe('applyFormat', () => {
     assert.equal(applyFormat('ilk\nikinci', 6, 6, 'h').value, 'ilk\n## ikinci');
     assert.equal(applyFormat('söz', 0, 0, 'quote').value, '> söz');
   });
-  test('boş satırlar atlanır', () => {
+  test('boş satırlar karışık seçimde atlanır', () => {
     assert.equal(applyFormat('a\n\nb', 0, 4, 'ul').value, '- a\n\n- b');
+  });
+  test('yalnızca boş satır(lar) seçiliyse ona da uygulanır (satırda karakter gerekmez)', () => {
+    assert.equal(applyFormat('', 0, 0, 'ul').value, '- ');
+    // seçim bir satır sonunun hemen ardında bitiyorsa sonraki satır dışarıda kalır (kullanıcı onu seçmemiştir)
+    assert.equal(applyFormat('\n\n', 0, 2, 'ul').value, '- \n- \n');
+    assert.equal(applyFormat('\n\n', 0, 2, 'ol').value, '1. \n2. \n');
+    assert.equal(applyFormat('\n\n', 0, 0, 'ul').value, '- \n\n', 'ilk satır boşken de başı doğru bulunur');
   });
 });
 
@@ -319,5 +326,39 @@ describe('formatAtCaret (seçim yokken araç çubuğu)', () => {
 
   test('seçim varsa applyFormat ile aynıdır', () => {
     assert.deepEqual(formatAtCaret('merhaba dünya', 0, 7, 'bold'), applyFormat('merhaba dünya', 0, 7, 'bold'));
+  });
+});
+
+describe('formatAtCaret — boş satırda satır biçimleri', () => {
+  const run = (text, kind) => {
+    const i = text.indexOf('|');
+    const r = formatAtCaret(text.replace('|', ''), i, i, kind);
+    return `${r.value.slice(0, r.start)}${r.start === r.end ? '|' : '['}${r.value.slice(r.start, r.end)}${r.start === r.end ? '' : ']'}${r.value.slice(r.end)}`;
+  };
+
+  test('boş satırda madde, numara, görev, alıntı ve başlık öneki eklenir; imleç önekin sonunda', () => {
+    assert.equal(run('|', 'ul'), '- |');
+    assert.equal(run('|', 'ol'), '1. |');
+    assert.equal(run('|', 'task'), '- [ ] |');
+    assert.equal(run('|', 'quote'), '> |');
+    assert.equal(run('|', 'h'), '## |');
+  });
+
+  test('çok satırlı metinde yalnızca imlecin bulunduğu boş satır etkilenir', () => {
+    assert.equal(run('ilk\n|\nson', 'ul'), 'ilk\n- |\nson');
+    assert.equal(run('ilk\n|', 'quote'), 'ilk\n> |');
+  });
+
+  test('boş önek varken aynı düğme onu kaldırır; başka türe geçilir', () => {
+    assert.equal(run('- |', 'ul'), '|');
+    assert.equal(run('> |', 'quote'), '|');
+    assert.equal(run('- |', 'task'), '- [ ] |');
+    assert.equal(run('1. |', 'ul'), '- |');
+  });
+
+  test('doluk satırda imleç seçmek yerine yerinde kalır (öneke göre kayar)', () => {
+    assert.equal(run('me|tin', 'h'), '## me|tin');
+    assert.equal(run('## me|tin', 'h'), 'me|tin');
+    assert.equal(run('|metin', 'ul'), '- |metin');
   });
 });

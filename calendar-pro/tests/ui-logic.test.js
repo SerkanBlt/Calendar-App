@@ -7,8 +7,48 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { buildRows } from '../src/components/commandPalette.js';
 import { clampFabBottom, FAB_SIZE } from '../src/components/fab.js';
-import { dayMonthShort } from '../src/core/dateUtils.js';
+import { dayMonthShort, shiftEnd } from '../src/core/dateUtils.js';
 import { normalizeHexColor } from '../src/core/eventModel.js';
+
+describe('shiftEnd (başlangıç–bitiş bağı: süre korunur)', () => {
+  const prev = { startDate: '2026-11-16', startTime: '09:00', endDate: '2026-11-16', endTime: '10:30' }; // 1,5 saat
+
+  test('başlangıç saati değişince bitiş aynı süre kalacak şekilde kayar', () => {
+    assert.deepEqual(shiftEnd(prev, { startDate: '2026-11-16', startTime: '14:00' }), { endDate: '2026-11-16', endTime: '15:30' });
+    assert.deepEqual(shiftEnd(prev, { startDate: '2026-11-16', startTime: '08:15' }), { endDate: '2026-11-16', endTime: '09:45' });
+  });
+
+  test('gece yarısını aşınca bitiş tarihi bir gün ilerler; geri dönünce geri gelir', () => {
+    const late = shiftEnd(prev, { startDate: '2026-11-16', startTime: '23:00' });
+    assert.deepEqual(late, { endDate: '2026-11-17', endTime: '00:30' });
+    // gece yarısını aşan aralıktan geri dönüş: süre (1,5 sa) yine korunur, bitiş aynı güne düşer
+    const back = shiftEnd({ startDate: '2026-11-16', startTime: '23:00', ...late }, { startDate: '2026-11-16', startTime: '21:00' });
+    assert.deepEqual(back, { endDate: '2026-11-16', endTime: '22:30' });
+  });
+
+  test('başlangıç tarihi değişince çok günlü süre de korunur (ay/yıl sınırları dahil)', () => {
+    const multi = { startDate: '2026-11-16', startTime: '09:00', endDate: '2026-11-18', endTime: '17:00' }; // 2 gün 8 saat
+    assert.deepEqual(shiftEnd(multi, { startDate: '2026-11-30', startTime: '09:00' }), { endDate: '2026-12-02', endTime: '17:00' });
+    assert.deepEqual(shiftEnd(multi, { startDate: '2026-12-30', startTime: '20:00' }), { endDate: '2027-01-02', endTime: '04:00' });
+  });
+
+  test('artık yıl ve 0 süre', () => {
+    assert.deepEqual(shiftEnd({ ...prev, endTime: '09:00' }, { startDate: '2028-02-28', startTime: '23:59' }), { endDate: '2028-02-28', endTime: '23:59' });
+    assert.deepEqual(shiftEnd(prev, { startDate: '2028-02-28', startTime: '23:00' }), { endDate: '2028-02-29', endTime: '00:30' });
+  });
+
+  test('bitiş başlangıçtan önceyse süre 0 sayılır (bitiş başlangıcı izler)', () => {
+    const bad = { startDate: '2026-11-16', startTime: '10:00', endDate: '2026-11-16', endTime: '09:00' };
+    assert.deepEqual(shiftEnd(bad, { startDate: '2026-11-16', startTime: '12:00' }), { endDate: '2026-11-16', endTime: '12:00' });
+  });
+
+  test('boş ya da geçersiz değerde null döner (bitişe dokunulmaz)', () => {
+    assert.equal(shiftEnd(prev, { startDate: '2026-11-16', startTime: '' }), null);
+    assert.equal(shiftEnd(prev, { startDate: '', startTime: '10:00' }), null);
+    assert.equal(shiftEnd({ ...prev, endTime: '' }, { startDate: '2026-11-16', startTime: '10:00' }), null);
+    assert.equal(shiftEnd(prev, { startDate: '20261-11-16', startTime: '10:00' }), null);
+  });
+});
 
 describe('dayMonthShort', () => {
   test('gün.kısa-ay biçimi', () => {

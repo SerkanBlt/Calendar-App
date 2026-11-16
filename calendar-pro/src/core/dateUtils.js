@@ -94,6 +94,26 @@ export function combineDateTime(dateStr, timeStr) {
   return d;
 }
 
+const EPOCH_DAY = '1970-01-01';
+/** Takvim günü + saat → "dakika damgası" (DST'den etkilenmez; yalnızca farklar anlamlıdır). */
+const minuteStamp = (dateStr, timeStr) => diffDays(EPOCH_DAY, dateStr) * 1440 + timeToMinutes(timeStr);
+
+/**
+ * Başlangıç değişince bitişi, aradaki süre korunacak biçimde kaydırır (etkinlik formundaki "bağ").
+ * `prev`: değişimden ÖNCEKİ { startDate, startTime, endDate, endTime }; `next`: yeni { startDate, startTime }.
+ * Süre = prev bitişi − prev başlangıcı (negatifse 0 sayılır). Gece yarısını aşan bitiş bir sonraki güne, öncesine düşen bir önceki güne taşınır.
+ * Herhangi bir değer boş/geçersizse (ör. kullanıcı saati siliyor) `null` döner: çağıran bitişe dokunmaz.
+ * @returns {{endDate: string, endTime: string} | null}
+ */
+export function shiftEnd(prev, next) {
+  if (![prev.startDate, prev.endDate, next.startDate].every(isValidISODate)) return null;
+  if (![prev.startTime, prev.endTime, next.startTime].every(isValidTime)) return null;
+  const duration = Math.max(0, minuteStamp(prev.endDate, prev.endTime) - minuteStamp(prev.startDate, prev.startTime));
+  const end = minuteStamp(next.startDate, next.startTime) + duration;
+  const day = Math.floor(end / 1440);
+  return { endDate: addDaysISO(EPOCH_DAY, day), endTime: minutesToTime(end - day * 1440) };
+}
+
 export function nowMinutes() {
   const n = new Date();
   return n.getHours() * 60 + n.getMinutes();

@@ -4,6 +4,21 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.25.0
+- **Başlangıç–bitiş saat bağı**: etkinlik formunda başlangıç ile bitiş arasında bir **zincir düğmesi** var (geniş ekranda tek satırda iki grubun arasında; dar ekranda iki saat kutusunun sağında "]" ayracının ortasında).
+  Bağ **açıkken** başlangıç saati/tarihi değişince bitiş, aradaki **süre korunacak** biçimde birlikte kayar (09:00–10:00 iken başlangıç 14:00 olursa bitiş 15:00; gece yarısını aşarsa bitiş tarihi ertesi güne geçer,
+  geri dönünce iner; çok günlü aralığın uzunluğu da korunur). Düğmeye basınca bağ **kopar** (kopuk zincir simgesi): iki uç bağımsızdır, yalnızca bitiş başlangıçtan önceye düşmez. Yeniden bağlanınca o anki fark
+  korunacak süre olur; bitişi elle değiştirmek süreyi günceller. Bağ **etkinliğe her girişte AÇIKTIR** (kalıcı ayar değil) ve tek başına "değişiklik yapıldı" sayılmaz (çıkarken sormaz). Tüm gün'de gizlenir (düzen kaymaz).
+  Klavyeyle (Enter/Boşluk) ve dokunmayla çalışır, `aria-pressed` ile duyurulur. Mantık `shiftEnd` (`dateUtils.js`) ile saf fonksiyondur (6 birim testi)
+- **Kanban panelleri üst üste binmiyor**: 1.24.0'daki "alt alta" düzeninde Yapılacak / Devam Ediyor / Tamamlandı panelleri üst üste biniyordu (sabit yükseklikli ızgara); düzen yeniden akan sütuna döndü, paneller kendi
+  içeriği kadar yer tutar ve sayfa kaydırılır. 7 görünüm boyutu × 2 düzende örtüşme ölçüldü: hiçbirinde yok
+- **Kanban panelleri açılıp kapanır**: her panel başlığındaki ok düğmesiyle (ya da başlığa tıklayarak) **daraltılır/genişletilir**; daraltılan panel yalnız başlığı + sayacı gösterir. Durum kaydedilir
+  (`settings.kanbanCollapsed`, dışa/içe aktarımda korunur; geçersiz değerler okunurken temizlenir). Daraltılmış panele kart **sürükleyip bırakmak** çalışır; klavye (`Enter`/`Boşluk`, `aria-expanded`) ve dokunma desteklenir
+- **Boş satırda liste/başlık başlatma**: açıklama araç çubuğundaki **madde, numaralı, görev, alıntı ve başlık** düğmeleri satırda karakter olmasa da çalışır: boş satıra `- `, `1. `, `- [ ] `, `> `, `## ` eklenir, imleç
+  önekin sonuna gelir (yazmaya devam edilir); öneke tekrar basmak onu kaldırır; başka türe basmak türü değiştirir. Birkaç satır seçiliyken boş satırlar yine atlanır; yalnızca boş satırlar seçiliyse hepsine uygulanır.
+  Düzeltme: ilk satır boşken ve imleç 0. konumdayken satır başı yanlış bulunuyordu (`lastIndexOf` + negatif indeks) — `lineStartOf` ile giderildi
+- Test: saat bağı (açık/kopuk/yeniden bağlama, gece yarısı, çok günlü, tüm gün, yeniden girişte açık, kirli sayılmama, klavye, dar/geniş yerleşim), Kanban çakışma ve daraltma, boş satır biçimlendirme (masaüstü + dokunma)
+
 ## 1.24.0
 - **Çıkarken sorar**: etkinlik editöründe kaydedilmemiş değişiklik varsa `Esc` / ✕ / **İptal** **"Değişiklikler kaydedilsin mi?"** diye sorar: **Kaydet** (kaydeder; ad boşsa pencere açık kalır) · **Kaydetme** (atar) ·
   **Vazgeç**. Form açılıştaki anlık görüntüyle karşılaştırılır: değişiklik geri alınırsa sorulmaz; kapsam seçimi tek başına değişiklik sayılmaz; tam ekran açıklamadaki yazı sayılır; Kaydet/Sil sormaz.

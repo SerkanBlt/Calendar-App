@@ -37,7 +37,7 @@ Tek seferlik ayar:
 | Scheduler | 24 saat, 15 dk snap, sürükle-bırak, boyutlandırma, tüm gün satırı, 1/3/5/7 gün, yakınlaştırma |
 | Timeline  | Ay/gün gruplu kronolojik akış; yaklaşan / tümü / geçmiş filtresi ve arama başlıkta; noktalar zaman çizgisinin tam üstünde |
 | Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı |
-| Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (başlıkta **yalnızca ikonlu** iki düğme; filtre kutusu onlarla aynı satırda ve aynı yükseklikte; seçim kaydedilir) |
+| Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (başlıkta **yalnızca ikonlu** iki düğme; filtre kutusu onlarla aynı satırda ve aynı yükseklikte; seçim kaydedilir). Her panel başlığındaki ok ya da başlığa tıklama ile **daraltılıp genişletilir** (durum kaydedilir; daraltılmış panele kart bırakılabilir); alt alta düzende paneller üst üste binmez, sayfa kayar |
 
 Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır:
 
@@ -166,7 +166,8 @@ seçim tutamakları**, imleç/klavye, mobil klavye (IME), kopyala-yapıştır ve
   Düğmeler: kalın, italik, üstü çizili, kod, bağlantı, başlık, madde / numaralı / görev listesi, alıntı (`Ctrl/⌘ + B` ve `+ I`).
   Seçim varsa **seçime ve seçili tüm satırlara** uygulanır (birden çok satırı tek seferde listeye çevirmek dahil). **Seçim yokken de anlamlı çalışır**: imleç bir **kelimedeyse kelime sarılır**
   (`mer|haba` → `**merhaba**`; zaten sarılıysa açılır) ve imleç yerinde kalır; **boşluktaysa** `**|**` gibi boş bir çift bırakılır, imleç ortasındadır ve yazdıkça biçimli yazılır
-  (boş çiftin içinde tekrar basmak çifti kaldırır). Yer tutucu metin (`kalın`) eklenmez. Bağlantıda kelime etiket olur ve adres seçilir; başlık/liste/görev/alıntı imlecin satırına uygulanır.
+  (boş çiftin içinde tekrar basmak çifti kaldırır). Yer tutucu metin (`kalın`) eklenmez. Bağlantıda kelime etiket olur ve adres seçilir; başlık/liste/görev/alıntı imlecin satırına uygulanır —
+  **satırda karakter olmasa da**: boş satırda madde `- `, numaralı `1. `, görev `- [ ] `, alıntı `> `, başlık `## ` eklenir ve imleç önekin sonuna gelir (öneke tekrar basmak kaldırır, başka türe basmak türü değiştirir).
   Editör hiç odaklanmadıysa (ilk açılış) biçim metnin sonuna uygulanır. Mantık: `formatAtCaret` (`src/core/markdown.js`, saf ve testli).
 - Kutunun **sağ alt köşesindeki tutamak** sürüklenerek (fare/dokunma) ya da `↑` `↓` ile kutuyu **büyütüp küçültür** (en az 140 px: araç çubuğu dahil; çift tıklama otomatik yüksekliğe döner; yükseklik
   sabitlenince uzun metin kutu içinde kayar). Köşedeki düğme açıklamayı **tam ekranda** düzenletir. Kanban kartı ve arama özetlerinde işaretler gizlenir.
@@ -222,6 +223,12 @@ Kaydet / İptal / Sil çubuğu altta sabittir. `Esc` kapatır; açıklamanın ta
 işaretlenir), **Kaydetme** (değişiklikleri atar ve kapatır), **Vazgeç** (düzenlemeye devam). Karşılaştırma formun açılıştaki anlık görüntüsüne göredir: bir değişiklik geri alınırsa (başlangıç hâline dönülürse)
 **sorulmaz**; kapsam seçimi (Yalnızca bu / Tüm seri) tek başına değişiklik sayılmaz; tam ekran açıklamada yazılanlar da sayılır. Kaydet ve Sil doğrudan kapatır, sormaz. Ek dosyalar (mevcut etkinlikte) anında
 kaydedildiği için bu denetime dahil değildir. Altyapı: `openModal({ canClose })` ve `modal.requestClose()` (`src/components/modal.js`).
+
+**Başlangıç–bitiş saat bağı:** Başlangıç ve bitiş alanları arasındaki **zincir düğmesi** (geniş ekranda iki grubun arasında, dar ekranda iki saat kutusunun sağında; yalnızca saatli etkinlikte görünür) başlangıç ile bitişi
+birbirine bağlar. Bağ **açıkken** başlangıç tarihi ya da saati değiştikçe bitiş, aradaki **süre korunacak** biçimde birlikte kayar: 09:00–10:00 iken başlangıç 14:00 olunca bitiş 15:00 olur; gece yarısını aşarsa
+bitiş tarihi ertesi güne geçer (23:00 → 01:30), geri dönünce iner; çok günlü bir aralık başlangıç kayınca aynı uzunlukta kalır. Düğmeye basınca bağ **kopar** (kopuk zincir simgesi): iki uç bağımsız düzenlenir
+(yalnızca bitiş başlangıçtan önceye düşemez). Yeniden bağlanınca o anki fark korunacak süre olur; bitişi elle değiştirmek de süreyi günceller. Bağ **etkinliğe her girişte açıktır** (kalıcı bir ayar değildir) ve
+tek başına "değişiklik" sayılmaz. Mantık: `shiftEnd` (`src/core/dateUtils.js`, saf ve testli).
 
 **Başlık:** sayfanın başlığında etkinliğin **kendi adı** görünür ("Etkinliği düzenle" yazmaz). Ad düz metin gibi durur, **dokununca metin kutusuna dönüşür**
 (zemin + vurgu kenarlığı); uzunsa **üç nokta** ile kısalır (tamamı ipucu olarak görünür). Yeni etkinlikte ad boştur, "Yeni etkinlik" ipucu görünür ve kutu açılışta odaklıdır;

@@ -18,7 +18,7 @@
 import { html } from '../core/dom.js';
 import { eventRepo, attachmentRepo } from '../core/eventRepo.js';
 import { store } from '../core/state.js';
-import { formatDate, todayISO } from '../core/dateUtils.js';
+import { formatDate, shiftEnd, todayISO } from '../core/dateUtils.js';
 import { EVENT_COLORS, normalizeHexColor, REMINDER_OPTIONS, STATUSES, STATUS_LABELS } from '../core/eventModel.js';
 import { createColorPicker } from './colorPicker.js';
 import { createMarkdownEditor } from './markdownEditor.js';
@@ -100,11 +100,12 @@ export function openEventEditor(input = {}) {
       <label class="switch"><input type="checkbox" name="critical" ${ev.critical ? 'checked' : ''} /><span></span>Kritik görev</label>
     </div>
 
-    <div class="field-grid">
+    <div class="field-grid field-grid--when">
       <label class="field"><span>Başlangıç</span><input type="date" name="startDate" value="${initialRange.start}" required /></label>
       <label class="field time-field"><span>Saat</span><input type="time" name="startTime" value="${ev.startTime || '09:00'}" step="300" /></label>
       <label class="field"><span>Bitiş</span><input type="date" name="endDate" value="${initialRange.end}" required /></label>
       <label class="field time-field"><span>Saat</span><input type="time" name="endTime" value="${ev.endTime || '10:00'}" step="300" /></label>
+      <div class="time-link-cell"><button type="button" class="time-link" data-time-link aria-pressed="true"></button></div>
     </div>
 
     <div class="field">
@@ -221,12 +222,49 @@ export function openEventEditor(input = {}) {
     syncAllDay();
     // Tüm gün seçilince başlangıç ve bitiş tarihi aynı olur (çok günlü yapmak için bitiş sonradan değiştirilebilir)
     if (f.allDay.checked) f.endDate.value = f.startDate.value;
+    commitRange();
   });
   f.freq.addEventListener('change', syncRecurrence);
   f.progress.addEventListener('input', () => (f.progressOut.value = `${f.progress.value}%`));
-  f.startDate.addEventListener('change', () => {
-    if (f.endDate.value < f.startDate.value) f.endDate.value = f.startDate.value;
+
+  // --- Başlangıç–bitiş bağı ---
+  // Bağ AÇIKKEN başlangıç tarihi/saati değişince bitiş, aradaki süre korunacak biçimde birlikte kayar (gece yarısını aşarsa bitiş tarihi ilerler).
+  // Bağ KAPALIYKEN iki uç birbirinden bağımsızdır (yalnızca bitiş başlangıçtan önceye düşemez). Bağ her açılışta AÇIKTIR; kalıcı bir ayar değildir
+  // ve "değişiklik yapıldı" sayılmaz (collect/snapshot'a girmez). Süre, son bilinen aralıktan (lastRange) hesaplanır: bitişi elle değiştirmek süreyi günceller.
+  const timeLink = form.querySelector('[data-time-link]');
+  let linked = true;
+  const readRange = () => ({ startDate: f.startDate.value, startTime: f.startTime.value, endDate: f.endDate.value, endTime: f.endTime.value });
+  let lastRange = readRange();
+  // Süre kaydı yalnızca dört alan da doluyken yenilenir: kullanıcı saati silip yeniden yazarken (geçici boş değer) önceki süre kaybolmaz
+  const commitRange = () => {
+    const r = readRange();
+    if (r.startDate && r.startTime && r.endDate && r.endTime) lastRange = r;
+  };
+  const syncTimeLink = () => {
+    timeLink.setAttribute('aria-pressed', String(linked));
+    const label = linked ? 'Başlangıç ve bitiş arasındaki süre korunuyor. Bağı kopartmak için dokunun.' : 'Başlangıç ve bitiş birbirinden bağımsız. Süreyi korumak için bağı yeniden kurun.';
+    timeLink.setAttribute('aria-label', label);
+    timeLink.title = linked ? 'Süre korunuyor — bağı kopar' : 'Bağ kopuk — süreyi koru';
+    timeLink.innerHTML = icon(linked ? 'link' : 'unlink');
+  };
+  syncTimeLink();
+  timeLink.addEventListener('click', () => {
+    linked = !linked;
+    commitRange(); // yeniden bağlanırken o anki fark korunacak süre olur
+    syncTimeLink();
   });
+  const onStartChange = () => {
+    const shifted = linked && !f.allDay.checked ? shiftEnd(lastRange, readRange()) : null;
+    if (shifted) {
+      f.endDate.value = shifted.endDate;
+      f.endTime.value = shifted.endTime;
+    } else if (f.endDate.value < f.startDate.value) {
+      f.endDate.value = f.startDate.value; // bağsızken (ya da tüm gün): bitiş başlangıçtan önceye düşmesin
+    }
+    commitRange();
+  };
+  for (const name of ['startDate', 'startTime']) for (const type of ['input', 'change']) f[name].addEventListener(type, onStartChange);
+  for (const name of ['endDate', 'endTime']) for (const type of ['input', 'change']) f[name].addEventListener(type, commitRange);
   f.status.addEventListener('change', () => {
     if (f.status.value === 'done') {
       f.progress.value = 100;
@@ -260,6 +298,7 @@ export function openEventEditor(input = {}) {
       const range = dateRanges[next];
       f.startDate.value = range.start;
       f.endDate.value = range.end;
+      commitRange(); // tarihler programla yazıldı (olay tetiklenmez): bağın süre kaydı yenilensin
       scope = next;
       if (!wasDirty) baseline = snapshot();
     }
