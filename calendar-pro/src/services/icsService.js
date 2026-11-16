@@ -10,7 +10,7 @@
  *  - Tekrar: RRULE (FREQ/INTERVAL/COUNT/UNTIL + BYDAY/BYMONTHDAY/BYMONTH/BYSETPOS desenleri; çeyreklik = FREQ=MONTHLY;INTERVAL=3N),
  *    EXDATE (silinen tarihler) ve RDATE (elle eklenen tarihler). DTSTART, kuralın ürettiği ilk tarihtir. Seriden ayrılmış tek örnekler
  *    aynı UID ile RECURRENCE-ID'li ayrı VEVENT olarak yazılır (bu durumda ana serinin EXDATE'inde yer almaz).
- *  - Hatırlatma: VALARM. Durum, ilerleme, renk, kritik ve bağımlılıklar yalnızca bu uygulamanın okuduğu
+ *  - Hatırlatma: VALARM. Durum, ilerleme, renk, kritik, Gantt projesi ve bağımlılıklar yalnızca bu uygulamanın okuduğu
  *    X-CALENDAR-PRO-* / RELATED-TO alanlarıyla taşınır; diğer uygulamalar bunları yok sayar.
  *
  * İçe aktarma (parseICS + planImport)
@@ -203,6 +203,7 @@ function eventLines(ev, ctx) {
 
   out.push(`X-CALENDAR-PRO-STATUS:${ev.status}`, `X-CALENDAR-PRO-PROGRESS:${ev.progress}`, `X-CALENDAR-PRO-COLOR:${ev.color}`);
   if (ev.critical) out.push('X-CALENDAR-PRO-CRITICAL:TRUE');
+  if (ev.project) out.push(`X-CALENDAR-PRO-PROJECT:${escapeText(ev.project)}`);
   for (const dep of ev.dependencies || []) {
     const target = ctx.byId.get(dep);
     // Ayrılmış tek örneklerin UID'si serininkiyle aynı olduğu için onlara bağımlılık yazılmaz
@@ -605,6 +606,8 @@ function convertEvent(raw, ctx, stats, { override = false } = {}) {
     rec.progress = Number.isFinite(progress) ? Math.min(100, Math.max(0, Math.round(progress))) : 0;
     if (color && COLOR_RE.test(color)) rec.color = color;
     rec.critical = first(raw.props, 'X-CALENDAR-PRO-CRITICAL')?.value.trim().toUpperCase() === 'TRUE';
+    const project = unescapeText(first(raw.props, 'X-CALENDAR-PRO-PROJECT')?.value).trim();
+    if (project) rec.project = project.slice(0, 80);
   }
   const dependsOn = all(raw.props, 'RELATED-TO')
     .filter((p) => (p.params.RELTYPE || '').toUpperCase() === 'DEPENDS-ON')

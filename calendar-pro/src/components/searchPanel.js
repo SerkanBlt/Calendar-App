@@ -86,7 +86,7 @@ function search(query) {
     if (filters.range === 'upcoming' && o.endDate < today) return false;
     if (filters.range === 'past' && o.endDate >= today) return false;
     if (!tokens.length) return true;
-    const haystack = normalizeText(`${o.title} ${o.description} ${o.category}`);
+    const haystack = normalizeText(`${o.title} ${o.description} ${o.category} ${o.project ?? ''}`);
     return tokens.every((t) => haystack.includes(t));
   });
   const upcoming = items.filter((o) => o.endDate >= today).sort(compareByStart);

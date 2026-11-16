@@ -57,7 +57,7 @@ export default {
       const items = all.filter((o) => {
         if (viewState.filter === 'upcoming' && o.endDate < today) return false;
         if (viewState.filter === 'past' && o.endDate >= today) return false;
-        return !q || normalizeText(`${o.title} ${o.description} ${o.category}`).includes(q);
+        return !q || normalizeText(`${o.title} ${o.description} ${o.category} ${o.project ?? ''}`).includes(q);
       });
       if (viewState.filter === 'past') items.reverse();
 

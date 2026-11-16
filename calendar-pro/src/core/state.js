@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   schedulerHourHeight: 56,
   ganttDayWidth: 36,
   ganttShowCriticalPath: true,
+  ganttProject: '', // Gantt'ta seçili proje: '' = tüm projeler (gruplu) · proje adı · '__none__' = projesiz görevler
+  ganttCollapsedProjects: [], // "Tüm projeler" görünümünde daraltılmış proje adları
   fabBottom: 16, // yüzen "Yeni" düğmesinin alt kenardan uzaklığı (px); basılı tutup dikey taşınarak değişir (bkz. components/fab.js)
   kanbanLayout: 'columns', // Kanban düzeni: 'columns' (kolonlar yan yana) | 'rows' (alt alta)
   kanbanCollapsed: {}, // Kanban'da daraltılmış paneller: { todo?: true, doing?: true, done?: true }

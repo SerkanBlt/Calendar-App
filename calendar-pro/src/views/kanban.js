@@ -45,7 +45,7 @@ export default {
 
     function paint() {
       const q = normalizeText(viewState.query.trim());
-      const visible = events.filter((e) => !q || normalizeText(`${e.title} ${e.category} ${e.description}`).includes(q));
+      const visible = events.filter((e) => !q || normalizeText(`${e.title} ${e.category} ${e.description} ${e.project ?? ''}`).includes(q));
       board.innerHTML = html`${STATUSES.map((status) => {
         const items = visible.filter((e) => e.status === status).sort(compareByStart);
         const isCollapsed = collapsed[status];

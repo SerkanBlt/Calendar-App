@@ -23,6 +23,7 @@ import { EVENT_COLORS, normalizeHexColor, REMINDER_OPTIONS, STATUSES, STATUS_LAB
 import { createColorPicker } from './colorPicker.js';
 import { createMarkdownEditor } from './markdownEditor.js';
 import { createRecurrenceEditor } from './recurrenceEditor.js';
+import { projectNames } from '../services/ganttProjects.js';
 import { deleteEventWithUndo, deleteOccurrence } from '../core/actions.js';
 import { choiceDialog, openModal } from './modal.js';
 import { toast } from './toast.js';
@@ -63,6 +64,7 @@ export function openEventEditor(input = {}) {
   const currentColor = normalizeHexColor(ev.color) || EVENT_COLORS[0];
   let colorValue = currentColor;
   const categories = [...new Set(events.map((e) => e.category).filter(Boolean))];
+  const projects = projectNames(events); // mevcut Gantt projeleri: yazarak ya da listeden seçerek verilir
   const depCandidates = events.filter((e) => e.id !== ev.id && !e.recurrence);
   const pendingFiles = []; // yeni etkinlikte kayıttan sonra yüklenecek ekler
 
@@ -144,10 +146,16 @@ export function openEventEditor(input = {}) {
       ? html`<details class="field deps series-only" ${ev.dependencies.length ? 'open' : ''}>
           <summary>${icon('link')} Bağımlılıklar <span class="muted">(Gantt — önce bitmesi gerekenler)</span></summary>
           <div class="dep-list">
-            ${depCandidates.map((d) => html`<label class="dep-item"><input type="checkbox" name="dependencies" value="${d.id}" ${ev.dependencies.includes(d.id) ? 'checked' : ''} /><span class="dot" style="--ev-color:${d.color}"></span>${d.title}</label>`)}
+            ${depCandidates.map((d) => html`<label class="dep-item"><input type="checkbox" name="dependencies" value="${d.id}" ${ev.dependencies.includes(d.id) ? 'checked' : ''} /><span class="dot" style="--ev-color:${d.color}"></span>${d.title}${d.project ? html` <span class="muted">· ${d.project}</span>` : ''}</label>`)}
           </div>
         </details>`
       : ''}
+
+    <label class="field series-only">
+      <span>${icon('gantt')} Gantt projesi <span class="muted">(Gantt'ta bu projenin altında gruplanır)</span></span>
+      <input name="project" list="project-options" value="${ev.project || ''}" placeholder="ör. Web sitesi yenileme — yazın ya da listeden seçin" maxlength="80" autocomplete="off" />
+      <datalist id="project-options">${projects.map((p) => html`<option value="${p}"></option>`)}</datalist>
+    </label>
 
     <div class="field attachments series-only">
       <span>${icon('paperclip')} Ekler</span>
@@ -396,6 +404,7 @@ export function openEventEditor(input = {}) {
       status: f.status.value,
       progress: Number(f.progress.value),
       category: f.category.value,
+      project: f.project.value,
       critical: f.critical.checked,
       reminder: Number(f.reminder.value),
       recurrence: recurrence.getRule(), // silinmiş/eklenmiş/ayrılmış örnek tarihleri (exdates/rdates) kural içinde korunur

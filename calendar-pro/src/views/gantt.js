@@ -8,13 +8,18 @@
  * - Kritik görevler (kullanıcı işaretli) ve CPM ile hesaplanan kritik yol vurgusu
  * - Bağımlılık ihlalleri (ardıl, öncül bitmeden başlıyorsa) kesikli kırmızı çizgiyle gösterilir
  *
- * Tekrarlayan etkinlikler ve bağımlılığı olmayan tek günlük saatli toplantılar Gantt'a dahil edilmez.
+ * Proje bazlı: etkinliğin "Gantt projesi" alanı varsa üstte proje seçici çıkar. "Tüm projeler"de görevler proje başlıkları altında
+ * gruplanır (başlık satırında özet çubuğu ve ilerleme; tıklayınca grup daralır/genişler), tek proje ya da "Projesiz" seçilince yalnızca
+ * o görevler gösterilir. Kritik yol proje başına hesaplanır (bkz. services/ganttProjects.js).
+ *
+ * Tekrarlayan etkinlikler ve projesiz, bağımlılığı olmayan tek günlük saatli toplantılar Gantt'a dahil edilmez.
  */
 import { html } from '../core/dom.js';
 import { addDaysISO, diffDays, formatDate, isWeekend, rangeDays, todayISO } from '../core/dateUtils.js';
 import { compareByStart, isTimed } from '../core/eventModel.js';
 import { clamp } from '../core/utils.js';
 import { computeCriticalPath, wouldCreateCycle } from '../services/criticalPathService.js';
+import { buildRows, combineCriticalPaths, NO_PROJECT, projectLabel, projectOptions, resolveProject } from '../services/ganttProjects.js';
 import { toolbar } from '../components/toolbar.js';
 import { icon } from '../components/icons.js';
 import { confirmDialog } from '../components/modal.js';
@@ -61,46 +66,63 @@ export default {
     const { events, settings } = ctx.state;
     const dayW = ZOOMS.some((z) => z.w === settings.ganttDayWidth) ? settings.ganttDayWidth : 36;
     const showCp = settings.ganttShowCriticalPath;
-    // Görevler: tekrarlamayan, tüm gün / çok günlü etkinlikler + bağımlılık zincirindeki her kayıt.
-    // Tek günlük saatli toplantılar şemayı kalabalıklaştırmasın diye dışarıda bırakılır.
+    // Görevler: tekrarlamayan, tüm gün / çok günlü etkinlikler + bağımlılık zincirindeki her kayıt + bir Gantt projesine atanmış her kayıt.
+    // Tek günlük saatli toplantılar (projesiz ve bağımlılıksız) şemayı kalabalıklaştırmasın diye dışarıda bırakılır.
     const linked = new Set(events.flatMap((e) => e.dependencies));
-    const tasks = events
-      .filter((e) => !e.recurrence && (!isTimed(e) || e.dependencies.length || linked.has(e.id)))
+    const allTasks = events
+      .filter((e) => !e.recurrence && (!isTimed(e) || e.dependencies.length || linked.has(e.id) || e.project))
       .sort(compareByStart);
     const today = todayISO();
 
+    // Proje bazlı görünüm: seçici (proje varsa), "Tüm projeler"de gruplu satırlar, proje başına kritik yol (bkz. services/ganttProjects.js)
+    const options = projectOptions(allTasks);
+    const activeProject = resolveProject(options, settings.ganttProject);
+    const collapsedProjects = Array.isArray(settings.ganttCollapsedProjects) ? settings.ganttCollapsedProjects.filter((p) => typeof p === 'string') : [];
+    const { grouped, rows, tasks, groups } = buildRows(allTasks, { project: activeProject, collapsed: collapsedProjects });
+
+    const projectPicker = options.length
+      ? html`<label class="gantt-project"><span class="sr-only">Gantt projesi</span>
+          <select data-project aria-label="Gantt projesi" title="Gantt projesi">${options.map((key) => html`<option value="${key}" ${key === activeProject ? 'selected' : ''}>${projectLabel(key)}</option>`)}</select>
+        </label>`
+      : '';
     const extra = html`
+      ${projectPicker}
       <div class="segmented segmented--sm" role="radiogroup" aria-label="Yakınlaştırma">
         ${ZOOMS.map((z) => html`<button type="button" role="radio" aria-checked="${String(z.w === dayW)}" class="${z.w === dayW ? 'is-active' : ''}" data-zoom="${z.w}">${z.label}</button>`)}
       </div>
       <button type="button" class="chip-btn gantt-push ${showCp ? 'is-on' : ''}" data-cp>${icon('flag')}<span>Kritik yol</span></button>
       <button type="button" class="btn btn-ghost btn-sm" data-scroll-today>${icon('target')}<span class="hide-sm">Bugün</span></button>`;
 
-    if (!tasks.length) {
+    if (!allTasks.length) {
       el.innerHTML = html`
         ${toolbar({ title: 'Gantt', subtitle: 'Proje zaman çizelgesi', extra })}
         <div class="view-body"><div class="empty-state glass">${icon('gantt')}<p>Henüz görev yok.</p><button type="button" class="btn btn-primary" data-action="new">${icon('plus')} Görev oluştur</button></div></div>`;
       return undefined;
     }
 
-    const cpm = computeCriticalPath(tasks);
-    const minStart = tasks.reduce((m, t) => (t.startDate < m ? t.startDate : m), today);
-    const maxEnd = tasks.reduce((m, t) => (t.endDate > m ? t.endDate : m), today);
+    // Kritik yol proje başına hesaplanır (projesiz/tek projeli görünümde tek grup: eski davranış)
+    const cpm = combineCriticalPaths(groups, computeCriticalPath);
+    // Zaman aralığı, daraltılmış gruplardaki görevleri de kapsar (daraltınca şema kaymasın)
+    const spanTasks = groups.flatMap((g) => g.tasks);
+    const minStart = spanTasks.reduce((m, t) => (t.startDate < m ? t.startDate : m), today);
+    const maxEnd = spanTasks.reduce((m, t) => (t.endDate > m ? t.endDate : m), today);
     const start = addDaysISO(minStart, -3);
     const count = Math.max(35, diffDays(start, maxEnd) + 15);
     const days = rangeDays(start, count);
     const chartW = count * dayW;
-    const chartH = tasks.length * ROW_H;
+    const chartH = rows.length * ROW_H;
     const xOf = (iso) => diffDays(start, iso) * dayW;
-    const rowOf = new Map(tasks.map((t, i) => [t.id, i]));
+    const rowOf = new Map(rows.flatMap((r, i) => (r.kind === 'task' ? [[r.task.id, i]] : [])));
     const byId = new Map(tasks.map((t) => [t.id, t]));
     const cpSet = showCp ? cpm.critical : new Set();
 
+    const only = groups.length === 1 ? groups[0] : null; // düz liste ya da tek proje: süre gösterilebilir
     const summary = cpm.hasCycle
       ? html`<span class="pill pill--danger">${icon('alert')} Bağımlılık döngüsü</span>`
       : cpm.critical.size
-        ? html`<span class="pill">Kritik yol: ${cpm.critical.size} görev · ${cpm.projectDuration} gün</span>`
+        ? html`<span class="pill">Kritik yol: ${cpm.critical.size} görev${only ? html` · ${cpm.durations.get(only.key)} gün` : ''}</span>`
         : '';
+    const subtitle = html`${activeProject && activeProject !== NO_PROJECT ? html`<strong class="gantt-sub-project">${activeProject}</strong> · ` : activeProject === NO_PROJECT ? 'Projesiz · ' : ''}${tasks.length} görev${grouped ? html` · ${groups.length} proje` : ''} ${summary}`;
 
     const links = [];
     tasks.forEach((t) =>
@@ -118,7 +140,7 @@ export default {
     );
 
     el.innerHTML = html`
-      ${toolbar({ title: 'Gantt', subtitle: html`${tasks.length} görev ${summary}`, extra })}
+      ${toolbar({ title: 'Gantt', subtitle, extra })}
       <div class="view-body gantt-body">
         <div class="gantt glass" style="--row-h:${ROW_H}px;--day-w:${dayW}px">
           <div class="gantt-scroll">
@@ -129,18 +151,25 @@ export default {
                 <div class="gantt-days">${days.map((d) => html`<div class="${d === today ? 'is-today' : ''} ${isWeekend(d) ? 'is-weekend' : ''}" style="width:${dayW}px">${dayW >= 36 ? html`<small>${formatDate(d, { weekday: 'narrow' })}</small>` : ''}${Number(d.slice(8))}</div>`)}</div>
               </div>
               <div class="gantt-side">
-                ${tasks.map(
-                  (t) => html`<button type="button" class="gantt-side-row ${cpSet.has(t.id) ? 'is-cp' : ''}" data-task="${t.id}" style="--ev-color:${t.color}">
-                    <span class="dot"></span>
-                    <span class="gantt-task-name">${t.title}${t.critical ? html` <span class="crit-flag" title="Kritik görev">${icon('flag')}</span>` : ''}</span>
-                    <span class="gantt-task-pct">${t.progress}%</span>
-                  </button>`,
+                ${rows.map((r) =>
+                  r.kind === 'group'
+                    ? html`<button type="button" class="gantt-side-row gantt-side-group ${r.collapsed ? 'is-collapsed' : ''}" data-group="${r.key}" aria-expanded="${String(!r.collapsed)}" title="${r.collapsed ? 'Genişlet' : 'Daralt'}: ${r.name}">
+                        <span class="gantt-group-chevron">${icon('chevronDown')}</span>
+                        <span class="gantt-task-name">${r.name}</span>
+                        <span class="gantt-group-count">${r.tasks.length}</span>
+                        <span class="gantt-task-pct">${r.progress}%</span>
+                      </button>`
+                    : html`<button type="button" class="gantt-side-row ${cpSet.has(r.task.id) ? 'is-cp' : ''} ${grouped ? 'is-indented' : ''}" data-task="${r.task.id}" style="--ev-color:${r.task.color}">
+                        <span class="dot"></span>
+                        <span class="gantt-task-name">${r.task.title}${r.task.critical ? html` <span class="crit-flag" title="Kritik görev">${icon('flag')}</span>` : ''}</span>
+                        <span class="gantt-task-pct">${r.task.progress}%</span>
+                      </button>`,
                 )}
               </div>
               <div class="gantt-chart" style="height:${chartH}px">
                 <div class="gantt-bg">
                   ${days.map((d, i) => (isWeekend(d) ? html`<div class="gantt-weekend" style="left:${i * dayW}px;width:${dayW}px"></div>` : ''))}
-                  ${tasks.map((_, i) => html`<div class="gantt-rowline" style="top:${(i + 1) * ROW_H}px"></div>`)}
+                  ${rows.map((r, i) => html`${r.kind === 'group' ? html`<div class="gantt-groupband" style="top:${i * ROW_H}px"></div>` : ''}<div class="gantt-rowline" style="top:${(i + 1) * ROW_H}px"></div>`)}
                   <div class="gantt-today" style="left:${xOf(today) + dayW / 2}px"></div>
                 </div>
                 <svg class="gantt-links" width="${chartW}" height="${chartH}" aria-hidden="true">
@@ -152,7 +181,16 @@ export default {
                   ${links}
                   <path class="gantt-link-temp" d="" />
                 </svg>
-                ${tasks.map((t, i) => {
+                ${rows.map((r, i) =>
+                  r.kind === 'group'
+                    ? html`<div class="gantt-group-bar" style="left:${xOf(r.start)}px;width:${(diffDays(r.start, r.end) + 1) * dayW}px;top:${i * ROW_H + ROW_H / 2 - 6}px"
+                          title="${r.name} · ${r.tasks.length} görev · ${formatDate(r.start, { day: 'numeric', month: 'short' })} – ${formatDate(r.end, { day: 'numeric', month: 'short' })} · %${r.progress}">
+                        <div class="gantt-group-progress" style="width:${r.progress}%"></div>
+                      </div>`
+                    : '',
+                )}
+                ${tasks.map((t) => {
+                  const i = rowOf.get(t.id);
                   const left = xOf(t.startDate);
                   const width = (diffDays(t.startDate, t.endDate) + 1) * dayW;
                   const slack = cpm.slack.get(t.id);
@@ -203,8 +241,21 @@ export default {
       } else if (e.target.closest('[data-cp]')) ctx.setSetting('ganttShowCriticalPath', !showCp);
       else if (e.target.closest('[data-scroll-today]')) scrollToToday(true);
     });
+    el.querySelector('[data-project]')?.addEventListener('change', (e) => {
+      scrollMemory.left = null; // proje değişince zaman aralığı da değişir: bugüne dön
+      scrollMemory.top = 0;
+      ctx.setSetting('ganttProject', e.target.value);
+    });
 
     el.querySelector('.gantt-side').addEventListener('click', (e) => {
+      const group = e.target.closest('[data-group]');
+      if (group) {
+        // Proje grubunu daralt / genişlet (kalıcı)
+        const key = group.dataset.group;
+        const next = collapsedProjects.includes(key) ? collapsedProjects.filter((k) => k !== key) : [...collapsedProjects, key];
+        ctx.setSetting('ganttCollapsedProjects', next);
+        return;
+      }
       const row = e.target.closest('[data-task]');
       if (row) ctx.openEditor(byId.get(row.dataset.task));
     });
@@ -324,7 +375,7 @@ export default {
           if (!linkTarget) return;
           const target = byId.get(linkTarget.dataset.task);
           if (target.dependencies.includes(task.id)) return toast('Bu bağımlılık zaten var');
-          if (wouldCreateCycle(tasks, task.id, target.id)) return toast('Bu bağlantı bir döngü oluşturur', { type: 'error' });
+          if (wouldCreateCycle(allTasks, task.id, target.id)) return toast('Bu bağlantı bir döngü oluşturur', { type: 'error' }); // gizli (daraltılmış / başka proje) görevler de hesaba katılır
           ctx.updateEvent(target.id, { dependencies: [...target.dependencies, task.id] });
           return toast(`"${task.title}" → "${target.title}" bağlandı`, { type: 'success' });
         }

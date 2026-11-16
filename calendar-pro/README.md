@@ -36,7 +36,7 @@ Tek seferlik ayar:
 | Gün       | Saat bazlı ızgara, çakışmaların yan yana yerleşimi, çakışma paneli ve "boş zamana kaydır" |
 | Scheduler | 24 saat, 15 dk snap, sürükle-bırak, boyutlandırma, tüm gün satırı, 1/3/5/7 gün, yakınlaştırma |
 | Timeline  | Ay/gün gruplu kronolojik akış; yaklaşan / tümü / geçmiş filtresi ve arama başlıkta; noktalar zaman çizgisinin tam üstünde |
-| Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı |
+| Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı; **proje bazlı** görünüm (aşağıya bakın) |
 | Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (başlıkta **yalnızca ikonlu** iki düğme; filtre kutusu onlarla aynı satırda ve aynı yükseklikte; seçim kaydedilir). Her panel başlığındaki ok ya da başlığa tıklama ile **daraltılıp genişletilir** (durum kaydedilir; daraltılmış panele kart bırakılabilir); alt alta düzende paneller üst üste binmez, sayfa kayar |
 
 Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır:
@@ -45,6 +45,19 @@ Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekran
 - **Dokunmatik:** dokunmak öğeyi açar, parmakla kaydırmak sayfayı kaydırır, **basılı tutmak** sürüklemeyi başlatır.
 - Hafta/Gün/Scheduler'da saatli bir etkinliği **Tüm gün** satırına bırakmak onu tüm gün yapar; tek günlük bir tüm gün
   etkinliğini saat ızgarasına bırakmak, bırakılan saatte 1 saatlik etkinliğe çevirir (çok günlü olanlar yalnızca gün kaydırır).
+
+## Proje bazlı Gantt
+
+Etkinlik formunda **Bağımlılıkların altında** bir **Gantt projesi** alanı vardır: proje adı **yazılır** ya da daha önce kullanılan projelerden **seçilir** (açılır öneri listesi; en çok 80 karakter).
+Aynı adı taşıyan görevler aynı projedir. Hiç proje yoksa Gantt eskisi gibi düz bir listedir; en az bir proje varsa başlıkta bir **proje seçici** çıkar:
+
+- **Tüm projeler:** görevler proje başlıkları altında **gruplanır** (Türkçe sıralı; projesiz görevler en sonda **"Projesiz"** grubunda). Başlık satırında görev sayısı, süreye göre ağırlıklı **ilerleme %** ve
+  projenin ilk başlangıcından son bitişine uzanan bir **özet çubuğu** görünür. Başlığa tıklayınca grup **daralır / genişler**; durum kaydedilir (`settings.ganttCollapsedProjects`).
+  Daraltılan projenin görevleri satırlardan kalkar ama zaman ekseni kaymaz.
+- **Tek proje / Projesiz:** yalnızca o görevler gösterilir (zaman ekseni de o görevlere göre kurulur); alt başlıkta proje adı yazar. Seçim kaydedilir (`settings.ganttProject`); proje silinir ya da adı değişirse "Tüm projeler"e döner.
+- **Kritik yol proje başına** hesaplanır ("Kritik yol: N görev · süre"); farklı projeler arasındaki bağımlılıklar çizilir ve ihlal uyarısı verir ama kritik yolu belirlemez. Yeni bağımlılıkta döngü denetimi tüm görevler üzerinden yapılır.
+- Bir projeye atanmış görev, tek günlük saatli bir toplantı olsa bile Gantt'ta görünür (tekrarlayan etkinlikler hâlâ Gantt'a girmez). Görevin projesi formdan değiştirilince Gantt'ta yeni grubun altına geçer.
+- Bağımlılık listesinde görevlerin yanında projeleri soluk metinle yazar; arama, Kanban/Timeline filtresi ve `Ctrl + K` paleti proje adında da eşleşir. Mantık: `src/services/ganttProjects.js` (saf, `tests/gantt-projects.test.js`).
 
 ## Çalışma günleri
 
@@ -304,7 +317,7 @@ Bu **tek seferlik bir aktarımdır**, iki yönlü senkron değildir. Mantık `sr
 | Tekrar | `RRULE` (günlük/haftalık/aylık/yıllık, aralık, adet, bitiş; `BYDAY`, `BYMONTHDAY`, `BYMONTH`, `BYSETPOS` desenleri; çeyreklik = `FREQ=MONTHLY;INTERVAL=3N`) + `EXDATE` (silinen tarihler) + `RDATE` (eklenen tarihler). `DTSTART` kuralın ürettiği **ilk tarihtir** | Aynı kurallar; aşağıdaki sınırlamalara bakın |
 | Tek örnek değişikliği | Aynı UID + `RECURRENCE-ID` ile ayrı `VEVENT` | Seriye bağlanır ("Seriye geri döndür" çalışır) |
 | Hatırlatma | `VALARM` (5/15/60 dk) | Alarm en yakın 5/15/60 dakikaya yuvarlanır |
-| Durum, ilerleme, renk, kritik, bağımlılık | `X-CALENDAR-PRO-*` ve `RELATED-TO;RELTYPE=DEPENDS-ON`; diğer uygulamalar yok sayar | Yalnızca bu uygulamanın dışa aktarımında geri yüklenir |
+| Durum, ilerleme, renk, kritik, Gantt projesi, bağımlılık | `X-CALENDAR-PRO-*` (proje: `X-CALENDAR-PRO-PROJECT`) ve `RELATED-TO;RELTYPE=DEPENDS-ON`; diğer uygulamalar yok sayar | Yalnızca bu uygulamanın dışa aktarımında geri yüklenir |
 
 İçe aktarma davranışı:
 
@@ -394,7 +407,7 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
 
 ```js
 { id, title, description, date, startDate, endDate, startTime, endTime, color, status,
-  progress, category, critical, recurrence, reminder, dependencies, createdAt, updatedAt }
+  progress, category, project, critical, recurrence, reminder, dependencies, createdAt, updatedAt }
 ```
 
 - `startTime` boşsa etkinlik tüm gündür (formda "Tüm gün" açılınca bitiş tarihi başlangıca eşitlenir).
@@ -407,6 +420,7 @@ IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
 - `seriesId` / `originalDate`: seriden ayrılıp tek başına düzenlenmiş örneğin bağlantısı.
 - `reminder`: 0 / 5 / 15 / 60 dakika.
 - `dependencies`: Gantt için öncül görev id'leri.
+- `project`: "Gantt projesi" (serbest metin, en çok 80 karakter); Gantt'ı proje bazlı gruplar (bkz. "Proje bazlı Gantt"). Eski kayıtlarda yoktur (boş sayılır).
 
 ## Bilinen davranışlar
 

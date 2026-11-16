@@ -392,8 +392,16 @@ kbd {
 .field-head { display: flex; align-items: center; justify-content: space-between; min-height: 26px; }
 .field-head label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
 .field-head .icon-btn { margin-right: -4px; }
-.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); background: var(--surface-3); }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); background-color: var(--surface-3); }
 .field select option { background: var(--surface-solid); }
+/* Açılır kutular: yerel ok kenara yapışık duruyordu; yerine kenardan 14 px içeride, 16 px'lik özel bir ok (tema bağımsız nötr gri) çizilir.
+   Dolgu (renk) ayrı özelliktir (background-color); sağ dolgu okun altında metin kalmasın diye geniştir. */
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none; appearance: none; padding-right: 40px; text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238d95a8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; background-size: 16px 16px;
+}
+select:not([multiple]):not([size]):disabled { opacity: 0.6; }
 .is-invalid { border-color: var(--danger) !important; }
 .field input[type='range'] { accent-color: var(--accent); width: 100%; }
 .field output { color: var(--text); margin-left: auto; }
@@ -444,7 +452,7 @@ kbd {
 .rec-radio:not(.is-dim) { border-color: var(--accent); }
 .rec-radio.is-dim { opacity: 0.6; }
 .rec-radio input[type='radio'] { accent-color: var(--accent); margin: 0; }
-.rec-radio select { width: auto; max-width: 100%; padding: 6px 10px; border-radius: var(--radius-sm); background: var(--surface-solid); border: 1px solid var(--border); }
+.rec-radio select:not([multiple]):not([size]) { width: auto; max-width: 100%; padding-block: 6px; padding-left: 10px; padding-right: 34px; background-position: right 10px center; border-radius: var(--radius-sm); background-color: var(--surface-solid); border: 1px solid var(--border); }
 .rec-end { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: end; }
 .rec-end .rec-until, .rec-end .rec-count { display: none; }
 .rec-end[data-mode='until'] .rec-until, .rec-end[data-mode='count'] .rec-count { display: flex; }

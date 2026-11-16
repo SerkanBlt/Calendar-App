@@ -160,7 +160,7 @@ describe('buildICS', () => {
 
 describe('gidiş-dönüş (dışa aktar → içe aktar)', () => {
   test('tüm alanlar korunur', () => {
-    const a = ev({ id: 'a-1', title: 'Tasarım; incelemesi, v2', description: 'Not 1\nNot 2', category: 'Toplantı', startDate: '2026-11-20', startTime: '11:00', endTime: '12:30', color: '#ff8a4c', status: 'doing', progress: 45, critical: true, reminder: 60 });
+    const a = ev({ id: 'a-1', title: 'Tasarım; incelemesi, v2', description: 'Not 1\nNot 2', category: 'Toplantı', startDate: '2026-11-20', startTime: '11:00', endTime: '12:30', color: '#ff8a4c', status: 'doing', progress: 45, critical: true, reminder: 60, project: 'Web sitesi; v2, yeni' });
     const b = ev({ id: 'b-2', title: 'Lansman', startDate: '2026-12-01', endDate: '2026-12-03', status: 'todo', dependencies: ['a-1'] });
     const c = ev({ id: 'c-3', title: 'Haftalık', startDate: '2026-11-02', startTime: '10:00', endTime: '10:30', recurrence: { freq: 'weekly', interval: 2, count: 8, exdates: ['2026-11-16'] } });
     const out = roundTrip([a, b, c]);
@@ -172,6 +172,7 @@ describe('gidiş-dönüş (dışa aktar → içe aktar)', () => {
     assert.equal(ra.category, 'Toplantı');
     assert.deepEqual([ra.startDate, ra.endDate, ra.startTime, ra.endTime], ['2026-11-20', '2026-11-20', '11:00', '12:30']);
     assert.deepEqual([ra.color, ra.status, ra.progress, ra.critical, ra.reminder], ['#ff8a4c', 'doing', 45, true, 60]);
+    assert.equal(ra.project, 'Web sitesi; v2, yeni'); // Gantt projesi (X-CALENDAR-PRO-PROJECT)
 
     const rb = byId.get('b-2');
     assert.deepEqual([rb.startDate, rb.endDate, rb.startTime], ['2026-12-01', '2026-12-03', '']);

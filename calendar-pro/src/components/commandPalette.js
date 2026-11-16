@@ -47,7 +47,7 @@ export function buildRows({ commands, groups = [], expanded = new Set(), query =
       .filter((r) => r.score > 0)
       .sort((a, b) => b.score - a.score);
     const matchedEvents = events
-      .map((e) => ({ kind: 'event', item: e, score: fuzzyScore(q, `${e.title} ${e.category}`) * 0.9 }))
+      .map((e) => ({ kind: 'event', item: e, score: fuzzyScore(q, `${e.title} ${e.category} ${e.project ?? ''}`) * 0.9 }))
       .filter((r) => r.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 6);

@@ -3,7 +3,8 @@
  *
  * Model:
  * { id, title, description, date, startDate, endDate, startTime, endTime, color, status,
- *   progress, category, critical, recurrence, reminder, dependencies, createdAt, updatedAt }
+ *   progress, category, project, critical, recurrence, reminder, dependencies, createdAt, updatedAt }
+ * - project: "Gantt projesi" (serbest metin, en çok 80 karakter); Gantt görünümünü proje bazlı gruplar (bkz. services/ganttProjects.js).
  *
  * - startTime boşsa etkinlik "tüm gün" kabul edilir.
  * - date alanı geriye dönük uyumluluk için startDate'in kopyasıdır.
@@ -84,6 +85,7 @@ export function normalizeEvent(input = {}, existing = null) {
     status: STATUSES.includes(e.status) ? e.status : 'todo',
     progress: clamp(Math.round(Number(e.progress) || 0), 0, 100),
     category: String(e.category ?? '').trim().slice(0, 60),
+    project: String(e.project ?? '').trim().slice(0, 80), // Gantt projesi: aynı adı taşıyan görevler Gantt'ta bir proje altında gruplanır
     critical: Boolean(e.critical),
     recurrence: normalizeRecurrence(e.recurrence),
     reminder: REMINDER_VALUES.includes(Number(e.reminder)) ? Number(e.reminder) : 0,

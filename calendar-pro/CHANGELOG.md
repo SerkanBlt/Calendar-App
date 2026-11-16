@@ -4,6 +4,17 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.27.0
+- **Proje bazlı Gantt**: etkinlik formunda **Bağımlılıkların altında yeni "Gantt projesi" alanı** (proje adı yazılır ya da önceki projelerden seçilir). Gantt'ta proje varsa başlıkta bir **proje seçici** çıkar:
+  **Tüm projeler** (proje başlıkları altında gruplu satırlar; başlıkta görev sayısı, ağırlıklı ilerleme % ve ilk başlangıç → son bitiş özet çubuğu; başlığa tıklayınca grup **daralır/genişler**, kalıcı; projesiz görevler en sonda
+  "Projesiz"), **tek proje** ya da **Projesiz** (yalnızca o görevler, zaman ekseni de onlara göre). Seçim kalıcıdır (`ganttProject`, `ganttCollapsedProjects`; ayarlar içe/dışa aktarımına dahil)
+- **Kritik yol proje başına** hesaplanır; projeler arası bağımlılıklar çizilir ama kritik yolu belirlemez; döngü denetimi tüm görevler üzerinden. Bir projeye atanmış görev tek günlük saatli toplantı olsa da Gantt'ta görünür
+- Veri: etkinliğe `project` alanı (en çok 80 karakter; eski kayıtlar boş sayılır). JSON'a otomatik yazılır; ICS'te `X-CALENDAR-PRO-PROJECT`. Arama, Kanban/Timeline filtresi ve `Ctrl + K` paleti proje adında da eşleşir; bağımlılık listesinde projeler soluk metinle görünür
+- **Açılır kutular**: yerel ok kenara yapışık duruyordu; tüm `select`'lerde (durum, hatırlatma, sıklık, ay günü, Gantt proje seçici …) yerine kenardan **14 px içeride** özel bir ok çizilir (sağ dolgu 40 px, uzun metin üç nokta ile kısalır;
+  tema bağımsız nötr gri; açık/koyu temada ve mobilde kontrol edildi)
+- Test: 13 yeni birim testi (`ganttProjects`: seçenekler, gruplu/düz/daraltılmış satırlar, özet, proje başına kritik yol, döngü) + ICS'te proje gidiş-dönüşü; gerçek tarayıcıda (masaüstü + mobil) alanın yeri, öneri listesi,
+  seçici, gruplu görünüm, daralt/genişlet + kalıcılık + yenileme, tek proje, Projesiz, proje değiştirme, projeli saatli toplantı
+
 ## 1.26.0
 - **Tekrarlı etkinliklerde tarih seçimi (desenler)**: Tekrar bölümü yeniden yazıldı (`recurrenceEditor.js`). Sıklığa göre desen seçilir:
   **günlük** → her gün / **iş günleri** / belirli günler (ör. 2 günde bir + yalnızca iş günleri); **haftalık** → haftanın **birden çok günü** (Sal + Per); **aylık** → ayın **N. günü** (ya da son günü) veya

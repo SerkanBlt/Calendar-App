@@ -97,8 +97,34 @@
 .gantt-bar:hover .gantt-knob, .gantt-bar:hover .gantt-link-dot, .gantt-bar:focus-visible .gantt-knob, .gantt-bar:focus-visible .gantt-link-dot { opacity: 1; }
 .gantt-link-dot:hover { transform: scale(1.3); }
 
+/* ---------- Proje bazlı Gantt: proje seçici, grup başlıkları, özet çubuğu ---------- */
+.gantt-project { display: inline-flex; }
+.gantt-project select:not([multiple]):not([size]) {
+  height: 34px; min-width: 130px; max-width: 220px; padding: 0 32px 0 12px; border-radius: var(--radius-md);
+  border: 1px solid var(--border); background-color: var(--surface-2); background-position: right 11px center; background-size: 14px 14px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.gantt-project select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gantt-sub-project { color: var(--text); font-weight: 600; }
+.gantt-side-row.is-indented { padding-left: 30px; }
+.gantt-side-group { font-weight: 700; background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.gantt-side-group:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.gantt-side-group .gantt-task-name { font-weight: 700; }
+.gantt-group-chevron { display: inline-flex; flex: none; color: var(--text-muted); transition: transform var(--dur); }
+.gantt-group-chevron .icon { width: 16px; height: 16px; }
+.gantt-side-group.is-collapsed .gantt-group-chevron { transform: rotate(-90deg); }
+.gantt-group-count { flex: none; padding: 1px 7px; border-radius: var(--radius-pill); background: var(--surface-hover); color: var(--text-muted); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gantt-groupband { position: absolute; left: 0; right: 0; height: var(--row-h); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.gantt-group-bar {
+  position: absolute; z-index: 1; height: 12px; border-radius: 6px; overflow: hidden; pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 22%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.gantt-group-progress { height: 100%; background: var(--accent); opacity: 0.8; }
+
 @media (max-width: 760px) {
   .gantt { --side-w: 140px; }
+  .gantt-side-row.is-indented { padding-left: 22px; }
+  .gantt-group-count { display: none; }
   .gantt-task-pct { display: none; }
   .gantt-side-row { padding: 0 8px; }
   .gantt-knob, .gantt-link-dot { opacity: 0.8; }
