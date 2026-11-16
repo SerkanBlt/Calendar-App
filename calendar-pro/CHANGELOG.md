@@ -18,6 +18,7 @@ Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarla
   eklenen grupların adını değiştirme ve silme; silinen grubun tatilleri Özel'e taşınır, Geri al). Tatil günleri grubunun renginde görünür: Yıl kartları ve lejantı, Yıl listesi, Ay hücresi, mini takvim, Gantt gölgesi,
   Gün başlığı. `settings.holidayGroups` (ayarlar yedeğine dahil); tatil kaydına `group` alanı eklendi (eski kayıtlar Özel sayılır)
 - **Yıl görünümünde ISO hafta numaraları**: her ay kartında satır başı numara (sütun başlığı **H**), ISO 8601'e göre (1. hafta = yılın ilk Perşembesini içeren hafta; 2026 → 53 hafta); numaraya tıklamak o haftayı açar
+- Sürüklerken imleç pencerenin en kenarındaki sayfa boşluğuna (12 px) gelse de otomatik kaydırma çalışır (kenar boşluğu eşitlenince bu şerit kaydırılamaz hâle gelmişti; otomatik kaydırıcı artık kaydırılabilir öğeyi biraz içeriden arar)
 - Test: ISO hafta (yıl sınırları, 53 haftalı yıllar, 2019–2030 tüm günler), otomatik kapat, durum yaması ve tatil grupları için 21 yeni birim test; gerçek tarayıcıda (masaüstü + mobil) hafta numaraları, grup ekleme/renk/ad/silme/geri al,
   tatil rengi (Yıl/Ay/Gün/Gantt/mini takvim), sağ tık menüsü, temalı liste, otomatik kapat, kenar boşlukları ve Menü solda
 

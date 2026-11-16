@@ -13,6 +13,7 @@
 
 const EDGE = 56; // px — bu mesafeden yakınsa kaydır
 const MAX_SPEED = 20; // px / kare
+const GUTTER = 24; // px — pencere kenarındaki kaydırılamayan sayfa boşluğu (--page-pad) için içeri kayma payı
 
 const isScrollable = (el, axis) => {
   const style = getComputedStyle(el);
@@ -52,6 +53,16 @@ function scrollElement(el, x, y, axes) {
   return moved;
 }
 
+/** (hx, hy) noktasının altındaki en yakın kaydırılabilir üst öğeyi (önce dikey, sonra yatay) bulup imlecin (x, y) konumuna göre kaydırır. */
+function scrollUnder(hx, hy, x, y, axes) {
+  let moved = false;
+  for (let el = document.elementFromPoint(hx, hy); el && el !== document.body && !moved; el = el.parentElement) {
+    const ax = [...axes].filter((a) => isScrollable(el, a)).join('');
+    if (ax) moved = scrollElement(el, x, y, ax);
+  }
+  return moved;
+}
+
 /**
  * @param {{container?: HTMLElement, axes?: string, onScroll?: (x: number, y: number) => void}} [options]
  *   axes: 'y', 'x' veya 'xy' (varsayılan 'xy')
@@ -69,11 +80,12 @@ export function createAutoScroller({ container, axes = 'xy', onScroll } = {}) {
     if (container) {
       moved = scrollElement(container, x, y, axes);
     } else {
-      // İmlecin altındaki en yakın kaydırılabilir üst öğe (önce dikey, sonra yatay)
-      const hit = document.elementFromPoint(x, y);
-      for (let el = hit; el && el !== document.body && !moved; el = el.parentElement) {
-        const ax = [...axes].filter((a) => isScrollable(el, a)).join('');
-        if (ax) moved = scrollElement(el, x, y, ax);
+      moved = scrollUnder(x, y, x, y, axes);
+      // İmleç pencere kenarındaki sayfa boşluğundaysa (kaydırılamayan dış kenar), kaydırılabilir öğeyi biraz içeriden ara: kenara yapışık sürükleme de kaydırır
+      if (!moved) {
+        const px = Math.min(Math.max(x, GUTTER), window.innerWidth - GUTTER);
+        const py = Math.min(Math.max(y, GUTTER), window.innerHeight - GUTTER);
+        if (px !== x || py !== y) moved = scrollUnder(px, py, x, y, axes);
       }
     }
     if (moved) onScroll?.(x, y);
