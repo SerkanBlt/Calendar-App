@@ -56,9 +56,9 @@ const VIEWS = { dashboard, month, week, day, scheduler, timeline, gantt, kanban 
 // ---------------------------------------------------------------------------
 const appEl = document.getElementById('app');
 appEl.innerHTML = html`
-  <aside class="sidebar glass" id="sidebar" aria-label="Kenar çubuğu"></aside>
-  <div class="sidebar-scrim" data-scrim></div>
   <main class="main" id="main"><div class="view" id="view"></div></main>
+  <div class="sidebar-scrim" data-scrim></div>
+  <aside class="sidebar glass" id="sidebar" aria-label="Kenar çubuğu"></aside>
   <button type="button" class="fab" data-fab aria-label="Yeni etkinlik" title="Yeni etkinlik (N)">${icon('plus')}</button>`;
 const sidebarEl = document.getElementById('sidebar');
 const viewEl = document.getElementById('view');

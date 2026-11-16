@@ -37,7 +37,7 @@ Tek seferlik ayar:
 | Scheduler | 24 saat, 15 dk snap, sürükle-bırak, boyutlandırma, tüm gün satırı, 1/3/5/7 gün, yakınlaştırma |
 | Timeline  | Ay/gün gruplu kronolojik akış; yaklaşan / tümü / geçmiş filtresi ve arama başlıkta; noktalar zaman çizgisinin tam üstünde |
 | Gantt     | Çubuklar, ilerleme tutamacı, taşıma, iki kenardan boyutlandırma, bağımlılık oluşturma/kaldırma, kritik görevler, CPM ile kritik yol, bağımlılık ihlali uyarısı |
-| Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (seçim kaydedilir) |
+| Kanban    | Todo / Doing / Done, kolonlar arası sürükle-bırak, filtre, kolonları yan yana / alt alta gösterme (başlıkta **yalnızca ikonlu** iki düğme; filtre kutusu onlarla aynı satırda ve aynı yükseklikte; seçim kaydedilir) |
 
 Sürükle-bırak Pointer Events ile yazıldığı için fare ve dokunmatik ekranda çalışır:
 
@@ -123,6 +123,9 @@ Yeni hazır görsel arka plan eklemek için:
    `dim` (0–90): tema renginin görsel üzerindeki yoğunluğu; koyu/yoğun desenler için daha yüksek bir değer seçin.
 
 ## Kenar çubuğu
+
+Kenar çubuğu ekranın **sağındadır**: masaüstünde içeriğin sağında kalıcı bir sütun, telefon/dar ekran/yatay telefonda hamburger düğmesine (başlığın sağ ucunda) basınca **sağ kenardan kayarak
+açılan çekmece**. (DOM'da da `main`'den sonra gelir; Tab sırası görsel sırayla aynıdır.) Masaüstünde sağ-alttaki bildirimler kenar çubuğunun soluna oturur ve daraltılmış genişliği izler.
 
 Üstte **Hızlı komut** (komut paleti, `Ctrl + K`) ve **Ara** (etkinlik arama paneli, `/`), ardından görünümler ve mini
 takvim yer alır. Liste kaydırılabilir (kaydırma çubuğu gizli). En altta sabit duran **Ayarlar** düğmesinin sağında
@@ -304,9 +307,9 @@ sürümle açıldıysa ve ilk kurulumda mesaj gösterilmez. Sayfa görünür olu
 Bu karşılaştırma `public/service-worker.js` → `VERSION` ile `package.json` sürümünün **aynı** olmasına dayanır (`npm test` denetler).
 Sayfa kendiliğinden yenilenmez; Yenile'ye basılana kadar açık formlar korunur.
 
-Sol üstteki **logoya** tıklamak (veya `[` tuşu) kenar çubuğunu ikon moduna daraltır: yalnızca ikonlar kalır,
+Kenar çubuğunun üstündeki **logoya** tıklamak (veya `[` tuşu) kenar çubuğunu ikon moduna daraltır: yalnızca ikonlar kalır,
 mini takvim gizlenir ve takvime daha fazla alan açılır. İkonların üzerine gelince adları görünür. Tercih kaydedilir.
-Telefonda menü her zaman tam genişlikte açılır.
+Telefonda menü her zaman tam genişlikte, sağdan açılır.
 
 ## Klavye kısayolları
 

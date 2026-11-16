@@ -86,7 +86,7 @@ kbd {
 /* ---------- Kabuk ---------- */
 .app {
   display: grid;
-  grid-template-columns: auto 1fr; /* kenar çubuğu genişliği .sidebar üzerinde (daraltma animasyonu için) */
+  grid-template-columns: 1fr auto; /* içerik solda, kenar çubuğu SAĞDA; kenar çubuğu genişliği .sidebar üzerinde (daraltma animasyonu için) */
   height: 100vh;
   height: 100dvh;
   gap: var(--space-3);
@@ -94,6 +94,8 @@ kbd {
 }
 
 .main { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.main { grid-column: 1; grid-row: 1; }
+.sidebar { grid-column: 2; grid-row: 1; }
 .view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
 .view-body { flex: 1; min-height: 0; padding: 0 var(--space-2) var(--space-2); }
 
@@ -257,6 +259,8 @@ kbd {
 .segmented button:hover { color: var(--text); }
 .segmented button.is-active { background: var(--surface-solid); color: var(--text); box-shadow: var(--shadow-sm); }
 .segmented--sm button { padding: 4px 10px; }
+.segmented--icons { box-sizing: border-box; height: 34px; }
+.segmented--icons button { padding: 4px 11px; } /* yalnızca ikon (ör. Kanban düzeni): başlık/aria-label düğmede kalır */
 
 /* ---------- Ayarlar paneli ---------- */
 .settings { display: flex; flex-direction: column; gap: var(--space-4); }
@@ -483,6 +487,7 @@ kbd {
 .search-input input { flex: 1; border: 0; background: transparent; outline: none; color: var(--text); min-width: 0; height: 100%; }
 .search-input:focus-within { border-color: var(--accent); }
 .search-input--sm { height: 32px; width: 200px; }
+.segmented--icons + .search-input--sm { height: 34px; } /* ikonlu düğme grubunun hemen yanındaki filtre (Kanban): aynı yükseklik, aynı hiza */
 
 /* ---------- Modal ---------- */
 .modal-backdrop {
@@ -717,6 +722,12 @@ kbd {
 .only-mobile { display: none !important; }
 
 /* ---------- Daraltılmış kenar çubuğu (logoya tıklayınca / [ tuşu) — yalnızca masaüstü ---------- */
+/* Masaüstü kabuğu: kenar çubuğu sağda olduğu için sağ-alttaki bildirimler onun solunda durur (daraltılmış genişliği de izler: :root'a yazılır, toast <body> çocuğudur) */
+@media (min-width: 901px) and (min-height: 501px) {
+  :root:has(.app.sidebar-collapsed) { --sidebar-w: 64px; }
+  .toast-stack { right: calc(var(--sidebar-w) + var(--space-3) * 2 + var(--space-4)); }
+}
+
 @media (min-width: 901px) {
   .app.sidebar-collapsed { --sidebar-w: 64px; } /* düğme boyutu (44×40) değişmez */
   .sidebar-collapsed .sidebar-inner { padding: var(--space-4) 10px var(--space-2); align-items: center; }
@@ -734,8 +745,8 @@ kbd {
 @media (max-width: 900px), (max-height: 500px) {
   .app { grid-template-columns: 1fr; padding: var(--space-2); gap: 0; }
   .sidebar {
-    position: fixed; inset: 8px auto 8px 8px; width: min(300px, calc(100vw - 32px)); z-index: 60;
-    transform: translateX(calc(-100% - 16px)); transition: transform 240ms var(--ease);
+    position: fixed; inset: 8px 8px 8px auto; width: min(300px, calc(100vw - 32px)); z-index: 60;
+    transform: translateX(calc(100% + 16px)); transition: transform 240ms var(--ease); /* sağ kenardan kayarak açılır */
     background: var(--surface-solid);
   }
   .sidebar-open .sidebar { transform: none; }
@@ -759,6 +770,7 @@ kbd {
   /* Eylem satırı: tam genişlikte, sola dayalı; Geri/Bugün/İleri bloğu en başta. "Yeni" yerine sağ alttaki FAB kullanılır */
   .toolbar-actions { flex: 1 0 100%; margin-left: 0; justify-content: flex-start; }
   .toolbar-nav { order: -1; }
+  .search-input--sm { flex: 1 1 160px; width: auto; min-width: 160px; } /* filtre kutusu, yanındaki düğmelerle aynı satırda kalan alanı doldurur; 160 px'e sığmazsa (ör. Timeline'ın geniş filtre düğmeleri) kendi satırına iner */
   .toolbar-actions .offdays-toggle { margin-left: auto; } /* Hafta sonlarını gizle/göster düğmesi sağa dayalı */
   .toolbar-actions .gantt-push { margin-left: auto; } /* Gantt: Kritik yol ve sağındaki düğme sağa dayalı (S-M-L solda kalır) */
   .toolbar [data-action='new'] { display: none; }

@@ -4,6 +4,14 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.23.0
+- **Kenar çubuğu sağda**: masaüstünde kalıcı kenar çubuğu artık içeriğin **sağında**; telefon/dar ekran/yatay telefonda hamburgere (başlığın sağ ucunda) basınca menü **sağ kenardan kayarak** açılır.
+  Kapatma yolları aynı (✕, perde, `Esc`); perde sol tarafı kaplar. DOM'da kenar çubuğu `main`'den sonra gelir, böylece Tab sırası görsel sırayla aynıdır.
+  Masaüstünde sağ-alttaki bildirimler kenar çubuğunu örtmeden onun soluna oturur ve daraltılmış (64 px) genişliği izler. Mobilde kapalı çekmece ekranın sağında durur, yatay kaydırma yapmaz
+- **Kanban başlığı**: "Yan yana / Alt alta" düğmeleri **yalnızca ikon** (açıklama `title` ve `aria-label`'da); **filtre kutusu** bu düğmelerle **aynı satırda, aynı yükseklikte (34 px) ve ortalı**
+  (dikey/yatay/tablet/masaüstü). Dikeyde Kanban başlığı 159 → 119 px; diğer sayfaların başlık yükseklikleri (Timeline dahil) birebir aynı
+- Test: kenar çubuğunun konumu/genişliği (masaüstü, daraltılmış), bildirim çakışması, mobil çekmece (3 boyut: sağdan açılma, kayarak kapanma, taşma yok), Kanban hizası (5 boyut), başlık yüksekliği karşılaştırması
+
 ## 1.22.1
 - **Çekme kulakçığı geri alındı**: 1.22.0'daki sol kenar kulakçığı kaldırıldı (`drawerTab.js` ve stilleri silindi). Yerine eski **hamburger düğmesi başlığın SAĞ ucuna** döndü:
   dikey düzende başlığın yanında (ilk satırın sağı), yatay kompakt şeritte eylemlerden sonra en sağda. Kenar çubuğu çekmecesi, ✕, perde ve `Esc` aynen çalışır; masaüstünde hamburger yoktur

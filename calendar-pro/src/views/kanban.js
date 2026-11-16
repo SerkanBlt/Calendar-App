@@ -23,9 +23,9 @@ export default {
 
     const layout = ctx.state.settings.kanbanLayout === 'rows' ? 'rows' : 'columns';
     const extra = html`
-      <div class="segmented segmented--sm" role="radiogroup" aria-label="Kolon düzeni">
-        <button type="button" role="radio" data-layout="columns" aria-checked="${String(layout === 'columns')}" class="${layout === 'columns' ? 'is-active' : ''}" title="Kolonlar yan yana">${icon('kanban')}<span>Yan yana</span></button>
-        <button type="button" role="radio" data-layout="rows" aria-checked="${String(layout === 'rows')}" class="${layout === 'rows' ? 'is-active' : ''}" title="Kolonlar alt alta">${icon('timeline')}<span>Alt alta</span></button>
+      <div class="segmented segmented--sm segmented--icons" role="radiogroup" aria-label="Kolon düzeni">
+        <button type="button" role="radio" data-layout="columns" aria-checked="${String(layout === 'columns')}" class="${layout === 'columns' ? 'is-active' : ''}" title="Kolonlar yan yana" aria-label="Kolonlar yan yana">${icon('kanban')}</button>
+        <button type="button" role="radio" data-layout="rows" aria-checked="${String(layout === 'rows')}" class="${layout === 'rows' ? 'is-active' : ''}" title="Kolonlar alt alta" aria-label="Kolonlar alt alta">${icon('timeline')}</button>
       </div>
       <label class="search-input search-input--sm">${icon('search')}<input type="search" placeholder="Filtrele…" value="${viewState.query}" aria-label="Görevleri filtrele" /></label>`;
 
