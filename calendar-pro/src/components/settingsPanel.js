@@ -34,14 +34,16 @@ import {
   setSidebarLeft,
   toggleWorkDay,
 } from '../core/actions.js';
-import { openModal } from './modal.js';
+import { confirmDialog, openModal } from './modal.js';
+import { toast } from './toast.js';
 import { icon } from './icons.js';
+import { connect, deleteCloudData, disconnect, getStatus, preloadSignIn, runSync, subscribeStatus } from '../services/syncService.js';
 import { APP_VERSION } from '../core/version.js';
 
 let current = null; // { modal, show }
 
 /** Paneldeki bölümler (Ctrl+K komutları belirli bir bölüme açabilir). */
-export const SETTINGS_SECTIONS = Object.freeze({ theme: 'Tema', background: 'Arka plan', calendar: 'Takvim', sidebar: 'Kenar çubuğu', notifications: 'Hatırlatmalar', data: 'Veri', about: 'Hakkında' });
+export const SETTINGS_SECTIONS = Object.freeze({ theme: 'Tema', background: 'Arka plan', calendar: 'Takvim', sidebar: 'Kenar çubuğu', notifications: 'Hatırlatmalar', data: 'Veri', sync: 'Bulut eşitleme', about: 'Hakkında' });
 
 function themeSection(settings) {
   return html`
@@ -186,6 +188,33 @@ function generalSections(settings) {
     </section>`;
 }
 
+/** Bulut eşitleme (Google Drive): bağlantı durumu ve eylemler. Mantık: services/syncService.js. */
+function syncSection() {
+  const st = getStatus();
+  if (!st.enabled) preloadSignIn(); // Google betiği önceden yüklenir (açılır pencere "Bağlan"a basınca engellenmesin)
+  const when = st.lastSyncAt ? new Date(st.lastSyncAt).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  const busy = st.phase === 'syncing';
+  const label = !st.enabled
+    ? 'Bağlı değil'
+    : { syncing: st.progress || 'Eşitleniyor…', offline: 'Çevrimdışı — internet gelince eşitlenir', 'needs-auth': 'Yeniden bağlanmanız gerekiyor', error: `Hata: ${st.error}`, idle: when ? `Eşitlendi · ${when}` : 'Henüz eşitlenmedi' }[st.phase];
+  return html`
+    <section class="settings-section" data-section="sync">
+      <h3>${icon('cloud')} Bulut eşitleme (Google Drive)</h3>
+      <p class="sync-status is-${st.enabled ? st.phase : 'off'}" role="status" aria-live="polite" data-sync-status><i class="sync-dot" aria-hidden="true"></i><span>${label}</span></p>
+      <div class="settings-actions">
+        ${!st.enabled
+          ? html`<button type="button" class="btn btn-primary" data-fk="sync-connect" data-sync-connect ${busy ? 'disabled' : ''}>${icon('cloud')} Google Drive'a bağlan</button>`
+          : html`
+            ${st.phase === 'needs-auth' ? html`<button type="button" class="btn btn-primary" data-fk="sync-reconnect" data-sync-reconnect>${icon('refresh')} Yeniden bağlan</button>` : ''}
+            <button type="button" class="btn ${st.phase === 'needs-auth' ? 'btn-ghost' : 'btn-primary'}" data-fk="sync-now" data-sync-now ${busy ? 'disabled' : ''}>${icon('refresh')} Şimdi eşitle</button>
+            <button type="button" class="btn btn-ghost" data-fk="sync-disconnect" data-sync-disconnect ${busy ? 'disabled' : ''}>Bağlantıyı kes</button>
+            <button type="button" class="btn btn-danger-ghost" data-fk="sync-delete" data-sync-delete ${busy ? 'disabled' : ''}>${icon('trash')} Bulut verisini sil</button>`}
+      </div>
+      <p class="settings-note">Etkinlikleriniz, ekleriniz (10 MB'a kadar) ve bazı ayarlarınız (tema, çalışma günleri, tatiller ve tatil grupları, haftanın başlangıcı, varsayılan hatırlatma) Google Drive'ınızdaki <b>bu uygulamaya ait gizli klasöre</b> eşitlenir: dosyalar Drive arayüzünde görünmez ve uygulamanın başka hiçbir Drive dosyanıza erişimi yoktur. Aynı hesapla bağlanan her cihaz aynı veriyi görür.</p>
+      <p class="settings-note">Aynı etkinliği iki cihazda değiştirirseniz <b>en son değişiklik kazanır</b> (cihaz saatlerinin doğru olması gerekir). Silmeler de eşitlenir. Arka plan, kenar çubuğu, görünüm yakınlaştırmaları ve bildirim izni gibi <b>cihaza özel ayarlar</b> ile örnek (demo) etkinlikler eşitlenmez. Oturum yaklaşık 1 saat sonra yenilenir; tarayıcı pencereyi engellerse "Yeniden bağlan"a basmanız gerekebilir.</p>
+    </section>`;
+}
+
 function dataSection() {
   return html`
     <section class="settings-section" data-section="data">
@@ -195,7 +224,7 @@ function dataSection() {
         <button type="button" class="btn btn-ghost" data-fk="export" data-export>${icon('download')} JSON dışa aktar</button>
         <button type="button" class="btn btn-ghost" data-fk="import" data-import>${icon('upload')} JSON içe aktar</button>
       </div>
-      <p class="settings-note">Etkinlikler ve ayarlar dışa aktarılır; ekler ve kendi arka plan görselleriniz bu tarayıcıda kalır.</p>
+      <p class="settings-note">Etkinlikler ve ayarlar dışa aktarılır; ekler ve kendi arka plan görselleriniz yedeğe girmez (ekler, bulut eşitleme açıksa Drive'a gider).</p>
       <p class="settings-sub">Takvim dosyası (ICS)</p>
       <div class="settings-actions">
         <button type="button" class="btn btn-ghost" data-fk="export-ics" data-export-ics>${icon('download')} ICS dışa aktar</button>
@@ -220,7 +249,7 @@ function aboutSection() {
           <p class="settings-note">Sürüm <b class="about-version">v${APP_VERSION}</b></p>
         </div>
       </div>
-      <p class="settings-note">Takvim, görev ve proje planlama uygulaması. İnternet olmadan da çalışır; tüm veriler yalnızca bu tarayıcıda saklanır.</p>
+      <p class="settings-note">Takvim, görev ve proje planlama uygulaması. İnternet olmadan da çalışır; veriler bu tarayıcıda saklanır, isterseniz Ayarlar → Veri'den Google Drive ile cihazlar arasında eşitlenir.</p>
       <p class="settings-note">Değişiklikler için projedeki <code>CHANGELOG.md</code> dosyasına bakın.</p>
     </section>`;
 }
@@ -233,7 +262,7 @@ const TABS = Object.freeze([
   { id: 'appearance', label: 'Görünüm', icon: 'palette', sections: ['theme', 'background'], render: (s, busy) => html`${themeSection(s)}${backgroundSection(s, busy)}` },
   { id: 'calendar', label: 'Takvim', icon: 'month', sections: ['calendar'], render: (s) => calendarSection(s) },
   { id: 'general', label: 'Genel', icon: 'settings', sections: ['sidebar', 'notifications'], render: (s) => generalSections(s) },
-  { id: 'data', label: 'Veri', icon: 'layers', sections: ['data'], render: () => dataSection() },
+  { id: 'data', label: 'Veri', icon: 'layers', sections: ['data', 'sync'], render: () => html`${syncSection()}${dataSection()}` },
   { id: 'about', label: 'Hakkında', icon: 'sparkles', sections: ['about'], render: () => aboutSection() },
 ]);
 
@@ -275,6 +304,7 @@ export function openSettings({ section } = {}) {
   // Sabit boyutlu: sekmeler arasında geçerken panel büyüyüp küçülmez; telefonda tam ekran (bkz. .modal--settings)
   const modal = openModal({ title: 'Ayarlar', body, size: 'lg', className: 'modal--settings', onClose: () => {
     unsubscribe();
+    offSync();
     current = null;
   } });
   const scroller = modal.body;
@@ -300,6 +330,7 @@ export function openSettings({ section } = {}) {
   const unsubscribe = store.subscribe((s, prev) => {
     if (s.settings !== prev.settings || s.userBackgrounds !== prev.userBackgrounds) rerender();
   });
+  const offSync = subscribeStatus(() => rerender()); // eşitleme durumu değişince "Bulut eşitleme" bölümü güncellenir
 
   body.addEventListener('click', async (e) => {
     const t = e.target;
@@ -335,6 +366,30 @@ export function openSettings({ section } = {}) {
     if (t.closest('[data-export-ics]')) return exportCalendar();
     if (t.closest('[data-import-ics]')) return importCalendar();
     if (t.closest('[data-reset]')) return resetData();
+    if (t.closest('[data-sync-connect]')) return connect();
+    if (t.closest('[data-sync-reconnect]')) return runSync({ interactive: true, announce: true });
+    if (t.closest('[data-sync-now]')) return runSync({ interactive: true, announce: true });
+    if (t.closest('[data-sync-disconnect]')) {
+      const ok = await confirmDialog({
+        title: 'Bağlantı kesilsin mi?',
+        message: 'Eşitleme durur ve uygulamanın Google erişimi iptal edilir. Bu cihazdaki veriler silinmez; buluttaki kopya da kalır (yeniden bağlanırsanız birleştirilir).',
+        confirmText: 'Bağlantıyı kes',
+      });
+      if (!ok) return undefined;
+      await disconnect();
+      return toast('Google Drive bağlantısı kesildi', { type: 'success' });
+    }
+    if (t.closest('[data-sync-delete]')) {
+      const ok = await confirmDialog({
+        title: 'Bulut verisi silinsin mi?',
+        message: 'Google Drive\'daki tüm eşitleme dosyaları (etkinlikler, ekler, ayarlar) silinir ve bağlantı kesilir. Bu cihazdaki veriler silinmez; diğer cihazlardaki veriler de yerinde kalır ama artık eşitlenmez. Bu işlem geri alınamaz.',
+        confirmText: 'Bulut verisini sil',
+        danger: true,
+      });
+      if (!ok) return undefined;
+      if (await deleteCloudData()) toast('Bulut verisi silindi ve bağlantı kesildi', { type: 'success' });
+      return undefined;
+    }
     const mode = t.closest('[data-bg-mode]');
     if (mode) return setBackgroundColors({ mode: mode.dataset.bgMode });
     if (t.closest('[data-bg-swap]')) {

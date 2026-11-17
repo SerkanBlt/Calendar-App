@@ -4,6 +4,23 @@ Sürüm numaraları [semver](https://semver.org/lang/tr/) kuralına göre verili
 **MAJOR** uyumsuz değişiklik · **MINOR** yeni özellik · **PATCH** hata düzeltmesi.
 Uygulamadaki sürüm, kenar çubuğunda Ayarlar düğmesinin sağında ve Ayarlar → Hakkında'da görünür.
 
+## 1.31.0
+- **Cihazlar arası eşitleme (Google Drive)**: Ayarlar → Veri → **Bulut eşitleme**: Google Drive'a bağlanınca etkinlikler, **ekler** ve bazı ayarlar (tema, çalışma günleri, tatiller ve tatil grupları, haftanın başlangıcı, varsayılan hatırlatma)
+  Drive'daki uygulamaya ait **gizli klasöre** (`drive.appdata`; başka Drive dosyalarına erişim yok) eşitlenir; aynı hesapla bağlanan her cihaz aynı veriyi görür. Sunucu yok: doğrudan tarayıcıdan Drive'a. Arka plan, kenar çubuğu, düğme konumu ve
+  örnek (demo) etkinlikler gibi cihaza özel şeyler eşitlenmez
+- **Birleştirme**: etkinlik başına **en son değişiklik kazanır**; **silmeler eşitlenir ve geri gelmez** (silme izleri; "Geri al" ve silmeden sonra başka cihazda yapılan düzenleme etkinliği yeniden doğurur); ekler değişmezdir ve etkinlikle birlikte silinir;
+  ayarlarda anahtar başına son değişiklik kazanır. Aynı anda oluşan iki `sync.json` birleştirilir; buluttaki veri bu uygulamadan daha yeni bir şemayla yazılmışsa hiçbir şey ezilmez
+- **Yeni cihaz**: buluttaki veriye ilk bağlanışta cihazın dokunulmamış örnek etkinlikleri atılır (düzenlenmiş olanlar korunur); örnek veriler hiçbir zaman buluta gitmez
+- **Tetikleyiciler**: bağlanınca, açılışta, değişiklikten ~5 sn sonra (etkinlik, ek ve eşitlenen ayarlar), sekme yeniden görününce, internet gelince, 5 dakikada bir, elle "Şimdi eşitle" / `Ctrl + K`. Değişiklik yoksa buluta yazılmaz
+- **Dayanıklılık**: çevrimdışıyken durum "Çevrimdışı — internet gelince eşitlenir" (veri yerelde güvende); 401'de belirteç sessizce yenilenir, 429/5xx'te üstel bekleyerek yeniden denenir; tarayıcı Google penceresini engellerse "Yeniden bağlan" uyarısı çıkar ve
+  otomatik denemeler durur; **4 MB üstü ekler** devam ettirilebilir (resumable) yüklemeyle gider; aynı cihazdaki birden çok sekme/pencere Web Locks ile tek tur eşitler, BroadcastChannel ile birbirinin ekranını yeniler ve silme izlerini ezmez
+- **Bağlantıyı kes** (erişim Google'da da iptal edilir; yerel veri ve bulut kalır) · **Bulut verisini sil** (Drive'daki eşitleme dosyalarını siler, bağlantıyı keser) · **Tüm verileri sıfırla** bağlantıyı da keser (onay penceresi uyarır)
+- Altyapı: `eventRepo`/`attachmentRepo` silmelerde iz bırakır ve buluttan gelenleri zaman damgasını koruyarak yazar (`applyRemote`); `settings` satırlarına `updatedAt` eklendi (eski satırlar zaman damgasızdır, bulutun gerçek damgalı değerine yenilir);
+  bağımlılığı temizlenen etkinliklerin `updatedAt`'i de yenilenir. Yeni dosyalar: `services/syncService.js`, `services/sync/{syncCore,syncState,driveClient,config}.js`
+- Test: 25 yeni birim test (birleştirme kuralları, idempotans, sıradan bağımsızlık, TTL, doğrulama, demo verisi, iki cihazın 8 farklı tohumla 300 adımlık rastgele işlem sonunda yakınsaması). Gerçek tarayıcıda **sahte Google oturumu ve sahte Drive** ile iki cihazlı uçtan uca test:
+  bağlanma/ilk yükleme (demo verisi hariç), yeni cihazın indirmesi, düzenleme/silme yayılımı, geri gelmeme, çakışmada son değişiklik, ek ekleme/silme (otomatik), tema eşitleme, oturum bitimi ve "Yeniden bağlan", 401/500/429, çevrimdışı → internet gelince,
+  sayfalı liste, yinelenen belge, daha yeni şema, bağlantıyı kes/yeniden bağlan, sıfırlama, bulut verisini silme, izin reddi, büyük ek, çoklu sekme, mobil düzen. **Gerçek Google hesabıyla bu sürümde denenmedi** (ilk denemeyi kullanıcı yapar)
+
 ## 1.30.0
 - **Menüde Yıl, Ay'ın üstünde**: görünüm sırası Dashboard, Yıl, Ay, Hafta, Gün, Scheduler, Timeline, Gantt, Kanban. Klavye kısayolları **değişmedi** (`2` Ay, `9` Yıl …); menü rozetleri ve ipuçları gerçek kısayolu gösterir
   (artık menü sırasından değil `core/router.js` → `ROUTES`'tan türetilir); komut paletindeki ipuçları da aynı

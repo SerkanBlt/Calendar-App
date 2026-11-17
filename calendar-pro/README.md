@@ -201,7 +201,7 @@ Bir sonuca tıklamak (veya ↑/↓ + Enter) takvimi o güne götürür ve etkinl
 | Görünüm | Tema, arka plan (Standart / Renk / kendi görselin), yerleşim |
 | Takvim | Çalışma günleri, çalışma dışı günleri göster/gizle |
 | Genel | Kenar çubuğu: ikon modu, **menü solda** (yalnız masaüstü); hatırlatmalar |
-| Veri | JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma, tüm verileri sıfırlama |
+| Veri | **Bulut eşitleme (Google Drive)**; JSON (yedek) ve ICS (Outlook/Gmail uyumlu takvim dosyası) dışa / içe aktarma, tüm verileri sıfırlama |
 | Hakkında | Sürüm bilgisi |
 
 ## Açıklamada Markdown
@@ -372,6 +372,41 @@ ve `FREQ=YEARLY;BYMONTH=1,4,7,10` (çeyreklik) ile `RDATE` desteklenir. **Destek
 olarak eklenir ve içe aktarma bildiriminde sayısı belirtilir. Ayın 29–31'i: uygulamada kısa aylarda ayın son gününe kayar; ICS'te 31 `BYMONTHDAY=-1` olarak yazılır,
 29/30 ise o günü olmayan ayları atlayan `BYMONTHDAY=N` olur. Ekler (attachments) ICS'e dahil edilmez.
 
+## Bulut eşitleme (Google Drive)
+
+Cihazlar arası eşitleme **Ayarlar → Veri → Bulut eşitleme** bölümündendir (ya da `Ctrl + K` → "Google Drive Eşitlemesi…" / bağlıyken "Şimdi Eşitle"). **Google Drive'a bağlan**'a basıp Google izni verilince bu cihazdaki veriler
+Drive'a gider; aynı hesapla bağlanan her cihaz aynı veriyi görür. Uygulamanın kendi sunucusu yoktur: eşitleme doğrudan tarayıcıdan **sizin Drive'ınıza** yapılır.
+
+**Ne eşitlenir:** etkinlikler (tekrarlar, bağımlılıklar, Gantt projesi, durum… dahil), **ekler** (10 MB'a kadar; 4 MB üstü Drive'a devam ettirilebilir yüklemeyle gider) ve bazı ayarlar: tema, çalışma günleri, çalışma dışı günleri göster, tatiller ve
+**tatil grupları**, haftanın başlangıcı, varsayılan hatırlatma. **Eşitlenmez:** arka plan/kendi görselleriniz, kenar çubuğu ve Menü solda, yüzen düğme konumu, görünüm yakınlaştırmaları ve daraltma durumları, bildirim izni (cihaza özel) ve **örnek (demo) etkinlikler**
+(bir cihazda hiç dokunulmadıysa hiçbir zaman eşitlenmez; yeni bir cihaz buluttaki veriye ilk bağlandığında kendi örnek verileri atılır, siz birini düzenlediyseniz gerçek veri sayılır ve korunur).
+
+**Gizlilik:** yalnızca Google'ın `drive.appdata` izni istenir: dosyalar Drive'ınızdaki **bu uygulamaya ait gizli klasörde** durur, Drive arayüzünde görünmez ve uygulamanın başka hiçbir Drive dosyanıza erişimi yoktur (kota Drive'ınızdan düşer).
+Erişim belirteci yalnızca bellekte tutulur. **Bağlantıyı kes** erişimi Google tarafında da iptal eder; **Bulut verisini sil** Drive'daki tüm eşitleme dosyalarını siler ve bağlantıyı keser (yerel veriye dokunulmaz).
+Google betiği yalnızca Bulut eşitleme bölümü görüntülendiğinde ya da bağlıyken yüklenir; eşitleme kullanmayan biri Google'a hiç istek yapmaz.
+
+**Nasıl çalışır:** Drive'daki gizli klasörde `sync.json` (etkinlikler, silme izleri, ek listesi, ayarlar) ve her ek için `att-<kimlik>` dosyası bulunur. Bir tur: Drive'daki dosyalar okunur → yerel veriyle birleştirilir → farklar yerele uygulanır → yeni ekler yüklenir →
+değiştiyse `sync.json` yazılır. Tetikleyiciler: bağlanınca, uygulama açılınca, bir değişiklikten ~5 sn sonra (etkinlik/ek/eşitlenen ayar), sekme yeniden görününce (son eşitleme 1 dakikadan eskiyse), internet gelince, her 5 dakikada bir ve elle "Şimdi eşitle". Yazma yalnızca bir şey değiştiyse yapılır.
+
+**Birleştirme kuralları** (saf ve testli: `src/services/sync/syncCore.js`):
+- **Aynı etkinlik iki cihazda değiştirildiyse en son değişiklik kazanır** (etkinlik başına; alan düzeyinde birleştirme yok). Bu yüzden cihaz saatlerinin doğru olması gerekir; saati çok sapmış bir cihazın değişiklikleri haksız yere kazanabilir.
+- **Silmeler eşitlenir** ve geri gelmez: silinen etkinlik/ek için iz (tombstone) tutulur; iz, silmeden SONRA başka cihazda yapılan bir düzenlemeyle (ya da "Geri al"la) geçersiz kılınır. İzler 120 gün sonra budanır: bundan uzun süre hiç eşitlenmeyen bir cihaz,
+  silinmiş etkinlikleri geri getirebilir.
+- Ekler değişmezdir (yalnızca eklenir/silinir); etkinliği silinen etkinliğin ekleri de silinir.
+- Ayarlarda anahtar başına son değişiklik kazanır. Bağlanan yeni cihazda daha önce değiştirilmemiş (zaman damgasız) ayarlar buluttakiyle değişir.
+- Bulutta karşılaştır-ve-yaz yoktur: iki cihaz aynı anda yazarsa biri diğerinin üzerine yazabilir, ama her cihaz kendi değişikliğini yerelde tuttuğu için bir sonraki turda birleştirme bunları yeniden buluta taşır (sonunda tutarlı). Aynı anda oluşan iki `sync.json` birleştirilip tek dosyaya indirilir.
+- Aynı cihazda birden çok sekme/pencere (tarayıcı + yüklü uygulama) olabilir: tur Web Locks ile tek yapılır, bir sekme eşitleyince diğerleri ekranını/durumunu kendiliğinden yeniler (BroadcastChannel) ve silme izleri sekmeler arası ezilmez.
+
+**Durumlar** (Ayarlar'daki rozet): *Eşitlendi · tarih*, *Eşitleniyor…* (ek ilerlemesiyle), *Çevrimdışı — internet gelince eşitlenir* (hata değildir; yerel veri güvende), *Yeniden bağlanmanız gerekiyor* ve *Hata: …*.
+Erişim belirteci yaklaşık 1 saat geçerlidir; süre dolunca sessizce yenilenir. Tarayıcı açılır pencereyi kullanıcı hareketi olmadan engellerse durum "Yeniden bağlanmanız gerekiyor" olur, bir uyarı ("Yeniden bağlan") çıkar ve otomatik denemeler
+durur; **Yeniden bağlan**'a (ya da Şimdi eşitle'ye) basmanız yeter. Buluttaki dosya bu uygulamadan DAHA YENİ bir şema sürümüyle yazılmışsa eşitleme hata verir ve buluttaki veriye dokunmaz (uygulamayı güncelleyin).
+**Tüm verileri sıfırla** eşitleme bağlantısını da keser (buluttaki kopya silinmez; yeniden bağlanırsanız veriler geri iner).
+
+**Kurulum (uygulamayı yayınlayan kişi için):** Google Cloud Console'da bir **Web uygulaması** OAuth istemci kimliği oluşturulur ve `src/services/sync/config.js` içindeki `GOOGLE_CLIENT_ID`'ye yazılır (ya da derlerken `VITE_GOOGLE_CLIENT_ID` verilir).
+İstemci kimliği gizli değildir. Gerekli ayarlar: **Yetkili JavaScript kaynakları** = yayın adresi (`https://serkanblt.github.io`) ve geliştirmede `http://localhost:5173`; OAuth onay ekranında `…/auth/drive.appdata` kapsamı eklenir; uygulama "Test"
+durumundaysa kullanıcılar **Test kullanıcıları** listesine eklenmelidir (ya da yayına alınır: yalnızca hassas olmayan kapsam istendiği için Google doğrulaması gerekmez). Kod: `src/services/syncService.js` (orkestrasyon), `sync/driveClient.js`
+(Google oturumu + Drive REST), `sync/syncCore.js` (saf birleştirme), `sync/syncState.js` (yerel durum ve silme izleri).
+
 ## Verileri sıfırlama
 
 **Ayarlar → Veri → Tüm verileri sıfırla** (veya `Ctrl + K` → "Reset All Data…") uygulamayı ilk kurulum haline döndürür.
@@ -384,6 +419,7 @@ olarak eklenir ve içe aktarma bildiriminde sayısı belirtilir. Ayın 29–31'i
 Silinenler: etkinlikler, ekler, gönderilmiş hatırlatma kayıtları, kendi arka plan görselleri ve tüm ayarlar (tema, çalışma günleri, kenar çubuğu
 vb. varsayılana döner). Veritabanı tek transaction'da temizlenir, yarım kalmaz. Sıfırlanmış uygulama **boş** açılır; ilk açılıştaki örnek veriler
 geri yüklenmez. İşlem geri alınamaz; JSON yedeği etkinlikleri ve ayarları içerir, ekler ve kendi arka plan görselleri yedeğe girmez.
+**Bulut eşitleme bağlıysa** bağlantı da kesilir; buluttaki kopyaya dokunulmaz.
 Mantık `src/services/resetService.js` içindedir.
 
 ## Sürümler
@@ -425,7 +461,8 @@ src/
   core/        state (store + bus), router (hash), db (IndexedDB), eventRepo, eventModel,
                settingsRepo, actions, theme, backgrounds, colors (renk paleti), markdown (güvenli Markdown), ghostClick, dateUtils, overlap,
                dom (güvenli şablon), utils, seed
-  services/    recurrenceService, notificationService, exportService, icsService, resetService, updateService, criticalPathService
+  services/    recurrenceService, notificationService, exportService, icsService, resetService, updateService, criticalPathService, autoCloseService,
+               ganttProjects, syncService (+ sync/: syncCore, syncState, driveClient, config — Google Drive eşitlemesi)
   components/  sidebar, commandPalette, modal, toast, eventCard, eventEditor, timeGrid,
                dragDrop, toolbar, icons, markdownEditor, markdownLive, colorPicker, fab
   views/       dashboard, month, week, day, scheduler, timeline, gantt, kanban
@@ -441,7 +478,8 @@ tests/         ICS, Markdown (XSS dahil), canlı önizleme planı, renk/palet, a
 
 ### Veri modeli
 
-IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`.
+IndexedDB store'ları: `events`, `settings`, `notifications`, `attachments`, `backgrounds`. `settings` satırları `{ key, value, updatedAt }`'tir (`updatedAt`: bulut eşitlemede anahtar başına son değişiklik kazansın diye); ayrılmış `sync:state` satırı bu cihazın
+eşitleme durumunu (bağlı mı, cihaz kimliği, son eşitleme, silme izleri) tutar, ayarlara/yedeğe girmez.
 
 ```js
 { id, title, description, date, startDate, endDate, startTime, endTime, color, status,

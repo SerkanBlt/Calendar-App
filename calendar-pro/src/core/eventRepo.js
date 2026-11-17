@@ -10,6 +10,7 @@ import { addDaysISO, diffDays } from './dateUtils.js';
 import { compareByStart, normalizeEvent } from './eventModel.js';
 import { createId } from './utils.js';
 import { shiftRule } from '../services/recurrenceService.js';
+import { markDirty, recordDeletes } from '../services/sync/syncState.js';
 
 function commit(events) {
   store.set({ events: [...events].sort(compareByStart) });
@@ -63,10 +64,12 @@ export const eventRepo = {
     if (!removed.length) return [];
     const gone = new Set(removed.map((e) => e.id));
     await db.bulkDelete(STORES.EVENTS, [...gone]);
+    await recordDeletes({ events: [...gone] }); // bulut eşitleme: silinen etkinlik buluttan geri gelmesin (bkz. services/sync)
     for (const e of removed) await attachmentRepo.removeByEvent(e.id);
+    const stamp = new Date().toISOString(); // bağımlılığı temizlenen etkinlikler de değişmiş sayılır (eşitlemeye girsin)
     const dependents = current()
       .filter((e) => !gone.has(e.id) && e.dependencies.some((d) => gone.has(d)))
-      .map((e) => ({ ...e, dependencies: e.dependencies.filter((d) => !gone.has(d)) }));
+      .map((e) => ({ ...e, dependencies: e.dependencies.filter((d) => !gone.has(d)), updatedAt: stamp }));
     if (dependents.length) await db.bulkPut(STORES.EVENTS, dependents);
     const byId = new Map(dependents.map((e) => [e.id, e]));
     commit(current().filter((e) => !gone.has(e.id)).map((e) => byId.get(e.id) || e));
@@ -142,9 +145,34 @@ export const eventRepo = {
   },
 
   async replaceAll(list) {
+    const kept = new Set(list.map((e) => e?.id).filter(Boolean));
+    const dropped = current().map((e) => e.id).filter((id) => !kept.has(id));
     await db.clear(STORES.EVENTS);
+    await recordDeletes({ events: dropped }); // yeni listede olmayanlar silinmiş sayılır (bulut eşitleme)
     store.set({ events: [] });
     return this.mergeMany(list);
+  },
+
+  /**
+   * Buluttan gelen değişiklikleri YEREL olarak uygular (bulut eşitleme): kayıtlar `updatedAt`/`createdAt` değiştirilmeden yazılır ve silme izi bırakılmaz
+   * (aksi halde her eşitleme yeni bir değişiklik üretip döngüye girerdi).
+   * @param {{upsert?: object[], removeIds?: string[]}} changes
+   */
+  async applyRemote({ upsert = [], removeIds = [] } = {}) {
+    const incoming = upsert.map((e) => ({ ...normalizeEvent(e), createdAt: typeof e.createdAt === 'string' ? e.createdAt : e.updatedAt, updatedAt: e.updatedAt }));
+    if (incoming.length) await db.bulkPut(STORES.EVENTS, incoming);
+    if (removeIds.length) await db.bulkDelete(STORES.EVENTS, removeIds);
+    if (!incoming.length && !removeIds.length) return;
+    const touched = new Set([...incoming.map((e) => e.id), ...removeIds]);
+    commit([...current().filter((e) => !touched.has(e.id)), ...incoming]);
+  },
+
+  /** Kaydı iz bırakmadan ve ek temizliği yapmadan siler (ilk bağlanışta örnek verileri atmak için; bkz. core/seed.js → isUntouchedSeedEvent). */
+  async removeSilently(ids) {
+    const gone = new Set(ids);
+    if (!gone.size) return;
+    await db.bulkDelete(STORES.EVENTS, [...gone]);
+    commit(current().filter((e) => !gone.has(e.id)));
   },
 
   /**
@@ -187,13 +215,26 @@ export const attachmentRepo = {
       createdAt: new Date().toISOString(),
     };
     await db.put(STORES.ATTACHMENTS, record);
+    markDirty(); // bulut eşitleme: ek eklendi (store değişmediği için ayrıca bildirilir)
     return record;
   },
 
-  remove: (id) => db.delete(STORES.ATTACHMENTS, id),
+  async remove(id) {
+    await db.delete(STORES.ATTACHMENTS, id);
+    await recordDeletes({ attachments: [id] }); // bulut eşitleme: silinen ek buluttan geri gelmesin
+    markDirty();
+  },
 
   async removeByEvent(eventId) {
     const list = await this.listByEvent(eventId);
-    if (list.length) await db.bulkDelete(STORES.ATTACHMENTS, list.map((a) => a.id));
+    if (!list.length) return;
+    await db.bulkDelete(STORES.ATTACHMENTS, list.map((a) => a.id));
+    await recordDeletes({ attachments: list.map((a) => a.id) });
   },
+
+  // --- bulut eşitleme (iz bırakmadan; bkz. services/syncService.js) ---
+  listAll: () => db.getAll(STORES.ATTACHMENTS),
+  getById: (id) => db.get(STORES.ATTACHMENTS, id),
+  putRaw: (record) => db.put(STORES.ATTACHMENTS, record),
+  removeLocal: (ids) => (ids.length ? db.bulkDelete(STORES.ATTACHMENTS, ids) : Promise.resolve()),
 };

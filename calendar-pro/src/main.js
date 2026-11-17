@@ -35,6 +35,8 @@ import { addDaysISO, addMonths, toISODate, todayISO } from './core/dateUtils.js'
 import { exportCalendar, exportData, importCalendar, importData, moveOccurrence, resetData, setBackground, setBackgroundFit, setTheme, addUserBackground, toggleNotifications, toggleSidebarCollapsed, toggleShowOffDays } from './core/actions.js';
 import { notificationService } from './services/notificationService.js';
 import { autoCloseService } from './services/autoCloseService.js';
+import { runSync, startSync } from './services/syncService.js';
+import { isSyncEnabled } from './services/sync/syncState.js';
 import { installThemedSelects } from './components/themedSelect.js';
 import { installEventContextMenu } from './components/contextMenu.js';
 import { registerServiceWorker } from './services/updateService.js';
@@ -231,6 +233,13 @@ const palette = createCommandPalette({
     { id: 'new', title: 'Yeni Event', keywords: 'yeni etkinlik oluştur ekle new', icon: 'plus', hint: 'N', run: () => ctx.openEditor({ startDate: store.get().cursor }) },
     { id: 'today', title: 'Bugüne Git', keywords: 'today bugün', icon: 'target', hint: 'T', run: ctx.today },
     ...NAV_ITEMS.map((item) => ({ id: `go-${item.id}`, title: `${item.label} Aç`, keywords: `görünüm view ${item.id}`, icon: item.icon, hint: String(item.key), run: () => ctx.go(item.id) })),
+    {
+      id: 'sync',
+      title: isSyncEnabled() ? 'Şimdi Eşitle (Google Drive)' : 'Google Drive Eşitlemesi…',
+      keywords: 'eşitle senkron senkronizasyon bulut drive google sync cloud cihaz',
+      icon: 'cloud',
+      run: () => (isSyncEnabled() ? runSync({ interactive: true, announce: true }) : openSettings({ section: 'sync' })),
+    },
     { id: 'export', title: 'Export Data (JSON)', keywords: 'dışa aktar yedek indir export', icon: 'download', group: 'data', run: exportData },
     { id: 'import', title: 'Import Data (JSON)', keywords: 'içe aktar yükle import', icon: 'upload', group: 'data', run: importData },
     { id: 'export-ics', title: 'Export Calendar (ICS)', keywords: 'dışa aktar takvim ics outlook gmail google indir export', icon: 'download', group: 'data', run: exportCalendar },
@@ -360,6 +369,7 @@ async function boot() {
   store.set({ ready: true });
   notificationService.start();
   autoCloseService.start(); // zamanı geçen "otomatik kapat" etkinliklerini tamamlandı yapar
+  startSync().catch((err) => console.warn('Bulut eşitleme başlatılamadı:', err)); // Google Drive eşitlemesi bağlıysa açılışta ve değişikliklerde eşitler
   startServiceWorker();
 }
 

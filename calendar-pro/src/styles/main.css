@@ -1010,3 +1010,14 @@ select:not([multiple]):not([size]):disabled { opacity: 0.6; }
 .md hr { border: 0; border-top: 1px solid var(--border-strong); margin: 0.8em 0; }
 .md del { opacity: 0.7; }
 .switch.is-disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Bulut eşitleme durumu (Ayarlar → Veri) */
+.sync-status { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-2); font-size: 13px; font-weight: 600; align-self: flex-start; max-width: 100%; }
+.sync-status span { min-width: 0; overflow-wrap: anywhere; }
+.sync-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--text-faint); }
+.sync-status.is-idle .sync-dot { background: var(--success); }
+.sync-status.is-syncing .sync-dot { background: var(--info); animation: sync-pulse 1s ease-in-out infinite; }
+.sync-status.is-offline .sync-dot, .sync-status.is-needs-auth .sync-dot { background: var(--warning, #f5b84b); }
+.sync-status.is-error .sync-dot { background: var(--danger); }
+@keyframes sync-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .sync-status.is-syncing .sync-dot { animation: none; } }

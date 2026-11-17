@@ -27,3 +27,17 @@ export function buildSeedEvents() {
     { title: 'Konferans', startDate: d(8), endDate: d(9), category: 'İş', color: '#e45cc4', description: 'İki günlük ürün konferansı' },
   ];
 }
+
+let seedSignatures = null;
+const signature = (e) => `${e.title}\u0000${e.category ?? ''}\u0000${e.color ?? ''}`;
+
+/**
+ * Örnek (demo) etkinliklerden biri mi ve hiç değiştirilmemiş mi? Bulut eşitleme bunları ASLA eşitlemez: yeni bir cihaz kendi örnek verileriyle
+ * ilk kez bağlandığında gerçek takvime karışmasın diye ilk eşitlemede atılırlar (bkz. services/sync). Ölçüt: başlık + kategori + renk örnek verilerle
+ * aynı ve kayıt hiç güncellenmemiş (`updatedAt === createdAt`; ilk kayıtta ikisi aynı anda üretilir). Kullanıcı bir örneği düzenlediği anda gerçek veri olur.
+ */
+export function isUntouchedSeedEvent(ev) {
+  if (!ev || ev.updatedAt !== ev.createdAt) return false;
+  seedSignatures ||= new Set(buildSeedEvents().map(signature));
+  return seedSignatures.has(signature(ev));
+}

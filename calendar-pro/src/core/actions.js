@@ -14,6 +14,7 @@ import { userBackgroundRepo } from './userBackgroundRepo.js';
 import { COLOR_BG, USER_PREFIX } from './backgrounds.js';
 import { normalizeHexColor, STATUS_LABELS, statusPatch } from './eventModel.js';
 import { crossProjectLinks, projectValue } from '../services/ganttProjects.js';
+import { isSyncEnabled } from '../services/sync/syncState.js';
 
 /** Onay alıp siler; "Geri al" ile etkinlik geri yüklenir (ekler hariç). */
 export async function deleteEventWithUndo(id, { skipConfirm = false } = {}) {
@@ -192,7 +193,9 @@ export async function resetData() {
   const choice = await choiceDialog({
     title: 'Tüm veriler sıfırlansın mı?',
     message:
-      'Bu tarayıcıdaki tüm etkinlikler, ekler, kendi arka plan görselleriniz ve ayarlarınız silinecek; uygulama ilk kurulum haline dönecek (örnek veriler geri yüklenmez). Bu işlem geri alınamaz. Yedek (JSON) etkinlikleri ve ayarları içerir; ekler ve kendi arka plan görselleriniz yedeğe girmez.',
+      `Bu tarayıcıdaki tüm etkinlikler, ekler, kendi arka plan görselleriniz ve ayarlarınız silinecek; uygulama ilk kurulum haline dönecek (örnek veriler geri yüklenmez). Bu işlem geri alınamaz. Yedek (JSON) etkinlikleri ve ayarları içerir; ekler ve kendi arka plan görselleriniz yedeğe girmez.${
+        isSyncEnabled() ? ' Google Drive eşitlemesi bağlı: bağlantı da kesilir; buluttaki kopyaya dokunulmaz (yeniden bağlanırsanız veriler geri iner, silmek için önce Ayarlar → Veri → "Bulut verisini sil").' : ''
+      }`,
     choices: [
       { value: 'backup', label: 'Yedek al ve sıfırla', variant: 'btn-primary' },
       { value: 'reset', label: 'Yedeksiz sıfırla', variant: 'btn-danger' },
