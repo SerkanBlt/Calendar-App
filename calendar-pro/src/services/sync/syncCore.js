@@ -155,3 +155,13 @@ export const toDocument = (merged, { deviceId = '', appVersion = '', now = new D
 
 /** Uzak belgede hiç veri var mı (ilk bağlanışta örnek verilerin atılıp atılmayacağına karar vermek için). */
 export const hasRemoteData = (doc) => Object.keys(doc.events).length > 0 || Object.keys(doc.settings).length > 0 || Object.keys(doc.attachments).length > 0;
+
+/** Google OAuth istemci kimliği biçimi: <proje numarası>-<rastgele>.apps.googleusercontent.com */
+export const CLIENT_ID_RE = /^[0-9]+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i;
+
+/** Ayarlar'da girilen özel istemci kimliğini doğrular. Boş = yerleşik kimlik kullanılsın (geçerli). @returns {{ok: boolean, id: string}} */
+export function parseClientId(value) {
+  const v = String(value ?? '').trim();
+  if (!v) return { ok: true, id: '' };
+  return CLIENT_ID_RE.test(v) ? { ok: true, id: v } : { ok: false, id: '' };
+}

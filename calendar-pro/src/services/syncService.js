@@ -20,8 +20,8 @@ import { isUntouchedSeedEvent } from '../core/seed.js';
 import { APP_VERSION } from '../core/version.js';
 import { toast } from '../components/toast.js';
 import * as drive from './sync/driveClient.js';
-import { combineRemotes, emptySnapshot, hasRemoteData, mergeSnapshots, normalizeRemoteDoc, SYNC_SETTING_KEYS, toDocument, TOMBSTONE_TTL_DAYS } from './sync/syncCore.js';
-import { ATT_PREFIX, SYNC_FILE } from './sync/config.js';
+import { combineRemotes, emptySnapshot, hasRemoteData, mergeSnapshots, normalizeRemoteDoc, parseClientId, SYNC_SETTING_KEYS, toDocument, TOMBSTONE_TTL_DAYS } from './sync/syncCore.js';
+import { ATT_PREFIX, GOOGLE_CLIENT_ID, SYNC_FILE } from './sync/config.js';
 import { getSyncState, isSyncEnabled, loadSyncState, onDirty, onSyncStateChange, patchSyncState, unionTombstones } from './sync/syncState.js';
 
 const DEBOUNCE_MS = 5000;
@@ -46,7 +46,7 @@ const setStatus = (patch) => {
   notify();
 };
 
-export const getStatus = () => ({ ...status, enabled: isSyncEnabled(), lastSyncAt: getSyncState().lastSyncAt, connectedAt: getSyncState().connectedAt });
+export const getStatus = () => ({ ...status, enabled: isSyncEnabled(), lastSyncAt: getSyncState().lastSyncAt, connectedAt: getSyncState().connectedAt, customClientId: getSyncState().clientId || '' });
 export const subscribeStatus = (fn) => {
   listeners.add(fn);
   return () => listeners.delete(fn);
@@ -233,6 +233,25 @@ export function runSync(options = {}) {
   return running;
 }
 
+/** Kullanılan Google OAuth istemci kimliği: özel (Ayarlar'dan girilmiş) ya da yerleşik. */
+export const getClientInfo = () => ({ custom: getSyncState().clientId || '', effective: drive.getClientId(), builtIn: GOOGLE_CLIENT_ID });
+
+/**
+ * Özel OAuth istemci kimliğini kaydeder ('' = yerleşik kimliğe dön). Bağlıyken değiştirilemez (önce bağlantı kesilmeli): bulut verisi istemci kimliğine/projesine bağlıdır,
+ * farklı kimlikler birbirinin Drive uygulama klasörünü göremez. Kimlik bulutta saklanmaz; aynı veriyi paylaşacak her cihazda ayrıca girilmelidir.
+ * @returns {Promise<{ok: boolean, reason?: 'enabled'|'invalid', id?: string}>}
+ */
+export async function setCustomClientId(value) {
+  if (isSyncEnabled()) return { ok: false, reason: 'enabled' };
+  const parsed = parseClientId(value);
+  if (!parsed.ok) return { ok: false, reason: 'invalid' };
+  await patchSyncState({ clientId: parsed.id });
+  drive.setClientId(parsed.id);
+  channel?.postMessage('state');
+  notify();
+  return { ok: true, id: parsed.id };
+}
+
 /** Bağlan'a basılmadan önce Google oturum betiğini yükler (yalnızca Bulut eşitleme bölümü görüntülenince çağrılır; diğer kullanıcılar Google'a hiç istek yapmaz). */
 export const preloadSignIn = () => drive.preloadGis();
 
@@ -281,7 +300,11 @@ export async function startSync() {
   if (started) return;
   started = true;
   await loadSyncState();
-  onSyncStateChange(() => notify());
+  drive.setClientId(getSyncState().clientId);
+  onSyncStateChange(() => {
+    drive.setClientId(getSyncState().clientId); // başka sekmede/sıfırlamayla değişmiş olabilir
+    notify();
+  });
   const localChanged = () => {
     if (applying || !isSyncEnabled() || status.phase === 'needs-auth') return;
     if (running) rerun = true;

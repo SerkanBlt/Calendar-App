@@ -6,7 +6,7 @@ process.env.TZ = 'Europe/Istanbul';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import {
-  combineRemotes, emptySnapshot, hasRemoteData, mergeSnapshots, normalizeRemoteDoc, SYNC_SCHEMA, SYNC_SETTING_KEYS, toDocument, TOMBSTONE_TTL_DAYS,
+  combineRemotes, emptySnapshot, hasRemoteData, mergeSnapshots, normalizeRemoteDoc, parseClientId, SYNC_SCHEMA, SYNC_SETTING_KEYS, toDocument, TOMBSTONE_TTL_DAYS,
 } from '../src/services/sync/syncCore.js';
 import { buildSeedEvents, isUntouchedSeedEvent } from '../src/core/seed.js';
 import { normalizeEvent } from '../src/core/eventModel.js';
@@ -297,5 +297,25 @@ describe('örnek (demo) veri: eşitlenmez', () => {
     assert.equal(isUntouchedSeedEvent(edited), false);
     assert.equal(isUntouchedSeedEvent(asSaved({ title: 'Pazar araştırması', category: 'Proje', color: '#ff0000', startDate: '2026-11-17' })), false);
     assert.equal(isUntouchedSeedEvent(asSaved({ title: 'Kendi etkinliğim', startDate: '2026-11-17' })), false);
+  });
+});
+
+describe('özel Google istemci kimliği (parseClientId)', () => {
+  test('yerleşik kimlik biçimi ve tipik özel kimlikler geçerlidir', () => {
+    for (const id of ['130178296499-883vksmje6127ure7ji455lhsvjj8i9b.apps.googleusercontent.com', '123456789012-abc_def-ghi0123456789.apps.googleusercontent.com', ' 1-a.apps.googleusercontent.com ']) {
+      const r = parseClientId(id);
+      assert.equal(r.ok, true, id);
+      assert.equal(r.id, id.trim());
+    }
+  });
+
+  test('boş değer "yerleşik kimliği kullan" demektir (geçerli, boş kimlik)', () => {
+    for (const v of ['', '   ', null, undefined]) assert.deepEqual(parseClientId(v), { ok: true, id: '' });
+  });
+
+  test('biçimi bozuk kimlikler reddedilir', () => {
+    for (const bad of ['abc', '123-abc', 'abc.apps.googleusercontent.com', '123-abc.googleusercontent.com', 'https://x.apps.googleusercontent.com', '123-abc.apps.googleusercontent.com.evil.com', '123 456-abc.apps.googleusercontent.com', '<script>']) {
+      assert.deepEqual(parseClientId(bad), { ok: false, id: '' }, bad);
+    }
   });
 });

@@ -37,10 +37,11 @@ import {
 import { confirmDialog, openModal } from './modal.js';
 import { toast } from './toast.js';
 import { icon } from './icons.js';
-import { connect, deleteCloudData, disconnect, getStatus, preloadSignIn, runSync, subscribeStatus } from '../services/syncService.js';
+import { connect, deleteCloudData, disconnect, getClientInfo, getStatus, preloadSignIn, runSync, setCustomClientId, subscribeStatus } from '../services/syncService.js';
 import { APP_VERSION } from '../core/version.js';
 
 let current = null; // { modal, show }
+let syncAdvancedOpen = false; // "Gelişmiş: kendi Google istemci kimliğim" açık mı (panel yeniden çizilince korunur)
 
 /** Paneldeki bölümler (Ctrl+K komutları belirli bir bölüme açabilir). */
 export const SETTINGS_SECTIONS = Object.freeze({ theme: 'Tema', background: 'Arka plan', calendar: 'Takvim', sidebar: 'Kenar çubuğu', notifications: 'Hatırlatmalar', data: 'Veri', sync: 'Bulut eşitleme', about: 'Hakkında' });
@@ -192,6 +193,7 @@ function generalSections(settings) {
 function syncSection() {
   const st = getStatus();
   if (!st.enabled) preloadSignIn(); // Google betiği önceden yüklenir (açılır pencere "Bağlan"a basınca engellenmesin)
+  const client = getClientInfo();
   const when = st.lastSyncAt ? new Date(st.lastSyncAt).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
   const busy = st.phase === 'syncing';
   const label = !st.enabled
@@ -210,6 +212,17 @@ function syncSection() {
             <button type="button" class="btn btn-ghost" data-fk="sync-disconnect" data-sync-disconnect ${busy ? 'disabled' : ''}>Bağlantıyı kes</button>
             <button type="button" class="btn btn-danger-ghost" data-fk="sync-delete" data-sync-delete ${busy ? 'disabled' : ''}>${icon('trash')} Bulut verisini sil</button>`}
       </div>
+      <details class="sync-advanced" ${client.custom || syncAdvancedOpen ? 'open' : ''}>
+        <summary>Gelişmiş: kendi Google istemci kimliğim${client.custom ? ' (özel kimlik kullanılıyor)' : ''}</summary>
+        <label class="field"><span>OAuth istemci kimliği (Client ID)</span>
+          <input type="text" data-fk="sync-client-id" data-sync-client-id value="${client.custom}" placeholder="boşsa uygulamanın yerleşik kimliği kullanılır" spellcheck="false" autocomplete="off" ${st.enabled ? 'disabled' : ''} />
+        </label>
+        <p class="settings-note">${st.enabled
+          ? 'Kimliği değiştirmek için önce bağlantıyı kesin.'
+          : 'Kendi Google Cloud projenizi kullanmak (ör. uygulamayı başka bir adreste barındırıyorsanız ya da yerleşik kimlikte Test kullanıcısı eklemek istemiyorsanız) için Google Cloud Console\'da "Web uygulaması" türünde bir OAuth istemci kimliği oluşturup buraya yazın.'}
+          Yetkili JavaScript kaynağı olarak <code>${location.origin}</code> eklenmeli, <code>drive.appdata</code> kapsamı etkin olmalı ve uygulama "Test" durumundaysa kendi Google hesabınız Test kullanıcıları'na eklenmelidir.</p>
+        <p class="settings-note"><b>Önemli:</b> bulut verisi istemci kimliğine (projeye) bağlıdır; farklı kimlikler birbirinin verisini göremez. Aynı veriyi paylaşacak <b>tüm cihazlarda aynı kimliği</b> girin (kimlik bulutta saklanmaz, her cihazda ayrıca girilir). Kimlik gizli değildir.</p>
+      </details>
       <p class="settings-note">Etkinlikleriniz, ekleriniz (10 MB'a kadar) ve bazı ayarlarınız (tema, çalışma günleri, tatiller ve tatil grupları, haftanın başlangıcı, varsayılan hatırlatma) Google Drive'ınızdaki <b>bu uygulamaya ait gizli klasöre</b> eşitlenir: dosyalar Drive arayüzünde görünmez ve uygulamanın başka hiçbir Drive dosyanıza erişimi yoktur. Aynı hesapla bağlanan her cihaz aynı veriyi görür.</p>
       <p class="settings-note">Aynı etkinliği iki cihazda değiştirirseniz <b>en son değişiklik kazanır</b> (cihaz saatlerinin doğru olması gerekir). Silmeler de eşitlenir. Arka plan, kenar çubuğu, görünüm yakınlaştırmaları ve bildirim izni gibi <b>cihaza özel ayarlar</b> ile örnek (demo) etkinlikler eşitlenmez. Oturum yaklaşık 1 saat sonra yenilenir; tarayıcı pencereyi engellerse "Yeniden bağlan"a basmanız gerekebilir.</p>
     </section>`;
@@ -429,7 +442,23 @@ export function openSettings({ section } = {}) {
     if (e.target.closest?.('[data-bg-color]')) applyBackgroundSettings(store.get().settings);
   });
 
-  body.addEventListener('change', (e) => {
+  body.addEventListener(
+    'toggle',
+    (e) => {
+      if (e.target.matches?.('.sync-advanced')) syncAdvancedOpen = e.target.open;
+    },
+    true, // toggle olayı kabarcıklanmaz
+  );
+
+  body.addEventListener('change', async (e) => {
+    const idInput = e.target.closest('[data-sync-client-id]');
+    if (idInput) {
+      const r = await setCustomClientId(idInput.value);
+      if (!r.ok) toast(r.reason === 'enabled' ? 'Kimliği değiştirmek için önce bağlantıyı kesin' : 'Geçersiz istemci kimliği: "<sayı>-<karakterler>.apps.googleusercontent.com" biçiminde olmalı', { type: 'error', duration: 6000 });
+      else toast(r.id ? 'Özel Google istemci kimliği kaydedildi' : 'Yerleşik Google istemci kimliği kullanılacak', { type: 'success' });
+      rerender();
+      return;
+    }
     const colorInput = e.target.closest('[data-bg-color]');
     if (colorInput) {
       setBackgroundColors({ [colorInput.dataset.bgColor === '2' ? 'color2' : 'color1']: colorInput.value });

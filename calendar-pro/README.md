@@ -402,9 +402,15 @@ Erişim belirteci yaklaşık 1 saat geçerlidir; süre dolunca sessizce yenileni
 durur; **Yeniden bağlan**'a (ya da Şimdi eşitle'ye) basmanız yeter. Buluttaki dosya bu uygulamadan DAHA YENİ bir şema sürümüyle yazılmışsa eşitleme hata verir ve buluttaki veriye dokunmaz (uygulamayı güncelleyin).
 **Tüm verileri sıfırla** eşitleme bağlantısını da keser (buluttaki kopya silinmez; yeniden bağlanırsanız veriler geri iner).
 
+**Kendi Google istemci kimliğiniz (isteğe bağlı):** uygulamanın yerleşik bir OAuth istemci kimliği vardır (`src/services/sync/config.js`). **Ayarlar → Veri → Bulut eşitleme → Gelişmiş: kendi Google istemci kimliğim** alanına kendi
+kimliğinizi yazarsanız onunla bağlanılır (boş bırakırsanız yerleşik kimlik kullanılır). Ne zaman gerekir: uygulamayı **başka bir adreste barındırıyorsanız** (yerleşik kimlik yalnızca yayın adresinde ve `localhost:5173`'te çalışır) ya da yerleşik kimlikte "Test kullanıcıları" listesine
+eklenmek istemiyorsanız. Kendi projenizde: Google Cloud Console'da **Web uygulaması** türünde OAuth istemci kimliği oluşturun, **Yetkili JavaScript kaynağı** olarak sayfanın adresini (alanın altında yazar) ekleyin, `drive.appdata` kapsamını etkinleştirin ve uygulama "Test" durumundaysa kendi hesabınızı
+Test kullanıcıları'na ekleyin. **Dikkat:** buluttaki veri istemci kimliğine (Cloud projesine) bağlıdır; farklı kimlikler birbirinin verisini göremez, bu yüzden aynı veriyi paylaşacak **tüm cihazlarda aynı kimlik** girilmelidir (kimlik bulutta saklanmaz, cihaza özeldir; bağlıyken değiştirilemez, önce bağlantı kesilir;
+bağlantı kesilince korunur, "Tüm verileri sıfırla" ile silinir). İstemci kimliği gizli değildir.
+
 **Kurulum (uygulamayı yayınlayan kişi için):** Google Cloud Console'da bir **Web uygulaması** OAuth istemci kimliği oluşturulur ve `src/services/sync/config.js` içindeki `GOOGLE_CLIENT_ID`'ye yazılır (ya da derlerken `VITE_GOOGLE_CLIENT_ID` verilir).
 İstemci kimliği gizli değildir. Gerekli ayarlar: **Yetkili JavaScript kaynakları** = yayın adresi (`https://serkanblt.github.io`) ve geliştirmede `http://localhost:5173`; OAuth onay ekranında `…/auth/drive.appdata` kapsamı eklenir; uygulama "Test"
-durumundaysa kullanıcılar **Test kullanıcıları** listesine eklenmelidir (ya da yayına alınır: yalnızca hassas olmayan kapsam istendiği için Google doğrulaması gerekmez). Kod: `src/services/syncService.js` (orkestrasyon), `sync/driveClient.js`
+durumundaysa kullanıcılar **Test kullanıcıları** listesine eklenmelidir (ya da OAuth onay ekranı **yayına alınır**: yalnızca hassas olmayan `drive.appdata` kapsamı istendiği için Google'ın doğrulama süreci gerekmemelidir — güncel kuralları Console'da doğrulayın; yayına alınırsa yerleşik kimlikle kimseyi tek tek eklemek gerekmez). Kod: `src/services/syncService.js` (orkestrasyon), `sync/driveClient.js`
 (Google oturumu + Drive REST), `sync/syncCore.js` (saf birleştirme), `sync/syncState.js` (yerel durum ve silme izleri).
 
 ## Verileri sıfırlama

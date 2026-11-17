@@ -5,7 +5,7 @@
  *   dosyalar Drive arayüzünde görünmez ve yalnızca bu uygulamanın OAuth kimliği tarafından okunabilir (kota kullanıcının Drive'ından düşer).
  * - Erişim belirteci (access token) YALNIZCA BELLEKTE tutulur (yaklaşık 1 saat geçerli); sayfa yenilenince sessizce (prompt: 'none') yeniden istenir.
  *   Tarayıcı açılır pencereyi kullanıcı etkileşimi olmadan engellerse AuthError fırlatılır ve arayüz "Yeniden bağlan" düğmesi gösterir.
- * - OAuth istemci kimliği (Client ID) gizli değildir; kod içinde durur (bkz. config.js). Yetkili JavaScript kaynakları Google Cloud'da tanımlıdır.
+ * - OAuth istemci kimliği (Client ID) gizli değildir: varsayılanı kod içinde durur (bkz. config.js); kullanıcı Ayarlar'dan kendi kimliğini girebilir. Yetkili JavaScript kaynakları Google Cloud'da tanımlıdır.
  * - Ağ hataları NetworkError, oturum hataları AuthError, Drive'ın döndürdüğü hatalar DriveError olarak ayrışır (arayüz durumları buna göre).
  */
 import { DRIVE_API, DRIVE_UPLOAD, DRIVE_SCOPE, GIS_SRC, GOOGLE_CLIENT_ID } from './config.js';
@@ -32,6 +32,16 @@ export class DriveError extends Error {
 }
 
 let token = { value: '', expiresAt: 0 };
+let clientId = GOOGLE_CLIENT_ID; // Ayarlar'dan özel kimlik girilmişse o (bkz. syncService.setCustomClientId)
+
+export const getClientId = () => clientId;
+/** Kullanılacak OAuth istemci kimliği ('' = yerleşik). Değişirse eski kimliğin belirteci geçersizdir. */
+export function setClientId(id) {
+  const next = id || GOOGLE_CLIENT_ID;
+  if (next === clientId) return;
+  clientId = next;
+  clearToken();
+}
 let gisPromise = null;
 
 export const hasValidToken = () => Boolean(token.value) && Date.now() < token.expiresAt;
@@ -59,7 +69,7 @@ function loadGis() {
 function requestToken(prompt) {
   return new Promise((resolve, reject) => {
     const client = globalThis.google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
+      client_id: clientId,
       scope: DRIVE_SCOPE,
       callback: (resp) => {
         if (resp?.error || !resp?.access_token) reject(new AuthError(resp?.error_description || resp?.error || 'Google oturumu açılamadı.', resp?.error || 'no_token'));

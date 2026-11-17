@@ -1021,3 +1021,9 @@ select:not([multiple]):not([size]):disabled { opacity: 0.6; }
 .sync-status.is-error .sync-dot { background: var(--danger); }
 @keyframes sync-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 @media (prefers-reduced-motion: reduce) { .sync-status.is-syncing .sync-dot { animation: none; } }
+
+.sync-advanced { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); padding: 0 var(--space-3); }
+.sync-advanced > summary { cursor: pointer; padding: 10px 0; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.sync-advanced[open] > summary { color: var(--text); }
+.sync-advanced .field { margin-bottom: var(--space-2); }
+.sync-advanced .settings-note:last-child { padding-bottom: var(--space-3); }

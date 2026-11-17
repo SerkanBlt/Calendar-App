@@ -9,6 +9,7 @@
  *     deviceId:      bu cihazın kimliği (bulut belgesine üst veri olarak yazılır)
  *     initial:       bağlandıktan sonra ilk eşitleme henüz yapılmadı (örnek veriler bu ilk eşitlemede atılır)
  *     connectedAt, lastSyncAt: ISO zamanları
+ *     clientId:      Ayarlar'dan girilen özel Google OAuth istemci kimliği ('' = yerleşik); bağlantı kesilince korunur, cihaza özeldir
  *     tombstones:    silinen etkinliklerin izi { id: ISO }     — yalnızca eşitleme bağlıyken kaydedilir
  *     attTombstones: silinen eklerin izi     { id: ISO }
  *   }
@@ -20,7 +21,7 @@ import { db, STORES } from '../../core/db.js';
 import { createId } from '../../core/utils.js';
 
 const KEY = 'sync:state';
-const defaults = () => ({ enabled: false, deviceId: createId(), initial: false, connectedAt: '', lastSyncAt: '', tombstones: {}, attTombstones: {} });
+const defaults = () => ({ enabled: false, deviceId: createId(), initial: false, connectedAt: '', lastSyncAt: '', clientId: '', tombstones: {}, attTombstones: {} });
 
 let state = null;
 let chain = Promise.resolve();
